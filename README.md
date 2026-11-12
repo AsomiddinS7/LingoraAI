@@ -3,7 +3,7 @@
 Builds the website and its mock services from *SignConnect Web Developer Brief v0.2*.
 The team plugs in the AI parts (classifier, Azure Speech, backend) without changing the UI.
 
-**Preview link:** _not deployed yet_ (see "Deploy the preview").
+**Preview link:** https://asomiddins7.github.io/LingoraAI/ (GitHub Pages, redeployed on every push to `main`)
 **Contract version:** API section 7 of brief v0.2, unchanged.
 
 ## Run in mock mode (no keys, no backend)
