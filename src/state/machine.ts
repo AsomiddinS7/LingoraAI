@@ -116,6 +116,8 @@ export function reducer(s: ConvState, e: ConvEvent): ConvState {
 
     case 'SIGN_EVENT': {
       if (s.phase !== 'SIGNER_LISTENING') return s;
+      // 'none' with confidence 0 = no hand in view: clear the status instead of "Not recognized".
+      if (e.label === 'none' && e.confidence === 0) return { ...s, last: null, notRecognized: false };
       const last = { label: e.label, confidence: e.confidence };
       if (e.label === 'none' || e.confidence < e.threshold) return { ...s, last, notRecognized: true };
       return {

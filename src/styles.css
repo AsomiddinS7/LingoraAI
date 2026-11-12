@@ -316,3 +316,10 @@ code { font-family: ui-monospace, Consolas, monospace; font-size: .9em; backgrou
 .sign-list code { font-size: .78rem; }
 .not-for li { margin-bottom: 6px; font-weight: 600; }
 .footer-links { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ---------- Hand tracking ---------- */
+.hand-overlay { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+.hand-pill { position: absolute; z-index: 2; right: 10px; bottom: 10px; }
+.hand-pill.on { background: #1d6a33; }
+.train-grid { display: grid; gap: 16px; margin-top: 8px; }
+@media (min-width: 900px) { .train-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } }

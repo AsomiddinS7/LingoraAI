@@ -7,6 +7,10 @@ import { useCamera } from '../state/CameraContext';
 import { useConversation } from '../state/ConversationContext';
 import { Icon } from './Icon';
 import { StatusChip } from './StatusChip';
+import { HandOverlay } from './HandOverlay';
+import { sampleStore, useSampleVersion } from '../ml/samples';
+import { useRuntime } from '../runtime';
+import { href } from '../router';
 
 /** CameraPanel: live preview, permission flow and every camera/classifier failure state (F1, N2). */
 export function CameraPanel() {
@@ -15,6 +19,9 @@ export function CameraPanel() {
   const conv = useConversation();
   const videoRef = useRef<HTMLVideoElement>(null);
   const perf = useMetrics();
+  const realModel = useRuntime((s) => s.config.signClassifier === 'mediapipe');
+  useSampleVersion();
+  const untrained = realModel && sampleStore.all().length === 0;
 
   // Measure the frame rate the camera really delivers (one callback per decoded frame).
   useEffect(() => {
@@ -98,6 +105,7 @@ export function CameraPanel() {
               </span>
               {conv.faceHint && <span className="pill">{t('hint.label', { hint: t(`hint.${conv.faceHint}` as MessageKey) })}</span>}
             </div>
+            {realModel && conv.classifierStatus === 'ready' && <HandOverlay />}
             {flash && (
               <div className="detect-banner" aria-hidden="true">
                 <Icon name="check" />
@@ -118,6 +126,14 @@ export function CameraPanel() {
         {t('camera.privacy')}
       </p>
       <ClassifierState />
+      {untrained && (
+        <div className="notice warn" role="status">
+          <Icon name="info" />
+          <p>
+            <a href={href('console')}>{t('train.noModel')}</a>
+          </p>
+        </div>
+      )}
       {live && <StatusChip />}
     </section>
   );

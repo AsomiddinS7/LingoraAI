@@ -19,7 +19,12 @@ export interface PipelineMetrics {
   avgLatencyMs: number | null;
   /** Time between consecutive gesture events, ms (for the mock this is its demo cadence). */
   avgEventIntervalMs: number | null;
-  classifier: 'mock' | 'model' | null;
+  /** Real model only: first frame of a held sign -> recognition event, ms. */
+  lastRecognitionMs: number | null;
+  avgRecognitionMs: number | null;
+  /** Time to download and initialise the hand tracking model, ms. */
+  modelLoadMs: number | null;
+  classifier: 'mock' | 'model' | 'mediapipe' | null;
 }
 
 const empty: PipelineMetrics = {
@@ -32,6 +37,9 @@ const empty: PipelineMetrics = {
   lastLatencyMs: null,
   avgLatencyMs: null,
   avgEventIntervalMs: null,
+  lastRecognitionMs: null,
+  avgRecognitionMs: null,
+  modelLoadMs: null,
   classifier: null,
 };
 
@@ -39,6 +47,7 @@ let state: PipelineMetrics = { ...empty };
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
 const latencies: number[] = [];
+const recognitions: number[] = [];
 const intervals: number[] = [];
 let lastEventAt: number | null = null;
 
@@ -73,15 +82,21 @@ export const metrics = {
     state = { ...state, lastLatencyMs: ms, avgLatencyMs: avg(latencies) };
     emit();
   },
+  recordRecognition(ms: number) {
+    pushWindow(recognitions, ms);
+    state = { ...state, lastRecognitionMs: ms, avgRecognitionMs: avg(recognitions) };
+    emit();
+  },
   /** Called when listening (re)starts so intervals do not include pauses. */
   resetCadence() {
     lastEventAt = null;
   },
   reset() {
     latencies.length = 0;
+    recognitions.length = 0;
     intervals.length = 0;
     lastEventAt = null;
-    state = { ...empty, cameraFps: state.cameraFps, classifier: state.classifier };
+    state = { ...empty, cameraFps: state.cameraFps, modelLoadMs: state.modelLoadMs, classifier: state.classifier };
     emit();
   },
 };

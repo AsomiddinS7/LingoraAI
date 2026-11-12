@@ -7,7 +7,7 @@ import type { AppConfig } from '../config';
 import type { MessageKey } from '../i18n';
 import { runtime } from '../runtime';
 import type { FaceHintProvider, SentenceService, SignClassifier, SttProvider, TtsProvider } from '../types';
-import { MockSignClassifier, ModelSignClassifier } from './classifier';
+import { MediaPipeSignClassifier, MockSignClassifier, ModelSignClassifier } from './classifier';
 import { BrowserSpeechStt, MockStt } from './stt';
 import { BrowserSynthesisTts } from './tts';
 
@@ -65,7 +65,9 @@ export function getClassifier(c: AppConfig): SignClassifier {
       instance:
         key === 'model'
           ? new ModelSignClassifier()
-          : new MockSignClassifier({
+          : key === 'mediapipe'
+            ? new MediaPipeSignClassifier()
+            : new MockSignClassifier({
               shouldFail: () => runtime.get().demo.simClassifierFail,
               intervalMs: () => runtime.get().demo.mockCadenceMs,
             }),

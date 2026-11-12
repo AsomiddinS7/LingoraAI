@@ -3,6 +3,10 @@
 import { VOCAB_LABELS } from '../data';
 import { startFramePump, type FrameProcessor, type FramePumpOptions } from '../pipeline/framePump';
 import { metrics } from '../pipeline/metrics';
+import { handTracking, loadHandLandmarker } from '../ml/handTracking';
+import { predict } from '../ml/knn';
+import { sampleStore } from '../ml/samples';
+import { createStabilityFilter } from '../ml/stability';
 import type { SignClassifier, SignLabel } from '../types';
 
 export interface MockClassifierOptions {
@@ -92,3 +96,54 @@ export const classifierHelpers: ClassifierHelpers = {
       onStats: (s) => metrics.set({ processedFps: s.processedFps, avgProcessMs: s.avgProcessMs, skippedPerSec: s.skippedPerSec }),
     }),
 };
+
+/** Convention for onSign: label 'none' with confidence exactly 0 means "no hand in view". */
+export const NO_HAND = 0;
+/** Unknown hand pose (not close to any recorded sign). */
+const UNKNOWN_POSE = 0.01;
+
+/**
+ * Real recognition: MediaPipe Hand Landmarker (on-device ML) + k-NN over landmark features,
+ * trained on samples recorded in the Console. With no samples it recognises nothing.
+ */
+export class MediaPipeSignClassifier implements SignClassifier {
+  private release: (() => void) | null = null;
+  private unsub: (() => void) | null = null;
+  private filter = createStabilityFilter(3, 150);
+  private hadHand = false;
+
+  async load(): Promise<void> {
+    await loadHandLandmarker();
+  }
+
+  attach(video: HTMLVideoElement, onSign: (r: { label: SignLabel | 'none'; confidence: number }) => void): void {
+    this.detach();
+    this.filter.reset();
+    this.release = handTracking.acquire(video);
+    this.unsub = handTracking.subscribe((frame) => {
+      if (!frame) {
+        if (this.hadHand) {
+          this.hadHand = false;
+          this.filter.reset();
+          onSign({ label: 'none', confidence: NO_HAND });
+        }
+        return;
+      }
+      this.hadHand = true;
+      const model = sampleStore.model();
+      if (model.samples.length === 0) return;
+      const p = predict(model, frame.features);
+      const ev = this.filter.feed(p.label, p.confidence, frame.at);
+      if (!ev) return;
+      if (ev.label !== 'none') metrics.recordRecognition(performance.now() - ev.startedAt);
+      onSign(ev.label === 'none' ? { label: 'none', confidence: UNKNOWN_POSE } : { label: ev.label, confidence: ev.confidence });
+    });
+  }
+
+  detach(): void {
+    this.unsub?.();
+    this.release?.();
+    this.unsub = this.release = null;
+    this.hadHand = false;
+  }
+}

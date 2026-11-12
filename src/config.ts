@@ -4,7 +4,7 @@
 export type SttProviderName = 'azure-speech' | 'typed-input' | 'browser-speech';
 export type TtsProviderName = 'azure-speech' | 'browser-synthesis';
 export type LlmProviderName = 'azure-openai' | 'mock';
-export type ClassifierName = 'mock' | 'model';
+export type ClassifierName = 'mock' | 'model' | 'mediapipe';
 export type DataCollectionPolicy = 'consenting-teammates' | 'tutor-confirmed';
 
 export interface AppConfig {
@@ -44,7 +44,7 @@ export function configFromEnv(env: Env = readEnv()): AppConfig {
     llmProvider: pick(env.VITE_LLM_PROVIDER, ['azure-openai', 'mock'] as const, 'azure-openai'),
     // Mock stays on unless explicitly turned off, so a fresh checkout runs with no keys.
     mockAzure: env.VITE_MOCK_AZURE !== 'false',
-    signClassifier: pick(env.VITE_SIGN_CLASSIFIER, ['mock', 'model'] as const, 'mock'),
+    signClassifier: pick(env.VITE_SIGN_CLASSIFIER, ['mock', 'model', 'mediapipe'] as const, 'mock'),
     dataCollection: pick(
       env.VITE_DATA_COLLECTION,
       ['consenting-teammates', 'tutor-confirmed'] as const,

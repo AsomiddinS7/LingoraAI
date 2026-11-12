@@ -10,6 +10,11 @@ import { VOCABULARY } from '../data';
 import { useI18n, type MessageKey } from '../i18n';
 import { backend, usesMockApi } from '../providers';
 import { metrics, useMetrics } from '../pipeline/metrics';
+import { TrainingCard } from '../components/TrainingCard';
+import { delegate } from '../ml/handTracking';
+import { evaluate } from '../ml/knn';
+import { sampleStore, useSampleVersion } from '../ml/samples';
+import { useMemo } from 'react';
 import { runtime, useRuntime } from '../runtime';
 import { useCamera } from '../state/CameraContext';
 import { useConversation } from '../state/ConversationContext';
@@ -19,7 +24,7 @@ const SELECTS: { key: keyof AppConfig; options: string[] }[] = [
   { key: 'sttProvider', options: ['typed-input', 'browser-speech', 'azure-speech'] },
   { key: 'ttsProvider', options: ['browser-synthesis', 'azure-speech'] },
   { key: 'llmProvider', options: ['azure-openai', 'mock'] },
-  { key: 'signClassifier', options: ['mock', 'model'] },
+  { key: 'signClassifier', options: ['mediapipe', 'mock', 'model'] },
   { key: 'dataCollection', options: ['consenting-teammates', 'tutor-confirmed'] },
 ];
 
@@ -38,7 +43,7 @@ export function ConsoleScreen() {
         <SimulateCard />
         <UsageCard />
         <EvaluationCard />
-        <DataCollectionCard />
+        <DataOrTraining />
         <RiskRegister />
       </div>
     </div>
@@ -49,7 +54,8 @@ function PerformanceCard() {
   const { t } = useI18n();
   const m = useMetrics();
   const cadence = useRuntime((s) => s.demo.mockCadenceMs);
-  const mock = m.classifier !== 'model';
+  const mock = m.classifier === 'mock';
+  useSampleVersion();
   const ms = (x: number | null) => (x === null ? '—' : `${Math.round(x)} ms`);
   const num = (x: number | null, digits = 1) => (x === null ? '—' : x.toFixed(digits));
   return (
@@ -63,13 +69,21 @@ function PerformanceCard() {
       </div>
       <div className={`notice ${mock ? 'warn' : 'info'}`} role="note" style={{ marginBottom: 12 }}>
         <Icon name={mock ? 'alert' : 'info'} />
-        <p>{mock ? t('perf.mockWarning') : t('perf.modelNote')}</p>
+        <p>
+          {mock
+            ? t('perf.mockWarning')
+            : m.classifier === 'mediapipe'
+              ? t('perf.realNote', { delegate: delegate ?? '…', n: sampleStore.all().length })
+              : t('perf.modelNote')}
+        </p>
       </div>
       <div className="kpis">
         <Kpi k={t('perf.cameraFps')} v={num(m.cameraFps)} />
         <Kpi k={t('perf.processedFps')} v={mock ? '—' : num(m.processedFps)} />
         <Kpi k={t('perf.processMs')} v={mock ? '—' : ms(m.avgProcessMs)} />
         <Kpi k={t('perf.skipped')} v={mock ? '—' : num(m.skippedPerSec)} />
+        {!mock && <Kpi k={t('perf.recognition')} v={ms(m.avgRecognitionMs)} />}
+        {m.classifier === 'mediapipe' && <Kpi k={t('perf.modelLoad')} v={ms(m.modelLoadMs)} />}
         <Kpi k={t('perf.latency')} v={m.avgLatencyMs === null ? '—' : `${m.avgLatencyMs.toFixed(1)} ms`} />
         <Kpi k={t('perf.interval')} v={ms(m.avgEventIntervalMs)} />
         <Kpi k={t('perf.events')} v={String(m.events)} />
@@ -316,18 +330,37 @@ type EvalData = {
 
 function EvaluationCard() {
   const { t, lang } = useI18n();
-  const ev = (sample as unknown as { evaluation: EvalData }).evaluation;
+  const classifier = useRuntime((s) => s.config.signClassifier);
+  const threshold = useRuntime((s) => s.config.confidenceThreshold);
+  const version = useSampleVersion();
+  const real = useMemo(
+    () => (classifier === 'mediapipe' ? evaluate(sampleStore.all(), threshold) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [classifier, threshold, version],
+  );
+  const placeholder = (sample as unknown as { evaluation: EvalData }).evaluation;
+  const ev: EvalData = real
+    ? {
+        accuracy: real.accuracy,
+        interval: real.interval,
+        per_sign_recall: real.perLabelRecall,
+        oov: { trials: null, rejected: null },
+      }
+    : placeholder;
   const pct = (x: number) => Math.round(x * 100);
   return (
     <section className="card" aria-labelledby="eval">
       <div className="card-title">
         <h2 id="eval">{t('console.eval')}</h2>
-        <span className="badge">{t('common.placeholder')}</span>
+        {!real && <span className="badge">{t('common.placeholder')}</span>}
       </div>
+      {classifier === 'mediapipe' && (
+        <p className="small muted">{real ? t('eval.loo', { takes: real.takes, frames: real.frames }) : t('eval.needMore')}</p>
+      )}
       <div className="kpis">
         <div className="kpi">
           <div className="v">{ev.accuracy === null ? '—' : `${pct(ev.accuracy)}%`}</div>
-          <div className="k">{t('console.eval.accuracy')}</div>
+          <div className="k">{real ? t('console.eval.accuracyLoo') : t('console.eval.accuracy')}</div>
           <div className="k">
             {ev.interval ? t('console.eval.interval', { lo: pct(ev.interval[0]), hi: pct(ev.interval[1]) }) : t('console.eval.awaiting')}
           </div>
@@ -355,6 +388,11 @@ function EvaluationCard() {
       </p>
     </section>
   );
+}
+
+function DataOrTraining() {
+  const classifier = useRuntime((s) => s.config.signClassifier);
+  return classifier === 'mediapipe' ? <TrainingCard /> : <DataCollectionCard />;
 }
 
 function DataCollectionCard() {

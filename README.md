@@ -50,6 +50,18 @@ The UI imports only the interfaces in `src/types.ts`. The registry in `src/provi
 - **Backend:** set `VITE_MOCK_AZURE=false` and `VITE_API_BASE`. Responses are validated against the contract (`src/api/validate.ts`). An invalid answer shows a visible error.
 - **Face hints:** replace `mockFaceHints` in `src/providers/index.ts` with a real `FaceHintProvider`.
 
+## Real recognition (MediaPipe)
+
+`signClassifier = mediapipe` (the default on the live GitHub Pages site) gives real, on-device recognition:
+
+- **Hand tracking:** MediaPipe Hand Landmarker (`@mediapipe/tasks-vision` 0.10.14). It uses the GPU and falls back to the CPU, and finds 21 landmarks per frame. The WASM runtime (`public/mediapipe`, copied by `scripts/copy-mediapipe.mjs`) and the model (`public/model/hand_landmarker.task`) are served from this site, with no CDN. They load only when recognition starts, and a warm-up pass runs during loading.
+- **Recognition:** a k-NN classifier (`src/ml/knn.ts`) over normalised landmarks (`src/ml/features.ts`). It is trained on samples recorded in **Console → Data collection and training**, which keeps landmarks only, never video, in memory, with export/import as JSON. With no samples it recognises nothing. A hand pose far from every recorded sign returns `none` and is not guessed.
+- **Speed:** the frame pump processes the newest frame only (no backlog, max 30 fps). A sign must agree on at least 3 frames and be held 150 ms (`src/ml/stability.ts`), and it fires once per hold. The gesture gate blocks repeats.
+- **Accuracy:** the Evaluation card measures it by leaving whole recordings out. This uses the same signer, so it is optimistic and is not the brief's unseen-signer test.
+
+Measured in headless Edge, which uses software WebGL, on real hand photos (`thumb_up`, `victory`, `pointing_up` from MediaPipe's test assets):
+the two trained signs were told apart correctly, the untrained pose was not labelled, about 20 frames were analysed per second at 33–41 ms per frame, a held sign took 241–294 ms to be recognised, and it took 17–23 ms to appear on screen. A phone with a hardware GPU should be faster, but this has not been measured yet.
+
 ## Mock fixtures (Console → Mock API answer)
 
 | Fixture | Result |
