@@ -65,7 +65,10 @@ export function getClassifier(c: AppConfig): SignClassifier {
       instance:
         key === 'model'
           ? new ModelSignClassifier()
-          : new MockSignClassifier({ shouldFail: () => runtime.get().demo.simClassifierFail }),
+          : new MockSignClassifier({
+              shouldFail: () => runtime.get().demo.simClassifierFail,
+              intervalMs: () => runtime.get().demo.mockCadenceMs,
+            }),
     };
   }
   return classifierCache.instance;

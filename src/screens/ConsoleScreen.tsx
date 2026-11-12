@@ -9,6 +9,7 @@ import sample from '../data/console-sample.json';
 import { VOCABULARY } from '../data';
 import { useI18n, type MessageKey } from '../i18n';
 import { backend, usesMockApi } from '../providers';
+import { metrics, useMetrics } from '../pipeline/metrics';
 import { runtime, useRuntime } from '../runtime';
 import { useCamera } from '../state/CameraContext';
 import { useConversation } from '../state/ConversationContext';
@@ -31,6 +32,7 @@ export function ConsoleScreen() {
       </div>
       <p className="muted">{t('console.note')}</p>
       <div className="console-grid">
+        <PerformanceCard />
         <SwitchesCard />
         <FixtureCard />
         <SimulateCard />
@@ -40,6 +42,56 @@ export function ConsoleScreen() {
         <RiskRegister />
       </div>
     </div>
+  );
+}
+
+function PerformanceCard() {
+  const { t } = useI18n();
+  const m = useMetrics();
+  const cadence = useRuntime((s) => s.demo.mockCadenceMs);
+  const mock = m.classifier !== 'model';
+  const ms = (x: number | null) => (x === null ? '—' : `${Math.round(x)} ms`);
+  const num = (x: number | null, digits = 1) => (x === null ? '—' : x.toFixed(digits));
+  return (
+    <section className="card span-2" aria-labelledby="perf">
+      <div className="card-title">
+        <h2 id="perf">{t('perf.title')}</h2>
+        <button type="button" className="btn" onClick={() => metrics.reset()}>
+          <Icon name="refresh" />
+          {t('perf.reset')}
+        </button>
+      </div>
+      <div className={`notice ${mock ? 'warn' : 'info'}`} role="note" style={{ marginBottom: 12 }}>
+        <Icon name={mock ? 'alert' : 'info'} />
+        <p>{mock ? t('perf.mockWarning') : t('perf.modelNote')}</p>
+      </div>
+      <div className="kpis">
+        <Kpi k={t('perf.cameraFps')} v={num(m.cameraFps)} />
+        <Kpi k={t('perf.processedFps')} v={mock ? '—' : num(m.processedFps)} />
+        <Kpi k={t('perf.processMs')} v={mock ? '—' : ms(m.avgProcessMs)} />
+        <Kpi k={t('perf.skipped')} v={mock ? '—' : num(m.skippedPerSec)} />
+        <Kpi k={t('perf.latency')} v={m.avgLatencyMs === null ? '—' : `${m.avgLatencyMs.toFixed(1)} ms`} />
+        <Kpi k={t('perf.interval')} v={ms(m.avgEventIntervalMs)} />
+        <Kpi k={t('perf.events')} v={String(m.events)} />
+        <Kpi k={t('perf.suppressed')} v={String(m.suppressed)} />
+      </div>
+      {mock && <p className="small muted" style={{ marginTop: 8 }}>{t('perf.noFrames')}</p>}
+      {m.lastLatencyMs !== null && <p className="small muted">{t('perf.lastLatency', { ms: m.lastLatencyMs.toFixed(1) })}</p>}
+      {mock && (
+        <div className="field" style={{ marginTop: 12, maxWidth: 420 }}>
+          <label htmlFor="cadence">{t('perf.cadence')}: {cadence}</label>
+          <input
+            id="cadence"
+            type="range"
+            min={500}
+            max={3000}
+            step={100}
+            value={cadence}
+            onChange={(e) => runtime.setDemo({ mockCadenceMs: Number(e.target.value) })}
+          />
+        </div>
+      )}
+    </section>
   );
 }
 

@@ -1,4 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { glossFor } from '../data';
+import { startFpsMeter } from '../pipeline/framePump';
+import { metrics, useMetrics } from '../pipeline/metrics';
 import { useI18n, type MessageKey } from '../i18n';
 import { useCamera } from '../state/CameraContext';
 import { useConversation } from '../state/ConversationContext';
@@ -7,10 +10,36 @@ import { StatusChip } from './StatusChip';
 
 /** CameraPanel: live preview, permission flow and every camera/classifier failure state (F1, N2). */
 export function CameraPanel() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const cam = useCamera();
   const conv = useConversation();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const perf = useMetrics();
+
+  // Measure the frame rate the camera really delivers (one callback per decoded frame).
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !cam.stream) return;
+    const stop = startFpsMeter(v, (fps) => metrics.set({ cameraFps: fps }));
+    return () => {
+      stop();
+      metrics.set({ cameraFps: null });
+    };
+  }, [cam.stream]);
+
+  // Visual indicator: flash the frame and show the label the moment a gesture is detected.
+  const [flash, setFlash] = useState<string | null>(null);
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const candidateAt = conv.state.candidate?.at;
+  useEffect(() => {
+    const c = conv.state.candidate;
+    if (!c) return; // accepting/discarding must not cancel the hide timer
+    setFlash(glossFor(c.label, lang));
+    if (flashTimer.current) clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setFlash(null), 1400);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [candidateAt]);
+  useEffect(() => () => void (flashTimer.current && clearTimeout(flashTimer.current)), []);
 
   // Load the classifier lazily once a camera screen is shown (N1).
   useEffect(() => conv.ensureClassifier(), [conv.ensureClassifier]);
@@ -54,7 +83,7 @@ export function CameraPanel() {
 
   return (
     <section aria-label={t('camera.region')}>
-      <div className="camera">
+      <div className={`camera${flash ? ' detected' : ''}`}>
         <video ref={videoRef} muted playsInline autoPlay aria-hidden="true" style={{ display: live ? 'block' : 'none' }} />
 
         {!live && <CameraMessage />}
@@ -64,10 +93,17 @@ export function CameraPanel() {
             <div className="camera-overlay top">
               <span className="pill">
                 <span className="dot" aria-hidden="true" />
-                {t('camera.region')}
+                {perf.cameraFps === null ? t('camera.region') : t('camera.fps', { fps: Math.round(perf.cameraFps) })}
+                {perf.classifier === 'mock' && ` · ${t('perf.mockShort')}`}
               </span>
               {conv.faceHint && <span className="pill">{t('hint.label', { hint: t(`hint.${conv.faceHint}` as MessageKey) })}</span>}
             </div>
+            {flash && (
+              <div className="detect-banner" aria-hidden="true">
+                <Icon name="check" />
+                <span>{flash}</span>
+              </div>
+            )}
             <div className="camera-overlay bottom">
               <button type="button" className="btn" onClick={cam.stop}>
                 <Icon name="stop" />

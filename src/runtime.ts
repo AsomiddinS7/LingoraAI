@@ -11,6 +11,8 @@ export interface DemoState {
   simCameraDenied: boolean;
   simOffline: boolean;
   faceHint: FaceHint | null;
+  /** Mock classifier demo cadence in ms. Demo timing only, not recognition speed. */
+  mockCadenceMs: number;
 }
 
 export interface RuntimeState {
@@ -23,7 +25,7 @@ const BUILD_CONFIG = configFromEnv();
 
 let state: RuntimeState = {
   config: BUILD_CONFIG,
-  demo: { fixture: 'success', simClassifierFail: false, simCameraDenied: false, simOffline: false, faceHint: null },
+  demo: { fixture: 'success', simClassifierFail: false, simCameraDenied: false, simOffline: false, faceHint: null, mockCadenceMs: 1200 },
   online: typeof navigator === 'undefined' ? true : navigator.onLine,
 };
 

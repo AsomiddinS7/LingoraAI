@@ -2,7 +2,6 @@
   "app.name": "SignConnect",
   "app.tagline": "A conversation aid for a Deaf signer and a hearing person",
   "app.skip": "Skip to main content",
-
   "nav.main": "Main navigation",
   "nav.sign": "Sign to text",
   "nav.speak": "Text to speech",
@@ -10,16 +9,13 @@
   "nav.about": "About",
   "nav.conversation": "Conversation",
   "nav.console": "Console",
-
   "lang.label": "Language",
   "lang.uz": "Oʻzbekcha",
   "lang.ru": "Русский",
   "lang.en": "English",
-
   "badge.mock": "Mock mode",
   "badge.plan": "Plan {plan}",
   "badge.planCustom": "Custom plan",
-
   "common.loading": "Loading…",
   "common.close": "Close",
   "common.on": "On",
@@ -30,15 +26,12 @@
   "common.save": "Save",
   "common.retry": "Try again",
   "common.placeholder": "Placeholder",
-
   "offline.banner": "You are offline. Phrases, typed text and read aloud still work. Sentences need a connection.",
-
   "interpreter.button": "Ask for a human interpreter",
   "interpreter.title": "A human interpreter is needed",
   "interpreter.body": "Please arrange a sign language interpreter. This tool cannot replace one.",
   "interpreter.contact": "Interpreter contact: not set yet [CONFIRM]. The team supplies this.",
   "interpreter.readAloud": "Read this aloud",
-
   "camera.region": "Camera",
   "camera.start": "Turn on camera",
   "camera.stop": "Turn off camera",
@@ -50,12 +43,10 @@
   "camera.unsupported": "This browser cannot use the camera here. Use HTTPS with Chrome, Edge or Safari.",
   "camera.error": "The camera could not start.",
   "camera.privacy": "Video stays on this device. It is never stored or sent.",
-
   "classifier.loading": "Loading sign recognition…",
   "classifier.failed.title": "Sign recognition did not load",
   "classifier.failed.body": "Use phrases or typed text instead. Everything else still works.",
   "classifier.retry": "Retry loading",
-
   "status.idle": "Ready. Press Start, then sign.",
   "status.listening": "Watching for a sign…",
   "status.notRecognized": "Not recognized. Try again or choose a phrase",
@@ -63,7 +54,6 @@
   "status.medium": "{pct}% sure. Please check it is right.",
   "status.low": "{pct}% sure. Too low to use.",
   "status.label": "Recognition status",
-
   "conv.start": "Start",
   "conv.stop": "Stop",
   "conv.signDetected": "Sign detected",
@@ -89,7 +79,6 @@
   "conv.source.typed": "Typed",
   "conv.lastSpoken": "Last sentence",
   "conv.readAgain": "Read aloud",
-
   "error.title": "Something went wrong",
   "error.UPSTREAM_TIMEOUT": "The sentence service did not answer in time.",
   "error.OFFLINE": "You are offline.",
@@ -101,17 +90,14 @@
   "error.INVALID_RESPONSE": "The service sent an answer the app could not read.",
   "error.fallbackHint": "You can use the signs as plain words, choose a phrase, or try again.",
   "error.useWords": "Use signs as words",
-
   "refusal.title": "This needs a human interpreter",
   "refusal.out_of_scope": "This is outside what the tool can handle.",
   "refusal.low_confidence": "The signs were not clear enough to write a sentence.",
   "refusal.unsafe_topic": "This topic is not suitable for an automated tool.",
-
   "tts.noVoice": "No {lang} voice on this device. The text is shown on screen instead.",
   "tts.unsupported": "Read aloud is not supported in this browser. The text is shown on screen instead.",
   "tts.failed": "Read aloud failed. The text is shown on screen instead.",
   "tts.azureMissing": "The Azure voice is not connected yet. Using the browser voice.",
-
   "speak.title": "Text to speech",
   "speak.tabType": "I type",
   "speak.tabReply": "Their reply",
@@ -120,7 +106,6 @@
   "speak.readAloud": "Read aloud",
   "speak.clear": "Clear",
   "speak.tabs": "Text to speech mode",
-
   "listener.title": "Hearing person",
   "listener.noticeTitle": "Before you speak",
   "listener.notice": "Your speech is turned into text on this screen. It is not stored.",
@@ -143,13 +128,11 @@
   "listener.matches": "Matching phrases",
   "listener.correct": "Correct text",
   "listener.tooLong": "Up to {n} characters can be simplified.",
-
   "transcript.title": "Conversation",
   "transcript.empty": "The conversation will appear here.",
   "transcript.signer": "Signer",
   "transcript.listener": "Hearing person",
   "transcript.simplified": "Simplified",
-
   "phrases.title": "Phrases",
   "phrases.hint": "Tap a phrase to show it large and read it aloud.",
   "phrases.cat.basics": "Basics",
@@ -157,7 +140,6 @@
   "phrases.cat.help": "Help",
   "phrases.use": "Use this phrase",
   "phrases.pickTitle": "Choose a phrase",
-
   "about.title": "About SignConnect",
   "about.what": "What it does",
   "about.whatBody": "SignConnect helps a Deaf signer and a hearing person talk, for example at a first job interview. The phone recognises a few still signs, writes a sentence that the signer checks, and reads it aloud. The hearing person's reply appears as large text.",
@@ -176,11 +158,9 @@
   "about.privacy": "Privacy",
   "about.privacyBody": "Video and audio never leave this device and are never stored. Only text labels and typed text are sent to the sentence service. There are no accounts and no tracking.",
   "about.more": "More screens",
-
   "ws.title": "Conversation workspace",
   "ws.signer": "Signer",
   "ws.phrasebook": "Phrasebook",
-
   "console.title": "Console",
   "console.note": "For the team and demos. Values are supplied by the team. Switches change this browser tab only.",
   "console.switches": "Feature switches",
@@ -210,7 +190,6 @@
   "hint.head_shake": "Head shake (no)",
   "hint.head_nod": "Head nod (yes)",
   "hint.label": "Face hint: {hint}",
-
   "console.data": "Data collection",
   "console.data.label": "Sign label",
   "console.data.consent": "The person being recorded has given consent",
@@ -219,7 +198,6 @@
   "console.data.notConnected": "The recording tool is supplied by the team. It will save hand landmarks only, never video.",
   "console.data.policy": "Policy: {policy}",
   "console.data.count": "Samples in this session: {n}",
-
   "console.eval": "Evaluation",
   "console.eval.accuracy": "Accuracy on a signer not in training",
   "console.eval.interval": "95% interval: {lo}–{hi}%",
@@ -228,7 +206,6 @@
   "console.eval.oovResult": "{rejected} of {trials} unknown signs correctly rejected",
   "console.eval.awaiting": "Awaiting team results",
   "console.eval.target": "Target: at least 85%",
-
   "console.usage": "Usage",
   "console.usage.session": "Calls this session",
   "console.usage.total": "Calls total",
@@ -240,7 +217,6 @@
   "console.health": "Health",
   "console.health.ok": "Service OK",
   "console.health.down": "Service not reachable",
-
   "console.risks": "Risk register",
   "console.risk": "Risk",
   "console.mitigation": "Mitigation",
@@ -257,5 +233,22 @@
   "risk.6": "Prompt injection through typed or spoken text",
   "risk.6.m": "Text treated as data, output validated, no tools",
   "risk.7": "Used in a serious situation",
-  "risk.7.m": "About screen, interpreter button, scope refusals"
+  "risk.7.m": "About screen, interpreter button, scope refusals",
+  "camera.fps": "{fps} fps",
+  "perf.mockShort": "mock AI",
+  "perf.title": "Recognition performance",
+  "perf.mockWarning": "Recognition is MOCK: no ML model is loaded and no camera frames are analysed. Gesture timing here is demo timing, not AI speed.",
+  "perf.modelNote": "Real model loaded from /model.",
+  "perf.cameraFps": "Camera FPS (measured)",
+  "perf.processedFps": "Frames analysed per second",
+  "perf.processMs": "Average analysis time per frame",
+  "perf.skipped": "Frames skipped per second (no backlog)",
+  "perf.latency": "Detection to screen, average",
+  "perf.lastLatency": "last: {ms} ms",
+  "perf.interval": "Time between gestures, average",
+  "perf.events": "Gestures received",
+  "perf.suppressed": "Repeats suppressed",
+  "perf.noFrames": "Not measured: the mock analyses no frames",
+  "perf.cadence": "Mock demo cadence (ms between fake gestures)",
+  "perf.reset": "Reset numbers"
 }

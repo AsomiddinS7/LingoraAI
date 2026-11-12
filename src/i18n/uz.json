@@ -3,7 +3,6 @@
   "app.name": "SignConnect",
   "app.tagline": "Kar inson va eshituvchi suhbatdosh oʻrtasidagi suhbat yordamchisi",
   "app.skip": "Asosiy qismga oʻtish",
-
   "nav.main": "Asosiy menyu",
   "nav.sign": "Ishoradan matnga",
   "nav.speak": "Matndan nutqqa",
@@ -11,16 +10,13 @@
   "nav.about": "Ilova haqida",
   "nav.conversation": "Suhbat",
   "nav.console": "Konsol",
-
   "lang.label": "Til",
   "lang.uz": "Oʻzbekcha",
   "lang.ru": "Русский",
   "lang.en": "English",
-
   "badge.mock": "Sinov rejimi",
   "badge.plan": "{plan}-reja",
   "badge.planCustom": "Maxsus reja",
-
   "common.loading": "Yuklanmoqda…",
   "common.close": "Yopish",
   "common.on": "Yoq.",
@@ -31,15 +27,12 @@
   "common.save": "Saqlash",
   "common.retry": "Qayta urinish",
   "common.placeholder": "Qoralama",
-
   "offline.banner": "Internet yoʻq. Iboralar, yozilgan matn va ovozli oʻqish ishlaydi. Gap tuzish uchun internet kerak.",
-
   "interpreter.button": "Tarjimon chaqirish",
   "interpreter.title": "Jonli tarjimon kerak",
   "interpreter.body": "Iltimos, imo-ishora tili tarjimonini taklif qiling. Bu ilova uning oʻrnini bosa olmaydi.",
   "interpreter.contact": "Tarjimon bilan bogʻlanish maʼlumoti hali yoʻq [CONFIRM]. Uni jamoa beradi.",
   "interpreter.readAloud": "Ovoz chiqarib oʻqish",
-
   "camera.region": "Kamera",
   "camera.start": "Kamerani yoqish",
   "camera.stop": "Kamerani oʻchirish",
@@ -51,12 +44,10 @@
   "camera.unsupported": "Bu brauzer bu yerda kameradan foydalana olmaydi. HTTPS va Chrome, Edge yoki Safari dan foydalaning.",
   "camera.error": "Kamerani yoqib boʻlmadi.",
   "camera.privacy": "Video shu qurilmada qoladi. U saqlanmaydi va yuborilmaydi.",
-
   "classifier.loading": "Ishorani aniqlash yuklanmoqda…",
   "classifier.failed.title": "Ishorani aniqlash yuklanmadi",
   "classifier.failed.body": "Iboralar yoki matn yozishdan foydalaning. Qolgan hammasi ishlaydi.",
   "classifier.retry": "Qayta yuklash",
-
   "status.idle": "Tayyor. «Boshlash» ni bosing va ishora koʻrsating.",
   "status.listening": "Ishora kutilmoqda…",
   "status.notRecognized": "Aniqlanmadi. Qayta urinib koʻring yoki ibora tanlang",
@@ -64,7 +55,6 @@
   "status.medium": "{pct}% ishonch. Toʻgʻriligini tekshiring.",
   "status.low": "{pct}% ishonch. Juda past.",
   "status.label": "Aniqlash holati",
-
   "conv.start": "Boshlash",
   "conv.stop": "Toʻxtatish",
   "conv.signDetected": "Ishora aniqlandi",
@@ -90,7 +80,6 @@
   "conv.source.typed": "Yozilgan",
   "conv.lastSpoken": "Oxirgi gap",
   "conv.readAgain": "Oʻqish",
-
   "error.title": "Xatolik yuz berdi",
   "error.UPSTREAM_TIMEOUT": "Gap xizmati oʻz vaqtida javob bermadi.",
   "error.OFFLINE": "Internet yoʻq.",
@@ -102,17 +91,14 @@
   "error.INVALID_RESPONSE": "Xizmat ilova oʻqiy olmaydigan javob yubordi.",
   "error.fallbackHint": "Ishoralarni oddiy soʻz sifatida ishlatish, ibora tanlash yoki qayta urinish mumkin.",
   "error.useWords": "Ishoralarni soʻz sifatida ishlatish",
-
   "refusal.title": "Jonli tarjimon kerak",
   "refusal.out_of_scope": "Bu ilova imkoniyatlaridan tashqarida.",
   "refusal.low_confidence": "Gap tuzish uchun ishoralar yetarlicha aniq emas.",
   "refusal.unsafe_topic": "Bu mavzu avtomatik vosita uchun mos emas.",
-
   "tts.noVoice": "Qurilmada {lang} ovozi yoʻq. Matn ekranda koʻrsatiladi.",
   "tts.unsupported": "Bu brauzerda ovozli oʻqish ishlamaydi. Matn ekranda koʻrsatiladi.",
   "tts.failed": "Ovozli oʻqish ishlamadi. Matn ekranda koʻrsatiladi.",
   "tts.azureMissing": "Azure ovozi hali ulanmagan. Brauzer ovozi ishlatilmoqda.",
-
   "speak.title": "Matndan nutqqa",
   "speak.tabType": "Men yozaman",
   "speak.tabReply": "Suhbatdosh javobi",
@@ -121,7 +107,6 @@
   "speak.readAloud": "Ovoz chiqarib oʻqish",
   "speak.clear": "Tozalash",
   "speak.tabs": "Rejim",
-
   "listener.title": "Eshituvchi suhbatdosh",
   "listener.noticeTitle": "Gapirishdan oldin",
   "listener.notice": "Nutqingiz shu ekranda matnga aylantiriladi. U saqlanmaydi.",
@@ -144,13 +129,11 @@
   "listener.matches": "Mos iboralar",
   "listener.correct": "Matnni tuzatish",
   "listener.tooLong": "{n} belgigacha soddalashtirish mumkin.",
-
   "transcript.title": "Suhbat",
   "transcript.empty": "Suhbat shu yerda paydo boʻladi.",
   "transcript.signer": "Ishora qiluvchi",
   "transcript.listener": "Suhbatdosh",
   "transcript.simplified": "Soddalashtirilgan",
-
   "phrases.title": "Iboralar",
   "phrases.hint": "Iborani katta koʻrsatish va oʻqish uchun ustiga bosing.",
   "phrases.cat.basics": "Asosiy",
@@ -158,7 +141,6 @@
   "phrases.cat.help": "Yordam",
   "phrases.use": "Shu iborani olish",
   "phrases.pickTitle": "Ibora tanlang",
-
   "about.title": "SignConnect haqida",
   "about.what": "Bu nima",
   "about.whatBody": "SignConnect kar inson va eshituvchi suhbatdoshga, masalan, ishga birinchi suhbatda gaplashishga yordam beradi. Telefon bir nechta harakatsiz ishorani aniqlaydi, ishora qiluvchi tekshiradigan gap tuzadi va uni ovoz chiqarib oʻqiydi. Suhbatdosh javobi katta matn boʻlib chiqadi.",
@@ -177,11 +159,9 @@
   "about.privacy": "Maxfiylik",
   "about.privacyBody": "Video va ovoz qurilmadan chiqmaydi va saqlanmaydi. Gap xizmatiga faqat matnli belgilar va yozilgan matn yuboriladi. Hisob qaydnomalari va kuzatuv yoʻq.",
   "about.more": "Boshqa ekranlar",
-
   "ws.title": "Suhbat ish joyi",
   "ws.signer": "Ishora qiluvchi",
   "ws.phrasebook": "Iboralar kitobi",
-
   "console.title": "Konsol",
   "console.note": "Jamoa va namoyish uchun. Qiymatlarni jamoa beradi. Oʻzgartirishlar faqat shu oynada amal qiladi.",
   "console.switches": "Funksiya almashtirgichlari",
@@ -211,7 +191,6 @@
   "hint.head_shake": "Bosh chayqash (yoʻq)",
   "hint.head_nod": "Bosh irgʻash (ha)",
   "hint.label": "Yuz ishorasi: {hint}",
-
   "console.data": "Maʼlumot yigʻish",
   "console.data.label": "Ishora belgisi",
   "console.data.consent": "Yozib olinayotgan inson rozilik bergan",
@@ -220,7 +199,6 @@
   "console.data.notConnected": "Yozish vositasini jamoa beradi. U faqat qoʻl nuqtalarini saqlaydi, hech qachon video emas.",
   "console.data.policy": "Qoida: {policy}",
   "console.data.count": "Shu sessiyadagi namunalar: {n}",
-
   "console.eval": "Baholash",
   "console.eval.accuracy": "Yangi inson boʻyicha aniqlik",
   "console.eval.interval": "95% oraliq: {lo}–{hi}%",
@@ -229,7 +207,6 @@
   "console.eval.oovResult": "{trials} ta notanish ishoradan {rejected} tasi toʻgʻri rad etildi",
   "console.eval.awaiting": "Jamoa natijalari kutilmoqda",
   "console.eval.target": "Maqsad: kamida 85%",
-
   "console.usage": "Foydalanish",
   "console.usage.session": "Sessiyadagi chaqiruvlar",
   "console.usage.total": "Jami chaqiruvlar",
@@ -241,7 +218,6 @@
   "console.health": "Holat",
   "console.health.ok": "Xizmat ishlayapti",
   "console.health.down": "Xizmatga ulanib boʻlmadi",
-
   "console.risks": "Xavflar reyestri",
   "console.risk": "Xavf",
   "console.mitigation": "Chora",
@@ -258,5 +234,22 @@
   "risk.6": "Yozilgan yoki aytilgan matn orqali buyruq kiritish",
   "risk.6.m": "Matn maʼlumot sifatida, javob tekshiriladi, vositalar yoʻq",
   "risk.7": "Jiddiy vaziyatda ishlatish",
-  "risk.7.m": "Ilova haqida ekrani, tarjimon tugmasi, mavzudan tashqari rad etish"
+  "risk.7.m": "Ilova haqida ekrani, tarjimon tugmasi, mavzudan tashqari rad etish",
+  "camera.fps": "{fps} kadr/s",
+  "perf.mockShort": "sinov AI",
+  "perf.title": "Aniqlash tezligi",
+  "perf.mockWarning": "Aniqlash SINOV rejimida: ML model yuklanmagan, kamera kadrlari tahlil qilinmaydi. Bu yerdagi vaqt — namoyish tempi, AI tezligi emas.",
+  "perf.modelNote": "Haqiqiy model /model dan yuklandi.",
+  "perf.cameraFps": "Kamera kadrlari soniyada (oʻlchangan)",
+  "perf.processedFps": "Soniyada tahlil qilingan kadrlar",
+  "perf.processMs": "Bir kadrni tahlil qilishning oʻrtacha vaqti",
+  "perf.skipped": "Soniyada tashlab ketilgan kadrlar (navbatsiz)",
+  "perf.latency": "Aniqlashdan ekrangacha, oʻrtacha",
+  "perf.lastLatency": "oxirgisi: {ms} ms",
+  "perf.interval": "Ishoralar orasidagi vaqt, oʻrtacha",
+  "perf.events": "Qabul qilingan ishoralar",
+  "perf.suppressed": "Bostirilgan takrorlar",
+  "perf.noFrames": "Oʻlchanmaydi: sinov kadrlarni tahlil qilmaydi",
+  "perf.cadence": "Sinov tempi (soxta ishoralar orasidagi ms)",
+  "perf.reset": "Raqamlarni tozalash"
 }

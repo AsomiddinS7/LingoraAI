@@ -8,6 +8,8 @@ import { TtsError } from '../providers/tts';
 import { runtime, useRuntime } from '../runtime';
 import type { FaceHint } from '../types';
 import { uuidv4 } from '../lib/id';
+import { createGestureGate } from '../pipeline/gestureGate';
+import { metrics } from '../pipeline/metrics';
 import { initialState, reducer, type ConvEvent, type ConvState } from './machine';
 
 export type ClassifierStatus = 'idle' | 'loading' | 'ready' | 'failed';
@@ -46,6 +48,8 @@ export function ConversationProvider({ children }: { children: ReactNode }) {
   stateRef.current = state;
 
   const classifier = useMemo(() => getClassifier(config), [config]);
+  const gate = useRef(createGestureGate(2000));
+  useEffect(() => metrics.set({ classifier: config.signClassifier }), [config.signClassifier]);
 
   // ----- classifier: loaded lazily when a camera screen opens -----
   const loadingFor = useRef<unknown>(null);
@@ -69,9 +73,20 @@ export function ConversationProvider({ children }: { children: ReactNode }) {
   // ----- attach the classifier only while the signer is being watched -----
   useEffect(() => {
     if (state.phase !== 'SIGNER_LISTENING' || !video || classifierStatus !== 'ready') return;
-    classifier.attach(video, (r) =>
-      dispatch({ type: 'SIGN_EVENT', label: r.label, confidence: r.confidence, at: Date.now(), threshold: runtime.get().config.confidenceThreshold }),
-    );
+    metrics.resetCadence();
+    classifier.attach(video, (r) => {
+      const t0 = performance.now();
+      metrics.recordEvent(t0);
+      // Same gesture still held -> ignore instead of asking the signer to confirm it again.
+      if (!gate.current.accept(r, t0)) {
+        metrics.recordSuppressed();
+        return;
+      }
+      dispatch({ type: 'SIGN_EVENT', label: r.label, confidence: r.confidence, at: Date.now(), threshold: runtime.get().config.confidenceThreshold });
+      // Detection -> on screen: React commits synchronously inside the event; the next
+      // animation frame + task marks the moment the browser has painted the result.
+      requestAnimationFrame(() => setTimeout(() => metrics.recordLatency(performance.now() - t0), 0));
+    });
     return () => classifier.detach();
   }, [state.phase, video, classifierStatus, classifier]);
 

@@ -1,11 +1,14 @@
 // SignClassifier implementations. The real classifier (MediaPipe, TF.js, thresholds, stability
 // filter) is the team's. This file only holds the mock and the loader hook for /model.
 import { VOCAB_LABELS } from '../data';
+import { startFramePump, type FrameProcessor, type FramePumpOptions } from '../pipeline/framePump';
+import { metrics } from '../pipeline/metrics';
 import type { SignClassifier, SignLabel } from '../types';
 
 export interface MockClassifierOptions {
   shouldFail: () => boolean;
-  intervalMs?: number;
+  /** Demo cadence: ms between fake 'stable sign' events. NOT a recognition speed. */
+  intervalMs?: () => number;
   random?: () => number;
 }
 
@@ -15,7 +18,7 @@ export interface MockClassifierOptions {
  * Emits one event per (pretend) stable sign. It never reads the video pixels.
  */
 export class MockSignClassifier implements SignClassifier {
-  private timer: ReturnType<typeof setInterval> | null = null;
+  private timer: ReturnType<typeof setTimeout> | null = null;
   private step = 0;
   constructor(private opts: MockClassifierOptions) {}
 
@@ -27,7 +30,7 @@ export class MockSignClassifier implements SignClassifier {
   attach(_video: HTMLVideoElement, onSign: (r: { label: SignLabel | 'none'; confidence: number }) => void): void {
     this.detach();
     const rand = this.opts.random ?? Math.random;
-    this.timer = setInterval(() => {
+    const tick = () => {
       const i = this.step++;
       if (i % 5 === 4) {
         onSign({ label: 'none', confidence: 0.55 + rand() * 0.2 });
@@ -35,11 +38,19 @@ export class MockSignClassifier implements SignClassifier {
       }
       const label = VOCAB_LABELS[i % VOCAB_LABELS.length];
       onSign({ label, confidence: Math.round((0.55 + rand() * 0.43) * 100) / 100 });
-    }, this.opts.intervalMs ?? 2600);
+    };
+    // setTimeout chain so a cadence change in the Console applies on the next event.
+    const loop = () => {
+      this.timer = setTimeout(() => {
+        tick();
+        loop();
+      }, this.opts.intervalMs?.() ?? 1200);
+    };
+    loop();
   }
 
   detach(): void {
-    if (this.timer) clearInterval(this.timer);
+    if (this.timer) clearTimeout(this.timer);
     this.timer = null;
   }
 }
@@ -54,9 +65,9 @@ export class ModelSignClassifier implements SignClassifier {
 
   async load(): Promise<void> {
     const url = new URL('model/classifier.js', document.baseURI).href;
-    const mod = (await import(/* @vite-ignore */ url)) as { createClassifier?: () => SignClassifier };
+    const mod = (await import(/* @vite-ignore */ url)) as { createClassifier?: (helpers: ClassifierHelpers) => SignClassifier };
     if (typeof mod.createClassifier !== 'function') throw new Error('model/classifier.js must export createClassifier()');
-    this.inner = mod.createClassifier();
+    this.inner = mod.createClassifier(classifierHelpers);
     await this.inner.load();
   }
 
@@ -68,3 +79,16 @@ export class ModelSignClassifier implements SignClassifier {
     this.inner?.detach();
   }
 }
+
+/** Passed to the team's createClassifier(helpers). Using it is optional but gives measured FPS. */
+export interface ClassifierHelpers {
+  startFramePump: (video: HTMLVideoElement, process: FrameProcessor, opts?: Omit<FramePumpOptions, 'onStats'>) => () => void;
+}
+
+export const classifierHelpers: ClassifierHelpers = {
+  startFramePump: (video, process, opts) =>
+    startFramePump(video, process, {
+      ...opts,
+      onStats: (s) => metrics.set({ processedFps: s.processedFps, avgProcessMs: s.avgProcessMs, skippedPerSec: s.skippedPerSec }),
+    }),
+};

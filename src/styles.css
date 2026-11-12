@@ -174,6 +174,17 @@ main { flex: 1; width: 100%; max-width: 1320px; margin: 0 auto; padding: 16px 16
 }
 .pill .dot { width: 9px; height: 9px; border-radius: 50%; background: #5fd38a; }
 .camera .btn { background: #fff; color: var(--ink); }
+.camera { transition: box-shadow .12s; }
+.camera.detected { box-shadow: inset 0 0 0 6px #5fd38a, 0 0 0 3px #1d6a33; }
+.detect-banner {
+  position: absolute; z-index: 3; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  display: flex; align-items: center; gap: 10px; padding: 12px 22px; border-radius: 999px;
+  background: #1d6a33; color: #fff; font-size: 1.6rem; font-weight: 800; box-shadow: 0 8px 30px rgb(0 0 0 / .35);
+  animation: pop .18s ease-out;
+}
+.detect-banner .ico { width: 28px; height: 28px; }
+@keyframes pop { from { transform: translate(-50%, -50%) scale(.85); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .detect-banner { animation: none; } .camera { transition: none; } }
 .camera-privacy { font-size: .85rem; margin-top: 8px; display: flex; gap: 6px; align-items: center; }
 
 /* ---------- Status chip ---------- */
