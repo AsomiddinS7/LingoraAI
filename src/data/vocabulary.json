@@ -1,0 +1,13 @@
+{
+  "_note": "[PLACEHOLDER] Placeholder vocabulary from the brief (section 9). The team replaces the labels and glosses after the sign language consultant. Do not use an ASL vocabulary.",
+  "signs": [
+    { "label": "hello",         "gloss": { "uz": "salom",                 "ru": "здравствуйте",      "en": "hello" } },
+    { "label": "thank_you",     "gloss": { "uz": "rahmat",                "ru": "спасибо",           "en": "thank you" } },
+    { "label": "yes",           "gloss": { "uz": "ha",                    "ru": "да",                "en": "yes" } },
+    { "label": "no",            "gloss": { "uz": "yoʻq",                  "ru": "нет",               "en": "no" } },
+    { "label": "please_repeat", "gloss": { "uz": "iltimos, takrorlang",   "ru": "пожалуйста, повторите", "en": "please repeat" } },
+    { "label": "i_want_work",   "gloss": { "uz": "men ish xohlayman",     "ru": "я хочу работать",   "en": "I want work" } },
+    { "label": "my_name",       "gloss": { "uz": "mening ismim",          "ru": "меня зовут",        "en": "my name" } },
+    { "label": "wait",          "gloss": { "uz": "kuting",                "ru": "подождите",         "en": "wait" } }
+  ]
+}

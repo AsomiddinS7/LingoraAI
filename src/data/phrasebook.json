@@ -1,0 +1,16 @@
+{
+  "_note": "[PLACEHOLDER] Draft phrases for a job interview. The team supplies the final Uzbek and Russian text.",
+  "categories": ["basics", "interview", "help"],
+  "phrases": [
+    { "id": "hello",            "category": "basics",    "text": { "uz": "Salom!",                                   "ru": "Здравствуйте!",                         "en": "Hello!" } },
+    { "id": "thank_you",        "category": "basics",    "text": { "uz": "Rahmat.",                                  "ru": "Спасибо.",                              "en": "Thank you." } },
+    { "id": "please_repeat",    "category": "basics",    "text": { "uz": "Iltimos, takrorlang.",                     "ru": "Пожалуйста, повторите.",                "en": "Please repeat." } },
+    { "id": "please_slower",    "category": "basics",    "text": { "uz": "Iltimos, sekinroq gapiring.",              "ru": "Пожалуйста, говорите медленнее.",       "en": "Please speak more slowly." } },
+    { "id": "please_write",     "category": "basics",    "text": { "uz": "Iltimos, yozib koʻrsating.",               "ru": "Пожалуйста, напишите это.",             "en": "Please write it down." } },
+    { "id": "i_am_deaf",        "category": "interview", "text": { "uz": "Men karman. Imo-ishora tilida gaplashaman.", "ru": "Я глухой. Я говорю на жестовом языке.", "en": "I am Deaf. I use sign language." } },
+    { "id": "i_want_work",      "category": "interview", "text": { "uz": "Men ish qidiryapman.",                     "ru": "Я ищу работу.",                         "en": "I am looking for work." } },
+    { "id": "my_name",          "category": "interview", "text": { "uz": "Mening ismim …",                           "ru": "Меня зовут …",                          "en": "My name is …" } },
+    { "id": "wait",             "category": "help",      "text": { "uz": "Iltimos, biroz kuting.",                   "ru": "Пожалуйста, подождите минуту.",         "en": "Please wait a moment." } },
+    { "id": "need_interpreter", "category": "help",      "text": { "uz": "Menga imo-ishora tili tarjimoni kerak.",   "ru": "Мне нужен сурдопереводчик.",            "en": "I need a sign language interpreter." } }
+  ]
+}

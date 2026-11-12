@@ -1,0 +1,13 @@
+{
+  "_note": "[PLACEHOLDER] No results yet. The team replaces null values with evaluation output (fractions 0..1). The app never invents numbers; null renders as 'awaiting team results'.",
+  "evaluation": {
+    "accuracy": null,
+    "interval": null,
+    "per_sign_recall": {
+      "hello": null, "thank_you": null, "yes": null, "no": null,
+      "please_repeat": null, "i_want_work": null, "my_name": null, "wait": null
+    },
+    "oov": { "trials": null, "rejected": null }
+  },
+  "cost_per_1000_users": null
+}
