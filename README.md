@@ -1,4 +1,4 @@
-# SignConnect: web app (handoff README)
+# Lingora: web app (handoff README)
 
 Builds the website and its mock services from *SignConnect Web Developer Brief v0.2*.
 The team plugs in the AI parts (classifier, Azure Speech, backend) without changing the UI.

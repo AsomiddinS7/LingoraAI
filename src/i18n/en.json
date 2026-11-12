@@ -1,5 +1,5 @@
 {
-  "app.name": "SignConnect",
+  "app.name": "Lingora",
   "app.tagline": "A conversation aid for a Deaf signer and a hearing person",
   "app.skip": "Skip to main content",
   "nav.main": "Main navigation",
@@ -140,9 +140,9 @@
   "phrases.cat.help": "Help",
   "phrases.use": "Use this phrase",
   "phrases.pickTitle": "Choose a phrase",
-  "about.title": "About SignConnect",
+  "about.title": "About Lingora",
   "about.what": "What it does",
-  "about.whatBody": "SignConnect helps a Deaf signer and a hearing person talk, for example at a first job interview. The phone recognises a few still signs, writes a sentence that the signer checks, and reads it aloud. The hearing person's reply appears as large text.",
+  "about.whatBody": "Lingora helps a Deaf signer and a hearing person talk, for example at a first job interview. The phone recognises a few still signs, writes a sentence that the signer checks, and reads it aloud. The hearing person's reply appears as large text.",
   "about.signs": "Supported signs",
   "about.signsNote": "Placeholder list. The final signs are chosen with a sign language consultant.",
   "about.notFor": "Do not use it for",

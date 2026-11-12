@@ -1,6 +1,6 @@
 // SignConnect service worker: caches the app shell so phrases, typed text and read aloud work offline.
 // Never caches /api/ responses and never touches camera or microphone data.
-const CACHE = 'signconnect-v1';
+const CACHE = 'lingora-v2';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png'];
 
 self.addEventListener('install', (event) => {

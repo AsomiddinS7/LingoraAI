@@ -1,6 +1,6 @@
 {
-  "name": "SignConnect",
-  "short_name": "SignConnect",
+  "name": "Lingora",
+  "short_name": "Lingora",
   "description": "A conversation aid for a Deaf signer and a hearing person.",
   "start_url": "./#/sign",
   "scope": "./",
