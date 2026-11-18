@@ -50,6 +50,37 @@ The UI imports only the interfaces in `src/types.ts`. The registry in `src/provi
 - **Backend:** set `VITE_MOCK_AZURE=false` and `VITE_API_BASE`. Responses are validated against the contract (`src/api/validate.ts`). An invalid answer shows a visible error.
 - **Face hints:** replace `mockFaceHints` in `src/providers/index.ts` with a real `FaceHintProvider`.
 
+## Lingora Platform v1: status
+
+Following *Lingora Platform v1: design and architecture changes*, **build step 2 (user app on mocks) is done** and is live:
+
+- **Design system (§9).** Spec tokens, light and dark themes (Profile → Theme), type scale 14–32 with 18 px minimum user text, radius 8 and 12, reduced motion.
+- **Screens (§9).**
+  - Welcome, shown on the first visit.
+  - Conversation: on phones the camera is on top; on desktop it is two columns.
+  - Phrasebook grid: tapping a phrase speaks it.
+  - Contribute, and Profile and privacy.
+  - Help and limits.
+  - Sign in / Register: the form is ready, and it says honestly that the server is not connected.
+- **Sign window (§8).** It runs `idle → countdown → recording → processing → result`:
+  - The countdown and recording show progress rings.
+  - Recording ends when the hands rest for 0.5 s, or after 3.5 s at most.
+  - The result shows the best sign, up to 2 alternatives, and confidence in words plus a number.
+  - The signer chooses Confirm, Confirm and add a sign, Pick another, or Try again.
+  - All timings are in `config.signWindow`. A watchdog timeout stops a window that hangs.
+  - Nothing is spoken before the signer confirms.
+- **Recognizer switch.** `recognizer = sequence | static | mock` (`VITE_RECOGNIZER`):
+  - `sequence`: the ML team's model, loaded through `GET /api/model/active`. The manifest is checked against its sha256, and the entry module must export `createSequenceRecognizer()`.
+  - `static`: v0, MediaPipe plus k-NN.
+  - `mock`: runs the whole app with no model.
+- **Data from the API.** Signs come from `GET /api/signs?scenario=greeting` and phrases from `GET /api/phrasebook`. The seeds live in `src/api/seed/` and mirror the database seed.
+- **Other v1 behaviour.**
+  - One-tap feedback goes to `POST /api/feedback`.
+  - The guest name for `my_name` is sent as the optional `name` field on `/api/sentence`.
+  - The new error codes are supported.
+
+**Not done yet:** the backend and everything that needs it, which is build steps 1 and 3–8. That covers the FastAPI server, PostgreSQL, auth, consents, the audit log, the admin dashboard, clips, the model registry and hardening. Hosting and the database are still open decisions (§14). Until the server exists, the mock server answers the account endpoints with `503 NOT_AVAILABLE`; it never fakes accounts.
+
 ## Real recognition (MediaPipe)
 
 `signClassifier = mediapipe` (the default on the live GitHub Pages site) gives real, on-device recognition:
