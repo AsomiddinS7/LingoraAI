@@ -422,3 +422,5 @@ code { font-family: ui-monospace, Consolas, monospace; font-size: .9em; backgrou
 /* Phrasebook grid */
 .phrase-grid { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--s3); grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
 .phrase-grid .phrase-btn { min-height: 88px; height: 100%; font-size: var(--t18); border-radius: var(--radius); }
+
+.consent-text { max-height: 180px; overflow-y: auto; padding: var(--s3); border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); font-size: var(--t16); }

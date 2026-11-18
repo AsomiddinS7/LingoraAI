@@ -17,6 +17,16 @@ export class ApiError extends Error {
 }
 
 export type Transport = (url: string, init: RequestInit) => Promise<Response>;
+type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE';
+
+/** CSRF token from /api/auth/login, /register or /me; sent on unsafe requests (backend section 7). */
+let csrfToken: string | null = null;
+export const csrf = {
+  set: (t: string | null) => {
+    csrfToken = t;
+  },
+  get: () => csrfToken,
+};
 
 export interface ApiClientOptions {
   transport: () => Transport;
@@ -30,17 +40,20 @@ const RETRYABLE: ClientErrorCode[] = ['UPSTREAM_TIMEOUT', 'UPSTREAM_ERROR', 'NET
 export function createApiClient(opts: ApiClientOptions) {
   const timeoutMs = opts.timeoutMs ?? 8000;
 
-  async function once<T>(method: 'GET' | 'POST', path: string, body: unknown, validate: (v: unknown) => v is T): Promise<T> {
+  async function once<T>(method: Method, path: string, body: unknown, validate: (v: unknown) => v is T): Promise<T> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     let res: Response;
     try {
       res = await opts.transport()(opts.baseUrl() + path, {
         method,
-        headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+        headers: {
+          ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+          ...(method !== 'GET' && csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
+        },
         body: body === undefined ? undefined : JSON.stringify(body),
         signal: controller.signal,
-        credentials: 'omit',
+        credentials: 'same-origin', // session cookie; the site and API are served same-site
       });
     } catch (e) {
       if (controller.signal.aborted) throw new ApiError('UPSTREAM_TIMEOUT', 'No answer within the timeout');
@@ -66,7 +79,7 @@ export function createApiClient(opts: ApiClientOptions) {
     return json;
   }
 
-  async function request<T>(method: 'GET' | 'POST', path: string, body: unknown, validate: (v: unknown) => v is T): Promise<T> {
+  async function request<T>(method: Method, path: string, body: unknown, validate: (v: unknown) => v is T): Promise<T> {
     if (opts.isOffline()) throw new ApiError('OFFLINE', 'Offline');
     try {
       return await once(method, path, body, validate);
@@ -80,6 +93,8 @@ export function createApiClient(opts: ApiClientOptions) {
   return {
     get: <T>(path: string, validate: (v: unknown) => v is T) => request('GET', path, undefined, validate),
     post: <T>(path: string, body: unknown, validate: (v: unknown) => v is T) => request('POST', path, body, validate),
+    patch: <T>(path: string, body: unknown, validate: (v: unknown) => v is T) => request('PATCH', path, body, validate),
+    del: <T>(path: string, validate: (v: unknown) => v is T) => request('DELETE', path, undefined, validate),
   };
 }
 

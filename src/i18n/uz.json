@@ -374,5 +374,9 @@
   "help.title": "Yordam va cheklovlar",
   "help.replayNA": "Namuna koʻrinishi hali mavjud emas",
   "perf.windowToResult": "Ishora oynasi tugashi → natija",
-  "perf.target": "Maqsad: ishora oynasi tugaganidan keyin 1 soniyadan kam vaqtda natija."
+  "perf.target": "Maqsad: ishora oynasi tugaganidan keyin 1 soniyadan kam vaqtda natija.",
+  "auth.consentVersion": "Hisob qaydnomasi roziligi, {v}-versiya",
+  "profile.signOut": "Chiqish",
+  "profile.deleteBody": "Hisobingiz, roziliklaringiz va yozgan kliplaringiz oʻchiriladi. Faol modelni oʻqitishda allaqachon ishlatilgan kliplar hisobingizsiz saqlanadi va belgilanadi. Buni ortga qaytarib boʻlmaydi.",
+  "profile.deleteConfirm": "Ha, hammasini oʻchirish"
 }

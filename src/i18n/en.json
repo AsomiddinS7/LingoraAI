@@ -373,5 +373,9 @@
   "help.title": "Help and limits",
   "help.replayNA": "Reference replay not available yet",
   "perf.windowToResult": "Sign window end → result",
-  "perf.target": "Target: result under 1 second after the sign window ends."
+  "perf.target": "Target: result under 1 second after the sign window ends.",
+  "auth.consentVersion": "Account consent, version {v}",
+  "profile.signOut": "Sign out",
+  "profile.deleteBody": "This deletes your account, consents and recorded clips. Clips already used to train an active model are kept without your account and flagged. This cannot be undone.",
+  "profile.deleteConfirm": "Yes, delete everything"
 }

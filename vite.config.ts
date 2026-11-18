@@ -7,5 +7,7 @@ export default defineConfig({
   base: './',
   plugins: [react()],
   build: { target: 'es2020', sourcemap: false },
+  // Dev only: same-origin /api so the session cookie works (run the FastAPI backend on :8000).
+  server: { proxy: { '/api': 'http://127.0.0.1:8000' } },
   test: { environment: 'node', include: ['tests/**/*.test.ts'] },
 });

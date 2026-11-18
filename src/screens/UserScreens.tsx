@@ -1,5 +1,7 @@
 // Welcome, Sign in / Register, Profile and privacy, Phrasebook, Contribute, Help and limits.
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
+import { account, useAccount } from '../account';
+import type { ConsentTextRow } from '../api/validate';
 import { ApiError } from '../api/client';
 import { Icon } from '../components/Icon';
 import { InterpreterButton } from '../components/InterpreterButton';
@@ -81,7 +83,21 @@ export function AuthScreen({ mode }: { mode: 'signin' | 'register' }) {
   const [consent, setConsent] = useState(false);
   const [error, setError] = useState<MessageKey | null>(null);
   const [busy, setBusy] = useState(false);
+  const [consentText, setConsentText] = useState<ConsentTextRow | null>(null);
   const register = mode === 'register';
+
+  // The current account consent text, in the user's language (versioned on the server).
+  useEffect(() => {
+    if (!register || mock) return;
+    let current = true; // ignore answers for a language the user already switched away from
+    backend.consents(lang).then(
+      (r) => current && setConsentText(r.items.find((i) => i.type === 'account') ?? null),
+      () => current && setConsentText(null),
+    );
+    return () => {
+      current = false;
+    };
+  }, [register, mock, lang]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -89,8 +105,8 @@ export function AuthScreen({ mode }: { mode: 'signin' | 'register' }) {
     if (register && password.length < 10) return setError('auth.errorWeak');
     setBusy(true);
     try {
-      if (register) await backend.register({ email, password, display_name: displayName, language: lang, consent_ids: [] });
-      else await backend.login(email, password);
+      if (register) await account.register({ email, password, display_name: displayName, language: lang, consent_ids: consentText ? [consentText.id] : [] });
+      else await account.login(email, password);
       window.location.hash = href('conversation');
     } catch (err) {
       const code = err instanceof ApiError ? err.code : 'NETWORK';
@@ -120,8 +136,14 @@ export function AuthScreen({ mode }: { mode: 'signin' | 'register' }) {
               <label htmlFor="auth-name">{t('auth.displayName')}</label>
               <input id="auth-name" className="input" autoComplete="nickname" maxLength={40} value={displayName} onChange={(e) => setDisplayName(e.target.value)} disabled={mock} />
             </div>
+            {consentText && (
+              <div className="consent-text" lang={lang}>
+                <p className="eyebrow">{t('auth.consentVersion', { v: consentText.version })}</p>
+                <p>{consentText.body}</p>
+              </div>
+            )}
             <label className="toggle">
-              <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} disabled={mock} />
+              <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} disabled={mock || (!consentText && !mock)} />
               {t('auth.consentAccount')}
             </label>
             <p className="small muted">{t('auth.consentNote')}</p>
@@ -133,7 +155,7 @@ export function AuthScreen({ mode }: { mode: 'signin' | 'register' }) {
             <p>{t(error)}</p>
           </div>
         )}
-        <button type="submit" className="btn btn-primary btn-lg" disabled={mock || busy || !email || !password || (register && (!consent || !displayName.trim()))}>
+        <button type="submit" className="btn btn-primary btn-lg" disabled={mock || busy || !email || !password || (register && (!consent || !displayName.trim() || !consentText))}>
           {busy && <div className="spinner" aria-hidden="true" />}
           {register ? t('auth.submitRegister') : t('auth.submitSignin')}
         </button>
@@ -152,6 +174,61 @@ export function ProfileScreen() {
   const { theme, setTheme } = useTheme();
   const conv = useConversation();
   const mock = useRuntime((s) => usesMockApi(s.config));
+  const me = useAccount();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [msg, setMsg] = useState<MessageKey | null>(null);
+
+  const download = async () => {
+    try {
+      const data = await backend.exportMe();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+      a.download = 'lingora-my-data.json';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    } catch {
+      setMsg('auth.errorGeneric');
+    }
+  };
+
+  if (me)
+    return (
+      <div className="narrow">
+        <h1>{t('profile.title')}</h1>
+        <section className="card stack">
+          <h2>{t('profile.account')}</h2>
+          <p>
+            <strong>{me.display_name}</strong> · {me.email}
+            {me.role === 'admin' && <span className="badge" style={{ marginLeft: 8 }}>admin</span>}
+          </p>
+          <div className="btn-row">
+            <button type="button" className="btn" onClick={() => void download()}>
+              <Icon name="download" />
+              {t('profile.export')}
+            </button>
+            <button type="button" className="btn" onClick={() => void account.logout()}>
+              {t('profile.signOut')}
+            </button>
+          </div>
+          {msg && <p role="alert" className="small">{t(msg)}</p>}
+        </section>
+        <section className="card stack" style={{ marginTop: 16, borderColor: 'var(--danger)' }}>
+          <h2 style={{ color: 'var(--danger)' }}>{t('profile.delete')}</h2>
+          <p className="small">{t('profile.deleteBody')}</p>
+          {!confirmDelete ? (
+            <button type="button" className="btn btn-danger" onClick={() => setConfirmDelete(true)}>{t('profile.delete')}</button>
+          ) : (
+            <div className="btn-row">
+              <button type="button" className="btn btn-danger" onClick={() => void account.deleteAccount().catch(() => setMsg('auth.errorGeneric'))}>
+                {t('profile.deleteConfirm')}
+              </button>
+              <button type="button" className="btn" onClick={() => setConfirmDelete(false)}>{t('common.cancel')}</button>
+            </div>
+          )}
+        </section>
+      </div>
+    );
+
   return (
     <div className="narrow">
       <h1>{t('profile.title')}</h1>

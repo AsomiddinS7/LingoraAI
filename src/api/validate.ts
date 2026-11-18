@@ -130,3 +130,23 @@ export function isHealth(v: unknown): v is HealthResponse {
 
 // Re-exported request types so callers can build bodies with type safety.
 export type { SentenceRequest, SimplifyRequest };
+
+
+export interface ConsentTextRow {
+  id: string;
+  type: 'account' | 'contribute_data' | 'voice';
+  version: number;
+  language: string;
+  body: string;
+}
+export function isConsentsPage(v: unknown): v is { items: ConsentTextRow[]; total: number } {
+  return isObj(v) && isNum(v.total) && Array.isArray(v.items) && v.items.every((r) => isObj(r) && isStr(r.id) && isStr(r.type) && isNum(r.version) && isStr(r.body));
+}
+
+export function isOk(v: unknown): v is { status: 'ok' } {
+  return isObj(v) && v.status === 'ok';
+}
+
+export function isAnyObject(v: unknown): v is Record<string, unknown> {
+  return isObj(v);
+}

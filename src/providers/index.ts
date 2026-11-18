@@ -2,7 +2,7 @@
 // The UI only sees the interfaces in ../types.
 import { createApiClient } from '../api/client';
 import { createMockServer } from '../api/mockServer';
-import { isActiveModel, isFeedbackAck, isHealth, isMe, isPhrasesPage, isSentenceResponse, isSignsPage, isSimplifyResponse, isSpeechToken, isUsage } from '../api/validate';
+import { isActiveModel, isAnyObject, isConsentsPage, isFeedbackAck, isOk, isHealth, isMe, isPhrasesPage, isSentenceResponse, isSignsPage, isSimplifyResponse, isSpeechToken, isUsage } from '../api/validate';
 import { catalog } from '../data';
 import { loadSequenceRecognizer, MockRecognizer, StaticRecognizer } from '../recognition/recognizers';
 import type { ModelManifest, SequenceRecognizer } from '../recognition/types';
@@ -63,6 +63,10 @@ export const backend = {
   login: (email: string, password: string) => api.post('/api/auth/login', { email, password }, isMe),
   register: (body: { email: string; password: string; display_name: string; language: string; consent_ids: string[] }) =>
     api.post('/api/auth/register', body, isMe),
+  logout: () => api.post('/api/auth/logout', {}, isOk),
+  consents: (language: string) => api.get(`/api/consents/current?language=${language}`, isConsentsPage),
+  exportMe: () => api.get('/api/me/export', isAnyObject),
+  deleteMe: () => api.del('/api/me', isOk),
 };
 
 /** Loads signs and phrases from the API; keeps the bundled seed if the API is unreachable. */

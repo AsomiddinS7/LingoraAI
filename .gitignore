@@ -4,3 +4,8 @@ dist
 .env.local
 *.log
 public/mediapipe
+backend/.venv
+backend/.pgdata*
+backend/.env
+__pycache__/
+.pytest_cache/
