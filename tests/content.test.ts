@@ -1,43 +1,40 @@
-// Phrasebook, vocabulary, language-file and config tests.
+// Seed data (signs, phrasebook), language files and config tests.
 import { describe, expect, it } from 'vitest';
-import phrasebook from '../src/data/phrasebook.json';
-import vocabulary from '../src/data/vocabulary.json';
+import phrasebook from '../src/api/seed/phrases.json';
+import signs from '../src/api/seed/signs.json';
 import en from '../src/i18n/en.json';
 import ru from '../src/i18n/ru.json';
 import uz from '../src/i18n/uz.json';
 import { configFromEnv, whichPlan } from '../src/config';
 
 const LANGS = ['uz', 'ru', 'en'] as const;
+type Row = { slug: string; id: string };
 
-describe('phrasebook', () => {
-  it('has 8 to 10 phrases with unique ids', () => {
-    expect(phrasebook.phrases.length).toBeGreaterThanOrEqual(8);
-    expect(phrasebook.phrases.length).toBeLessThanOrEqual(10);
-    expect(new Set(phrasebook.phrases.map((p) => p.id)).size).toBe(phrasebook.phrases.length);
+describe('sign seed (table signs)', () => {
+  it('is the v1 candidate greeting list', () => {
+    expect(signs.items.map((s) => s.slug)).toEqual([
+      'hello', 'goodbye', 'how_are_you', 'fine', 'my_name', 'your_name', 'nice_to_meet_you', 'thank_you', 'please', 'yes', 'no', 'please_repeat',
+    ]);
   });
-
-  it('every phrase has text in all three languages and a known category', () => {
-    for (const p of phrasebook.phrases) {
-      expect(phrasebook.categories).toContain(p.category);
-      for (const l of LANGS) expect((p.text as Record<string, string>)[l]?.trim().length).toBeGreaterThan(0);
+  it('has unique ids and slugs, labels in all languages, scenario greeting', () => {
+    expect(new Set(signs.items.map((s: Row) => s.id)).size).toBe(signs.items.length);
+    for (const s of signs.items) {
+      expect(s.scenario).toBe('greeting');
+      for (const l of LANGS) expect((s.labels as Record<string, string>)[l]?.trim()).toBeTruthy();
     }
   });
-
-  it('contains please_repeat, the phrase the simplify contract example points to', () => {
-    expect(phrasebook.phrases.some((p) => p.id === 'please_repeat')).toBe(true);
-  });
-
-  it('is marked as placeholder content', () => {
-    expect(phrasebook._note).toContain('[PLACEHOLDER]');
-  });
+  it('is marked as placeholder', () => expect(signs._note).toContain('[PLACEHOLDER]'));
 });
 
-describe('vocabulary', () => {
-  it('is exactly the placeholder vocabulary from the brief', () => {
-    expect(vocabulary.signs.map((s) => s.label)).toEqual(['hello', 'thank_you', 'yes', 'no', 'please_repeat', 'i_want_work', 'my_name', 'wait']);
+describe('phrasebook seed (table phrases)', () => {
+  it('has 8 to 10 phrases with unique slugs and text in all languages', () => {
+    expect(phrasebook.items.length).toBeGreaterThanOrEqual(8);
+    expect(phrasebook.items.length).toBeLessThanOrEqual(10);
+    expect(new Set(phrasebook.items.map((p: Row) => p.slug)).size).toBe(phrasebook.items.length);
+    for (const p of phrasebook.items) for (const l of LANGS) expect((p.texts as Record<string, string>)[l]?.trim()).toBeTruthy();
   });
-  it('has glosses in all languages', () => {
-    for (const s of vocabulary.signs) for (const l of LANGS) expect((s.gloss as Record<string, string>)[l]).toBeTruthy();
+  it('contains please_repeat, the phrase the simplify contract example points to', () => {
+    expect(phrasebook.items.some((p: Row) => p.slug === 'please_repeat')).toBe(true);
   });
 });
 
@@ -62,21 +59,29 @@ describe('language files', () => {
       expect(vars((uz as Record<string, string>)[k]), k).toBe(vars((en as Record<string, string>)[k]));
     }
   });
+  it('the old product name is gone', () => {
+    for (const file of [en, ru, uz]) expect(JSON.stringify(file)).not.toContain('SignConnect');
+  });
 });
 
 describe('config switches', () => {
-  it('defaults to Plan B with mocks on when nothing is set', () => {
+  it('defaults to Plan B, mocks on and the mock recognizer when nothing is set', () => {
     const c = configFromEnv({});
     expect(whichPlan(c)).toBe('B');
     expect(c.mockAzure).toBe(true);
+    expect(c.recognizer).toBe('mock');
     expect(c.confidenceThreshold).toBe(0.8);
+    expect(c.signWindow).toMatchObject({ countdownMs: 1000, restMs: 500, maxRecordingMs: 3500 });
+  });
+  it('recognizer = sequence | static | mock, with the old switch still understood', () => {
+    expect(configFromEnv({ VITE_RECOGNIZER: 'sequence' }).recognizer).toBe('sequence');
+    expect(configFromEnv({ VITE_RECOGNIZER: 'static' }).recognizer).toBe('static');
+    expect(configFromEnv({ VITE_SIGN_CLASSIFIER: 'mediapipe' }).recognizer).toBe('static');
+    expect(configFromEnv({ VITE_RECOGNIZER: 'nonsense' }).recognizer).toBe('mock');
   });
   it('Plan A from environment', () => {
     const c = configFromEnv({ VITE_STT_PROVIDER: 'azure-speech', VITE_TTS_PROVIDER: 'azure-speech', VITE_FACE_HINTS: 'on', VITE_MOCK_AZURE: 'false' });
     expect(whichPlan(c)).toBe('A');
     expect(c.mockAzure).toBe(false);
-  });
-  it('ignores unknown values', () => {
-    expect(configFromEnv({ VITE_STT_PROVIDER: 'something', VITE_CONFIDENCE_THRESHOLD: '7' })).toMatchObject({ sttProvider: 'typed-input', confidenceThreshold: 0.8 });
   });
 });

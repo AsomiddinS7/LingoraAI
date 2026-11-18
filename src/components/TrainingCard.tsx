@@ -1,6 +1,6 @@
 // Records training samples for the real recognizer: hand landmarks only, never video.
 import { useEffect, useRef, useState } from 'react';
-import { VOCABULARY } from '../data';
+import { useCatalog, vocabulary } from '../data';
 import { useI18n } from '../i18n';
 import { handTracking, loadHandLandmarker } from '../ml/handTracking';
 import { sampleStore, useSampleVersion } from '../ml/samples';
@@ -16,9 +16,11 @@ export function TrainingCard() {
   const cam = useCamera();
   const policy = useRuntime((s) => s.config.dataCollection);
   useSampleVersion();
+  useCatalog();
+  const VOCAB = vocabulary();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [tracker, setTracker] = useState<'loading' | 'ready' | 'failed'>('loading');
-  const [label, setLabel] = useState(VOCABULARY[0]?.label ?? '');
+  const [label, setLabel] = useState(vocabulary()[0]?.label ?? '');
   const [consent, setConsent] = useState(false);
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' });
   const [importMsg, setImportMsg] = useState<string | null>(null);
@@ -70,7 +72,7 @@ export function TrainingCard() {
 
   const live = cam.status === 'live';
   const busy = phase.kind === 'countdown' || phase.kind === 'recording';
-  const gloss = (l: string) => VOCABULARY.find((v) => v.label === l)?.gloss[lang] ?? l;
+  const gloss = (l: string) => VOCAB.find((v) => v.label === l)?.gloss[lang] ?? l;
 
   return (
     <section className="card span-2" aria-labelledby="train">
@@ -109,7 +111,7 @@ export function TrainingCard() {
           <div className="field">
             <label htmlFor="train-label">{t('console.data.label')}</label>
             <select id="train-label" className="input" value={label} onChange={(e) => setLabel(e.target.value)} disabled={busy}>
-              {VOCABULARY.map((v) => (
+              {VOCAB.map((v) => (
                 <option key={v.label} value={v.label}>{`${v.gloss[lang]} (${v.label})`}</option>
               ))}
             </select>
@@ -135,7 +137,7 @@ export function TrainingCard() {
               </tr>
             </thead>
             <tbody>
-              {VOCABULARY.map((v) => (
+              {VOCAB.map((v) => (
                 <tr key={v.label}>
                   <td>{v.gloss[lang]}</td>
                   <td>{counts[v.label]?.takes ?? 0}</td>
@@ -160,7 +162,7 @@ export function TrainingCard() {
                   e.target.value = '';
                   if (!f) return;
                   try {
-                    const n = sampleStore.importJson(await f.text(), VOCABULARY.map((v) => v.label));
+                    const n = sampleStore.importJson(await f.text(), VOCAB.map((v) => v.label));
                     setImportMsg(t('train.importOk', { n }));
                   } catch {
                     setImportMsg(t('train.importBad'));

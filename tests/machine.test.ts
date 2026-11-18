@@ -154,3 +154,41 @@ describe('conversation state machine', () => {
     expect(run([{ type: 'CHOOSE_PHRASE', text: 'Hi' }], composing).phase).toBe('COMPOSING');
   });
 });
+
+describe('v1 sign window -> conversation', () => {
+  it('SIGN_CONFIRMED with compose writes the sentence at once', () => {
+    const s = run([{ type: 'SIGN_CONFIRMED', label: 'hello', confidence: 0.9, at: 1, compose: true }]);
+    expect(s.phase).toBe('COMPOSING');
+    expect(s.buffer.map((b) => b.label)).toEqual(['hello']);
+    expect(s.requestId).toBe(1);
+  });
+  it('confirm-and-add collects signs, COMPOSE_BUFFER writes them, CLEAR_SIGNS empties', () => {
+    let s = run([
+      { type: 'SIGN_CONFIRMED', label: 'my_name', confidence: 0.9, at: 1, compose: false },
+      { type: 'SIGN_CONFIRMED', label: 'nice_to_meet_you', confidence: 0.9, at: 2, compose: false },
+    ]);
+    expect(s.phase).toBe('IDLE');
+    expect(s.buffer).toHaveLength(2);
+    expect(run([{ type: 'CLEAR_SIGNS' }], s).buffer).toHaveLength(0);
+    s = run([{ type: 'COMPOSE_BUFFER' }], s);
+    expect(s.phase).toBe('COMPOSING');
+  });
+  it('the fifth sign composes automatically', () => {
+    const ev = (l: string) => ({ type: 'SIGN_CONFIRMED' as const, label: l, confidence: 0.9, at: 1, compose: false });
+    const s = run([ev('a'), ev('b'), ev('c'), ev('d'), ev('e')]);
+    expect(s.phase).toBe('COMPOSING');
+    expect(s.buffer).toHaveLength(5);
+  });
+  it('EDIT_PROPOSAL changes the sentence before it is spoken', () => {
+    let s = run([{ type: 'SIGN_CONFIRMED', label: 'hello', confidence: 0.9, at: 1, compose: true }, { type: 'COMPOSE_OK', sentence: 'Helo' }]);
+    s = run([{ type: 'EDIT_PROPOSAL', text: 'Hello!' }], s);
+    expect(s.proposal).toEqual({ text: 'Hello!', source: 'typed' });
+    expect(s.phase).toBe('CONFIRM_SENTENCE');
+    expect(s.turns).toHaveLength(0);
+  });
+  it('cannot confirm a new sign while a sentence waits for confirmation', () => {
+    const s = run([{ type: 'SIGN_CONFIRMED', label: 'hello', confidence: 0.9, at: 1, compose: true }, { type: 'COMPOSE_OK', sentence: 'Hello.' }, { type: 'SIGN_CONFIRMED', label: 'yes', confidence: 0.9, at: 2, compose: true }]);
+    expect(s.phase).toBe('CONFIRM_SENTENCE');
+    expect(s.buffer).toHaveLength(1);
+  });
+});

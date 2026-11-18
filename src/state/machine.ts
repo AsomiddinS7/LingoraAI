@@ -76,6 +76,12 @@ export type ConvEvent =
   | { type: 'ADD_SIGN' }
   | { type: 'DISCARD_SIGN' }
   | { type: 'CHOOSE_PHRASE'; text: string }
+  /** v1 sign window: the signer confirmed a sign. compose=true writes the sentence now. */
+  | { type: 'SIGN_CONFIRMED'; label: string; confidence: number; at: number; compose: boolean }
+  | { type: 'EDIT_PROPOSAL'; text: string }
+  | { type: 'CLEAR_SIGNS' }
+  /** Write the sentence from the signs collected so far. */
+  | { type: 'COMPOSE_BUFFER' }
   | { type: 'COMPOSE_OK'; sentence: string }
   | { type: 'COMPOSE_REFUSED'; reason: RefusalReason }
   | { type: 'COMPOSE_FAILED'; code: ClientErrorCode; retryAfterS?: number }
@@ -146,6 +152,28 @@ export function reducer(s: ConvState, e: ConvEvent): ConvState {
     case 'DISCARD_SIGN':
       if (s.phase !== 'CONFIRM_SIGN') return s;
       return { ...s, phase: 'SIGNER_LISTENING', candidate: null, notRecognized: false };
+
+    case 'SIGN_CONFIRMED': {
+      if (BUSY.includes(s.phase) || s.phase === 'CONFIRM_SENTENCE') return s;
+      const buffer = [...s.buffer, { label: e.label, confidence: e.confidence, at: e.at }].slice(-MAX_SIGNS);
+      const full = buffer.length >= MAX_SIGNS;
+      if (e.compose || full) return { ...s, phase: 'COMPOSING', buffer, candidate: null, error: null, requestId: s.requestId + 1 };
+      return { ...s, phase: 'IDLE', buffer, candidate: null, error: null };
+    }
+
+    case 'COMPOSE_BUFFER':
+      if (BUSY.includes(s.phase) || s.phase === 'CONFIRM_SENTENCE' || s.buffer.length === 0) return s;
+      return { ...s, phase: 'COMPOSING', error: null, requestId: s.requestId + 1 };
+
+    case 'CLEAR_SIGNS':
+      if (BUSY.includes(s.phase)) return s;
+      return { ...s, buffer: [], phase: s.phase === 'ERROR' ? 'IDLE' : s.phase, error: null };
+
+    case 'EDIT_PROPOSAL': {
+      const text = e.text.trim();
+      if (s.phase !== 'CONFIRM_SENTENCE' || !s.proposal || !text) return s;
+      return { ...s, proposal: { text, source: 'typed' } };
+    }
 
     case 'CHOOSE_PHRASE':
       if (BUSY.includes(s.phase)) return s;

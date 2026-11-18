@@ -1,7 +1,7 @@
 // Hearing person side (F5, F6): push-to-talk or typed text, shown large; Simplify on request.
 import { useState, type FormEvent, type KeyboardEvent } from 'react';
 import { SIMPLIFY_MAX_CHARS } from '../api/validate';
-import { phraseById } from '../data';
+import { phraseBySlug } from '../data';
 import { useI18n } from '../i18n';
 import { getStt } from '../providers';
 import { useRuntime } from '../runtime';
@@ -219,7 +219,7 @@ export function LatestReply() {
               <p className="eyebrow">{t('listener.matches')}</p>
               <div className="chips">
                 {state.matches.map((id) => (
-                  <span className="chip" key={id}>{phraseById(id)?.text[lang] ?? id}</span>
+                  <span className="chip" key={id}>{phraseBySlug(id)?.texts[lang] ?? id}</span>
                 ))}
               </div>
             </>

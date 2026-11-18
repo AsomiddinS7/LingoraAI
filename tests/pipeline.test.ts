@@ -1,38 +1,6 @@
-// Frame pump and gesture gate tests.
+// Frame pump tests.
 import { describe, expect, it } from 'vitest';
 import { startFramePump } from '../src/pipeline/framePump';
-import { createGestureGate } from '../src/pipeline/gestureGate';
-
-describe('gesture gate: no repeated recognition of a held sign', () => {
-  it('suppresses the same sign while it is held', () => {
-    const g = createGestureGate(2000);
-    expect(g.accept({ label: 'hello', confidence: 0.9 }, 0)).toBe(true);
-    expect(g.accept({ label: 'hello', confidence: 0.92 }, 500)).toBe(false);
-    expect(g.accept({ label: 'hello', confidence: 0.95 }, 1900)).toBe(false);
-    // still held: the cooldown keeps extending, so no repeat at 3000 either
-    expect(g.accept({ label: 'hello', confidence: 0.95 }, 3000)).toBe(false);
-  });
-
-  it('accepts the same sign again after the hands drop (none)', () => {
-    const g = createGestureGate(2000);
-    g.accept({ label: 'yes', confidence: 0.9 }, 0);
-    expect(g.accept({ label: 'none', confidence: 0.4 }, 300)).toBe(true);
-    expect(g.accept({ label: 'yes', confidence: 0.9 }, 600)).toBe(true);
-  });
-
-  it('accepts a different sign immediately', () => {
-    const g = createGestureGate(2000);
-    g.accept({ label: 'yes', confidence: 0.9 }, 0);
-    expect(g.accept({ label: 'no', confidence: 0.9 }, 100)).toBe(true);
-    expect(g.accept({ label: 'yes', confidence: 0.9 }, 200)).toBe(true);
-  });
-
-  it('accepts the same sign again after a pause longer than the cooldown', () => {
-    const g = createGestureGate(2000);
-    g.accept({ label: 'wait', confidence: 0.9 }, 0);
-    expect(g.accept({ label: 'wait', confidence: 0.9 }, 2500)).toBe(true);
-  });
-});
 
 function fakeVideo() {
   const cbs: ((now: number) => void)[] = [];

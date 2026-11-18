@@ -27,7 +27,7 @@ jobs:
       - run: npm test
       - run: npm run build
         env:
-          VITE_SIGN_CLASSIFIER: mediapipe
+          VITE_RECOGNIZER: static
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

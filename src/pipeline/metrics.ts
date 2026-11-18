@@ -24,7 +24,9 @@ export interface PipelineMetrics {
   avgRecognitionMs: number | null;
   /** Time to download and initialise the hand tracking model, ms. */
   modelLoadMs: number | null;
-  classifier: 'mock' | 'model' | 'mediapipe' | null;
+  /** Sign window end -> result, ms (spec target: under 1 s). */
+  lastProcessingMs: number | null;
+  classifier: 'mock' | 'static' | 'sequence' | null;
 }
 
 const empty: PipelineMetrics = {
@@ -40,6 +42,7 @@ const empty: PipelineMetrics = {
   lastRecognitionMs: null,
   avgRecognitionMs: null,
   modelLoadMs: null,
+  lastProcessingMs: null,
   classifier: null,
 };
 

@@ -1,27 +1,23 @@
-// Wires the pure state machine to the providers (classifier, sentence service, TTS, STT).
+// Wires the pure conversation machine to the services: sentence/simplify API, TTS, STT, feedback.
+// Sign recognition itself lives in SignWindowContext (v1 sign window).
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import { ApiError } from '../api/client';
-import { SIMPLIFY_MAX_CHARS } from '../api/validate';
+import { NAME_MAX, SIMPLIFY_MAX_CHARS } from '../api/validate';
 import { useI18n } from '../i18n';
-import { getClassifier, getStt, getTts, mockFaceHints, sentenceService } from '../providers';
+import { backend, getStt, getTts, mockFaceHints, sentenceService } from '../providers';
 import { TtsError } from '../providers/tts';
 import { runtime, useRuntime } from '../runtime';
-import type { FaceHint } from '../types';
+import type { FaceHint, FeedbackKind } from '../types';
 import { uuidv4 } from '../lib/id';
-import { createGestureGate } from '../pipeline/gestureGate';
-import { metrics } from '../pipeline/metrics';
 import { initialState, reducer, type ConvEvent, type ConvState } from './machine';
-
-export type ClassifierStatus = 'idle' | 'loading' | 'ready' | 'failed';
 
 interface ConversationValue {
   state: ConvState;
   dispatch: (e: ConvEvent) => void;
-  classifierStatus: ClassifierStatus;
-  ensureClassifier: () => void;
-  retryClassifier: () => void;
-  setVideo: (v: HTMLVideoElement | null) => void;
   faceHint: FaceHint | null;
+  /** Display name for this session (guests type it once; v1 spec 2.2). Memory only. */
+  name: string;
+  setName: (n: string) => void;
   acceptSentence: () => void;
   speakDirect: (text: string) => void;
   sayListener: (text: string) => void;
@@ -29,66 +25,27 @@ interface ConversationValue {
   pttStop: () => Promise<void>;
   simplify: (turnId: string) => void;
   cancelSpeech: () => void;
+  sendFeedback: (kind: FeedbackKind, signIds: string[]) => Promise<'ok' | 'failed'>;
   sessionId: string;
 }
 
 const Ctx = createContext<ConversationValue | null>(null);
 
-const CONTEXT = 'job_interview'; // TODO [CONFIRM]: scenario is to be validated by interviews.
+const CONTEXT = 'greeting'; // v1 demo scenario: greeting and self-introduction
 
 export function ConversationProvider({ children }: { children: ReactNode }) {
   const { lang } = useI18n();
   const [state, dispatch] = useReducer(reducer, initialState);
   const config = useRuntime((s) => s.config);
   const [sessionId] = useState(uuidv4);
-  const [classifierStatus, setClassifierStatus] = useState<ClassifierStatus>('idle');
-  const [video, setVideo] = useState<HTMLVideoElement | null>(null);
   const [faceHint, setFaceHint] = useState<FaceHint | null>(null);
+  const [name, setNameState] = useState('');
   const stateRef = useRef(state);
   stateRef.current = state;
+  const nameRef = useRef(name);
+  nameRef.current = name;
 
-  const classifier = useMemo(() => getClassifier(config), [config]);
-  const gate = useRef(createGestureGate(2000));
-  useEffect(() => metrics.set({ classifier: config.signClassifier }), [config.signClassifier]);
-
-  // ----- classifier: loaded lazily when a camera screen opens -----
-  const loadingFor = useRef<unknown>(null);
-  const load = useCallback(() => {
-    loadingFor.current = classifier;
-    setClassifierStatus('loading');
-    classifier.load().then(
-      () => loadingFor.current === classifier && setClassifierStatus('ready'),
-      (err) => {
-        console.warn('[SignConnect] classifier failed to load', err);
-        if (loadingFor.current === classifier) setClassifierStatus('failed');
-      },
-    );
-  }, [classifier]);
-
-  useEffect(() => setClassifierStatus('idle'), [classifier]);
-  const ensureClassifier = useCallback(() => {
-    if (classifierStatus === 'idle') load();
-  }, [classifierStatus, load]);
-
-  // ----- attach the classifier only while the signer is being watched -----
-  useEffect(() => {
-    if (state.phase !== 'SIGNER_LISTENING' || !video || classifierStatus !== 'ready') return;
-    metrics.resetCadence();
-    classifier.attach(video, (r) => {
-      const t0 = performance.now();
-      metrics.recordEvent(t0);
-      // Same gesture still held -> ignore instead of asking the signer to confirm it again.
-      if (!gate.current.accept(r, t0)) {
-        metrics.recordSuppressed();
-        return;
-      }
-      dispatch({ type: 'SIGN_EVENT', label: r.label, confidence: r.confidence, at: Date.now(), threshold: runtime.get().config.confidenceThreshold });
-      // Detection -> on screen: React commits synchronously inside the event; the next
-      // animation frame + task marks the moment the browser has painted the result.
-      requestAnimationFrame(() => setTimeout(() => metrics.recordLatency(performance.now() - t0), 0));
-    });
-    return () => classifier.detach();
-  }, [state.phase, video, classifierStatus, classifier]);
+  const setName = useCallback((n: string) => setNameState(n.slice(0, NAME_MAX)), []);
 
   // ----- face hints (Plan A, display only) -----
   useEffect(() => {
@@ -96,7 +53,7 @@ export function ConversationProvider({ children }: { children: ReactNode }) {
       setFaceHint(null);
       return;
     }
-    return mockFaceHints.subscribe(setFaceHint); // TODO: team swaps in the real face hint provider.
+    return mockFaceHints.subscribe(setFaceHint);
   }, [config.faceHints]);
   const faceHintRef = useRef(faceHint);
   faceHintRef.current = faceHint;
@@ -106,6 +63,7 @@ export function ConversationProvider({ children }: { children: ReactNode }) {
     if (state.phase !== 'COMPOSING') return;
     const id = state.requestId;
     const hint = faceHintRef.current;
+    const n = nameRef.current.trim();
     sentenceService
       .compose({
         session_id: sessionId,
@@ -113,6 +71,7 @@ export function ConversationProvider({ children }: { children: ReactNode }) {
         context: CONTEXT,
         signs: state.buffer.map((b) => ({ label: b.label, confidence: b.confidence })),
         face_hints: runtime.get().config.faceHints ? { question: hint === 'eyebrows_raised', negation: hint === 'head_shake' } : null,
+        ...(n && state.buffer.some((b) => b.label === 'my_name') ? { name: n } : {}),
       })
       .then(
         (res) => {
@@ -184,7 +143,7 @@ export function ConversationProvider({ children }: { children: ReactNode }) {
         else dispatch({ type: 'PARTIAL', text });
       });
     } catch (err) {
-      console.warn('[SignConnect] speech input failed', err);
+      console.warn('[Lingora] speech input failed', err);
       dispatch({ type: 'PTT_FAILED' });
     }
   }, [lang]);
@@ -198,7 +157,6 @@ export function ConversationProvider({ children }: { children: ReactNode }) {
     } catch {
       dispatch({ type: 'PTT_FAILED' });
     }
-    // If the provider produced no final text, leave TRANSCRIBING anyway.
     if (stateRef.current.phase === 'TRANSCRIBING') dispatch({ type: 'FINAL', text: stateRef.current.partial, id: uuidv4(), at: Date.now() });
   }, []);
 
@@ -216,14 +174,22 @@ export function ConversationProvider({ children }: { children: ReactNode }) {
     [tts],
   );
 
+  // ----- one-tap feedback (v1 spec 2.3 flow 5) -----
+  const sendFeedback = useCallback(async (kind: FeedbackKind, signIds: string[]) => {
+    try {
+      await backend.feedback({ kind, sign_ids: signIds.slice(0, 5), model_id: null });
+      return 'ok' as const;
+    } catch {
+      return 'failed' as const;
+    }
+  }, []);
+
   const value: ConversationValue = {
     state,
     dispatch: wrappedDispatch,
-    classifierStatus,
-    ensureClassifier,
-    retryClassifier: load,
-    setVideo,
     faceHint,
+    name,
+    setName,
     acceptSentence: () => dispatch({ type: 'ACCEPT_SENTENCE', id: uuidv4(), at: Date.now() }),
     speakDirect: (text) => dispatch({ type: 'SPEAK_DIRECT', text, id: uuidv4(), at: Date.now() }),
     sayListener: (text) => dispatch({ type: 'LISTENER_TYPED', text, id: uuidv4(), at: Date.now() }),
@@ -231,6 +197,7 @@ export function ConversationProvider({ children }: { children: ReactNode }) {
     pttStop,
     simplify: (turnId) => dispatch({ type: 'SIMPLIFY', turnId }),
     cancelSpeech,
+    sendFeedback,
     sessionId,
   };
 

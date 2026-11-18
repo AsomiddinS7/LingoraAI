@@ -1,0 +1,105 @@
+{
+  "_note": "[PLACEHOLDER] Seed for table 'phrases'. The team supplies the final Uzbek and Russian text. Served by GET /api/phrasebook.",
+  "items": [
+    {
+      "id": "2fc73e22-5359-5f56-b11c-56933c854074",
+      "slug": "hello",
+      "texts": {
+        "en": "Hello!",
+        "ru": "Здравствуйте!",
+        "uz": "Assalomu alaykum!"
+      },
+      "audio_path": null
+    },
+    {
+      "id": "16d9f3f2-5041-5890-92a9-52284a775334",
+      "slug": "how_are_you",
+      "texts": {
+        "en": "How are you?",
+        "ru": "Как дела?",
+        "uz": "Qalaysiz?"
+      },
+      "audio_path": null
+    },
+    {
+      "id": "60d035cb-a223-55f2-87c9-531d0b2ac2f0",
+      "slug": "fine_thanks",
+      "texts": {
+        "en": "I am fine, thank you.",
+        "ru": "Хорошо, спасибо.",
+        "uz": "Yaxshi, rahmat."
+      },
+      "audio_path": null
+    },
+    {
+      "id": "355fada4-3703-54de-aa73-fdac378adebe",
+      "slug": "my_name",
+      "texts": {
+        "en": "My name is …",
+        "ru": "Меня зовут …",
+        "uz": "Mening ismim …"
+      },
+      "audio_path": null
+    },
+    {
+      "id": "286baf80-aecd-5c0f-bfe6-5254fcb9b384",
+      "slug": "nice_to_meet_you",
+      "texts": {
+        "en": "Nice to meet you.",
+        "ru": "Приятно познакомиться.",
+        "uz": "Tanishganimdan xursandman."
+      },
+      "audio_path": null
+    },
+    {
+      "id": "ab957d30-79e4-5ee5-8e65-30ccfd9f292d",
+      "slug": "i_am_deaf",
+      "texts": {
+        "en": "I am Deaf. I use sign language.",
+        "ru": "Я глухой. Я говорю на жестовом языке.",
+        "uz": "Men karman. Imo-ishora tilida gaplashaman."
+      },
+      "audio_path": null
+    },
+    {
+      "id": "e9aed7fe-c8cd-5e3f-81bf-eeafef91abde",
+      "slug": "please_repeat",
+      "texts": {
+        "en": "Please repeat.",
+        "ru": "Пожалуйста, повторите.",
+        "uz": "Iltimos, takrorlang."
+      },
+      "audio_path": null
+    },
+    {
+      "id": "645b4db4-b870-5d30-a673-cf765c8abdea",
+      "slug": "please_slower",
+      "texts": {
+        "en": "Please speak more slowly.",
+        "ru": "Пожалуйста, говорите медленнее.",
+        "uz": "Iltimos, sekinroq gapiring."
+      },
+      "audio_path": null
+    },
+    {
+      "id": "8bab0fe1-1bdb-5812-9054-4b507fc8be69",
+      "slug": "please_write",
+      "texts": {
+        "en": "Please write it down.",
+        "ru": "Пожалуйста, напишите это.",
+        "uz": "Iltimos, yozib koʻrsating."
+      },
+      "audio_path": null
+    },
+    {
+      "id": "5e623407-9480-5bf0-af81-eec7c8e761c5",
+      "slug": "thank_you_goodbye",
+      "texts": {
+        "en": "Thank you. Goodbye!",
+        "ru": "Спасибо. До свидания!",
+        "uz": "Rahmat. Xayr!"
+      },
+      "audio_path": null
+    }
+  ]
+}

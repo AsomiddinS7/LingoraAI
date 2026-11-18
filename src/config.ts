@@ -4,7 +4,8 @@
 export type SttProviderName = 'azure-speech' | 'typed-input' | 'browser-speech';
 export type TtsProviderName = 'azure-speech' | 'browser-synthesis';
 export type LlmProviderName = 'azure-openai' | 'mock';
-export type ClassifierName = 'mock' | 'model' | 'mediapipe';
+/** v1 spec section 8: sequence (ML team's model via manifest), static (v0 held shapes), mock. */
+export type RecognizerName = 'sequence' | 'static' | 'mock';
 export type DataCollectionPolicy = 'consenting-teammates' | 'tutor-confirmed';
 
 export interface AppConfig {
@@ -13,12 +14,36 @@ export interface AppConfig {
   faceHints: boolean;
   llmProvider: LlmProviderName;
   mockAzure: boolean;
-  /** Not in the brief's switch table; needed so the app runs without the team's model (F12). */
-  signClassifier: ClassifierName;
+  recognizer: RecognizerName;
+  /** Sign window timings (v1 spec section 8). Starting values; the ML team tunes them. */
+  signWindow: SignWindowConfig;
   dataCollection: DataCollectionPolicy;
   confidenceThreshold: number;
   apiBase: string;
 }
+
+export interface SignWindowConfig {
+  countdownMs: number;
+  /** Recording ends when the hands rest this long... */
+  restMs: number;
+  /** ...but not before this... */
+  minRecordingMs: number;
+  /** ...and at the latest after this. */
+  maxRecordingMs: number;
+  /** Give up waiting for a result after this (shows an error, never hangs). */
+  processingTimeoutMs: number;
+  /** Confidence at or above this reads "Sure"; between threshold and this reads "Maybe". */
+  sureAt: number;
+}
+
+export const DEFAULT_SIGN_WINDOW: SignWindowConfig = {
+  countdownMs: 1000,
+  restMs: 500,
+  minRecordingMs: 400,
+  maxRecordingMs: 3500,
+  processingTimeoutMs: 2500,
+  sureAt: 0.9,
+};
 
 type Env = Record<string, string | undefined>;
 
@@ -44,7 +69,12 @@ export function configFromEnv(env: Env = readEnv()): AppConfig {
     llmProvider: pick(env.VITE_LLM_PROVIDER, ['azure-openai', 'mock'] as const, 'azure-openai'),
     // Mock stays on unless explicitly turned off, so a fresh checkout runs with no keys.
     mockAzure: env.VITE_MOCK_AZURE !== 'false',
-    signClassifier: pick(env.VITE_SIGN_CLASSIFIER, ['mock', 'model', 'mediapipe'] as const, 'mock'),
+    recognizer: pick(
+      env.VITE_RECOGNIZER ?? ({ mediapipe: 'static', model: 'sequence', mock: 'mock' } as Record<string, string>)[env.VITE_SIGN_CLASSIFIER ?? ''],
+      ['sequence', 'static', 'mock'] as const,
+      'mock',
+    ),
+    signWindow: { ...DEFAULT_SIGN_WINDOW },
     dataCollection: pick(
       env.VITE_DATA_COLLECTION,
       ['consenting-teammates', 'tutor-confirmed'] as const,

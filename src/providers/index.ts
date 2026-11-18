@@ -2,12 +2,14 @@
 // The UI only sees the interfaces in ../types.
 import { createApiClient } from '../api/client';
 import { createMockServer } from '../api/mockServer';
-import { isHealth, isSentenceResponse, isSimplifyResponse, isSpeechToken, isUsage } from '../api/validate';
+import { isActiveModel, isFeedbackAck, isHealth, isMe, isPhrasesPage, isSentenceResponse, isSignsPage, isSimplifyResponse, isSpeechToken, isUsage } from '../api/validate';
+import { catalog } from '../data';
+import { loadSequenceRecognizer, MockRecognizer, StaticRecognizer } from '../recognition/recognizers';
+import type { ModelManifest, SequenceRecognizer } from '../recognition/types';
 import type { AppConfig } from '../config';
 import type { MessageKey } from '../i18n';
 import { runtime } from '../runtime';
-import type { FaceHintProvider, SentenceService, SignClassifier, SttProvider, TtsProvider } from '../types';
-import { MediaPipeSignClassifier, MockSignClassifier, ModelSignClassifier } from './classifier';
+import type { FaceHintProvider, FeedbackRequest, SentenceService, SttProvider, TtsProvider } from '../types';
 import { BrowserSpeechStt, MockStt } from './stt';
 import { BrowserSynthesisTts } from './tts';
 
@@ -52,28 +54,40 @@ export const backend = {
   health: () => api.get('/api/health', isHealth),
   // Plan A only. The team's Azure provider should call this and cache below expires_in_s.
   speechToken: () => api.get('/api/speech-token', isSpeechToken),
+  // v1 platform
+  signs: (scenario = 'greeting') => api.get(`/api/signs?scenario=${encodeURIComponent(scenario)}`, isSignsPage),
+  phrasebook: () => api.get('/api/phrasebook', isPhrasesPage),
+  activeModel: () => api.get('/api/model/active', isActiveModel),
+  feedback: (req: FeedbackRequest) => api.post('/api/feedback', req, isFeedbackAck),
+  me: () => api.get('/api/auth/me', isMe),
+  login: (email: string, password: string) => api.post('/api/auth/login', { email, password }, isMe),
+  register: (body: { email: string; password: string; display_name: string; language: string; consent_ids: string[] }) =>
+    api.post('/api/auth/register', body, isMe),
 };
 
-// ---------- Sign classifier ----------
-let classifierCache: { key: string; instance: SignClassifier } | null = null;
-export function getClassifier(c: AppConfig): SignClassifier {
-  const key = c.signClassifier;
-  if (classifierCache?.key !== key) {
-    classifierCache?.instance.detach();
-    classifierCache = {
-      key,
-      instance:
-        key === 'model'
-          ? new ModelSignClassifier()
-          : key === 'mediapipe'
-            ? new MediaPipeSignClassifier()
-            : new MockSignClassifier({
-              shouldFail: () => runtime.get().demo.simClassifierFail,
-              intervalMs: () => runtime.get().demo.mockCadenceMs,
-            }),
-    };
+/** Loads signs and phrases from the API; keeps the bundled seed if the API is unreachable. */
+export async function refreshCatalog(): Promise<'api' | 'seed'> {
+  const [s, p] = await Promise.allSettled([backend.signs(), backend.phrasebook()]);
+  if (s.status === 'fulfilled' || p.status === 'fulfilled') {
+    catalog.set({
+      signs: s.status === 'fulfilled' ? (s.value.items as never) : undefined,
+      phrases: p.status === 'fulfilled' ? (p.value.items as never) : undefined,
+    });
+    return 'api';
   }
-  return classifierCache.instance;
+  return 'seed';
+}
+
+// ---------- Sign recognizer (v1 spec section 8): sequence | static | mock ----------
+/** Creates and loads the configured recognizer. The caller owns attach/detach. */
+export async function createRecognizer(c: AppConfig): Promise<SequenceRecognizer> {
+  if (c.recognizer === 'sequence') {
+    // The ML team's model from the registry. If none is active this throws and the UI falls back.
+    return loadSequenceRecognizer(() => backend.activeModel());
+  }
+  const r = c.recognizer === 'static' ? new StaticRecognizer() : new MockRecognizer();
+  await (r as SequenceRecognizer).load({} as ModelManifest);
+  return r;
 }
 
 // ---------- Text to speech ----------

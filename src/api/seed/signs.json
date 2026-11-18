@@ -1,0 +1,161 @@
+{
+  "_note": "[PLACEHOLDER] Seed for table 'signs' (v1 spec 2.2 candidate list). The final list and sign forms come from the instructor videos and a native signer review. Served by GET /api/signs; never hard-coded in the app.",
+  "items": [
+    {
+      "id": "b1f0d447-0e93-5db4-ae8a-ffdf7eab9fb6",
+      "slug": "hello",
+      "labels": {
+        "en": "hello",
+        "ru": "привет",
+        "uz": "salom"
+      },
+      "scenario": "greeting",
+      "reference_clip_id": null,
+      "status": "active",
+      "sort_order": 1
+    },
+    {
+      "id": "29b27e3d-76fd-5663-95df-404cf354f582",
+      "slug": "goodbye",
+      "labels": {
+        "en": "goodbye",
+        "ru": "до свидания",
+        "uz": "xayr"
+      },
+      "scenario": "greeting",
+      "reference_clip_id": null,
+      "status": "active",
+      "sort_order": 2
+    },
+    {
+      "id": "5d1fad99-63db-58de-b70c-7a1538450783",
+      "slug": "how_are_you",
+      "labels": {
+        "en": "how are you?",
+        "ru": "как дела?",
+        "uz": "qalaysiz?"
+      },
+      "scenario": "greeting",
+      "reference_clip_id": null,
+      "status": "active",
+      "sort_order": 3
+    },
+    {
+      "id": "38eea4fd-56a4-5d17-bbed-cd0a10b699f8",
+      "slug": "fine",
+      "labels": {
+        "en": "I am fine",
+        "ru": "хорошо",
+        "uz": "yaxshi"
+      },
+      "scenario": "greeting",
+      "reference_clip_id": null,
+      "status": "active",
+      "sort_order": 4
+    },
+    {
+      "id": "3d0c0ad1-7ce9-5b7f-86b5-aedfd6c1db42",
+      "slug": "my_name",
+      "labels": {
+        "en": "my name is …",
+        "ru": "меня зовут …",
+        "uz": "mening ismim …"
+      },
+      "scenario": "greeting",
+      "reference_clip_id": null,
+      "status": "active",
+      "sort_order": 5
+    },
+    {
+      "id": "4da273d4-ed08-5e22-8f28-c9764bb8ee4f",
+      "slug": "your_name",
+      "labels": {
+        "en": "what is your name?",
+        "ru": "как вас зовут?",
+        "uz": "ismingiz nima?"
+      },
+      "scenario": "greeting",
+      "reference_clip_id": null,
+      "status": "active",
+      "sort_order": 6
+    },
+    {
+      "id": "6bec27f2-277c-5588-b47e-d7acfebcaf60",
+      "slug": "nice_to_meet_you",
+      "labels": {
+        "en": "nice to meet you",
+        "ru": "приятно познакомиться",
+        "uz": "tanishganimdan xursandman"
+      },
+      "scenario": "greeting",
+      "reference_clip_id": null,
+      "status": "active",
+      "sort_order": 7
+    },
+    {
+      "id": "9c18dfe1-04ae-591f-98fb-f58cc3c8b7a4",
+      "slug": "thank_you",
+      "labels": {
+        "en": "thank you",
+        "ru": "спасибо",
+        "uz": "rahmat"
+      },
+      "scenario": "greeting",
+      "reference_clip_id": null,
+      "status": "active",
+      "sort_order": 8
+    },
+    {
+      "id": "f872ac43-b6f0-5d19-9d03-c62bcdbaed68",
+      "slug": "please",
+      "labels": {
+        "en": "please",
+        "ru": "пожалуйста",
+        "uz": "iltimos"
+      },
+      "scenario": "greeting",
+      "reference_clip_id": null,
+      "status": "active",
+      "sort_order": 9
+    },
+    {
+      "id": "b86dd9b8-0ffc-5c1d-9ba2-892e0ab6d77f",
+      "slug": "yes",
+      "labels": {
+        "en": "yes",
+        "ru": "да",
+        "uz": "ha"
+      },
+      "scenario": "greeting",
+      "reference_clip_id": null,
+      "status": "active",
+      "sort_order": 10
+    },
+    {
+      "id": "e2f306b0-5621-5c6a-88f5-5ce7f1237acc",
+      "slug": "no",
+      "labels": {
+        "en": "no",
+        "ru": "нет",
+        "uz": "yoʻq"
+      },
+      "scenario": "greeting",
+      "reference_clip_id": null,
+      "status": "active",
+      "sort_order": 11
+    },
+    {
+      "id": "8058fed1-7c73-5898-a6c5-6a3fce4821a5",
+      "slug": "please_repeat",
+      "labels": {
+        "en": "please repeat",
+        "ru": "пожалуйста, повторите",
+        "uz": "iltimos, takrorlang"
+      },
+      "scenario": "greeting",
+      "reference_clip_id": null,
+      "status": "active",
+      "sort_order": 12
+    }
+  ]
+}

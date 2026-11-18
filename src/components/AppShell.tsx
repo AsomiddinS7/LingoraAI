@@ -10,19 +10,19 @@ import { InterpreterButton } from './InterpreterButton';
 import { OfflineBanner } from './Notices';
 
 const TOP: { route: Route; key: MessageKey }[] = [
-  { route: 'sign', key: 'nav.sign' },
-  { route: 'speak', key: 'nav.speak' },
-  { route: 'phrases', key: 'nav.phrases' },
   { route: 'conversation', key: 'nav.conversation' },
-  { route: 'console', key: 'nav.console' },
-  { route: 'about', key: 'nav.about' },
+  { route: 'phrasebook', key: 'nav.phrasebook' },
+  { route: 'contribute', key: 'nav.contribute' },
+  { route: 'help', key: 'nav.help' },
+  { route: 'profile', key: 'nav.profile' },
 ];
 
 const BOTTOM: { route: Route; key: MessageKey; icon: IconName }[] = [
-  { route: 'sign', key: 'nav.sign', icon: 'hand' },
-  { route: 'speak', key: 'nav.speak', icon: 'speaker' },
-  { route: 'phrases', key: 'nav.phrases', icon: 'book' },
-  { route: 'about', key: 'nav.about', icon: 'info' },
+  { route: 'conversation', key: 'nav.conversation', icon: 'chat' },
+  { route: 'phrasebook', key: 'nav.phrasebook', icon: 'book' },
+  { route: 'contribute', key: 'nav.contribute', icon: 'hand' },
+  { route: 'help', key: 'nav.help', icon: 'info' },
+  { route: 'profile', key: 'nav.profile', icon: 'person' },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -49,7 +49,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {t('app.skip')}
       </a>
       <header className="header">
-        <a className="brand" href={href('sign')}>
+        <a className="brand" href={href('conversation')}>
           <BrandMark />
           <span>{t('app.name')}</span>
         </a>

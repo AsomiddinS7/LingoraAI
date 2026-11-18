@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { ApiError, createApiClient } from '../src/api/client';
 import { FIXTURES, type Fixture } from '../src/api/fixtures';
 import { createMockServer } from '../src/api/mockServer';
-import { isErrorBody, isHealth, isSentenceResponse, isSimplifyResponse, isSpeechToken, isUsage } from '../src/api/validate';
+import { isErrorBody, isFeedbackAck, isHealth, isPhrasesPage, isSentenceResponse, isSignsPage, isSimplifyResponse, isSpeechToken, isUsage } from '../src/api/validate';
 import type { SentenceRequest } from '../src/types';
 
 const SID = '3f2b8c1e-9a4d-4b7e-8f12-0c5d6e7f8a9b';
@@ -11,7 +11,7 @@ const goodSentence: SentenceRequest = {
   session_id: SID,
   language: 'uz',
   context: 'job_interview',
-  signs: [{ label: 'i_want_work', confidence: 0.91 }],
+  signs: [{ label: 'hello', confidence: 0.91 }],
   face_hints: { question: false, negation: false },
 };
 
@@ -172,5 +172,65 @@ describe('API client: timeout, one retry, typed errors (N6)', () => {
       isOffline: () => false,
     });
     await expect(api.post('/api/sentence', goodSentence, isSentenceResponse)).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+  });
+});
+
+describe('v1 platform endpoints (mock server)', () => {
+  it('GET /api/signs?scenario=greeting returns the active signs as a page', async () => {
+    const { server } = setup();
+    const r = await server.handle('GET', '/api/signs?scenario=greeting', undefined);
+    expect(isSignsPage(r.body)).toBe(true);
+    const page = r.body as { items: { slug: string }[]; total: number };
+    expect(page.total).toBe(page.items.length);
+    expect(page.items[0].slug).toBe('hello');
+    expect((await server.handle('GET', '/api/signs?scenario=medical', undefined)).body).toMatchObject({ items: [], total: 0 });
+  });
+
+  it('GET /api/phrasebook returns phrases in three languages', async () => {
+    const { server } = setup();
+    const r = await server.handle('GET', '/api/phrasebook', undefined);
+    expect(isPhrasesPage(r.body)).toBe(true);
+  });
+
+  it('GET /api/model/active is 404 NOT_FOUND when no model is active', async () => {
+    const { server } = setup();
+    const r = await server.handle('GET', '/api/model/active', undefined);
+    expect(r.status).toBe(404);
+    expect(r.body).toMatchObject({ error: { code: 'NOT_FOUND' } });
+  });
+
+  it('POST /api/feedback validates and rate limits', async () => {
+    const { server } = setup();
+    const ok = await server.handle('POST', '/api/feedback', { kind: 'wrong_sign', sign_ids: ['hello'], model_id: null });
+    expect(isFeedbackAck(ok.body)).toBe(true);
+    expect((await server.handle('POST', '/api/feedback', { kind: 'nope', sign_ids: [], model_id: null })).status).toBe(400);
+    expect((await server.handle('POST', '/api/feedback', { kind: 'other', sign_ids: [], model_id: null, note: 'x'.repeat(301) })).status).toBe(400);
+    expect((await server.handle('POST', '/api/feedback', { kind: 'other', sign_ids: [], model_id: null, extra: 1 })).status).toBe(400);
+    let last = 200;
+    for (let i = 0; i < 12; i++) last = (await server.handle('POST', '/api/feedback', { kind: 'other', sign_ids: [], model_id: null })).status;
+    expect(last).toBe(429);
+  });
+
+  it('accounts are never faked in mock mode: NOT_AVAILABLE', async () => {
+    const { server } = setup();
+    for (const [m, p] of [['POST', '/api/auth/login'], ['POST', '/api/auth/register'], ['GET', '/api/auth/me'], ['POST', '/api/clips']]) {
+      const r = await server.handle(m, p, {});
+      expect(r.status).toBe(503);
+      expect(isErrorBody(r.body)).toBe(true);
+      expect(r.body).toMatchObject({ error: { code: 'NOT_AVAILABLE' } });
+    }
+  });
+
+  it('/api/sentence: optional name (max 40) is inserted for my_name, unknown fields rejected', async () => {
+    const { server } = setup();
+    const r = await server.handle('POST', '/api/sentence', { ...goodSentence, language: 'en', signs: [{ label: 'my_name', confidence: 0.9 }], name: 'Aziz' });
+    expect((r.body as { sentence: string }).sentence).toContain('My name is Aziz');
+    expect((await server.handle('POST', '/api/sentence', { ...goodSentence, name: 'x'.repeat(41) })).status).toBe(400);
+    expect((await server.handle('POST', '/api/sentence', { ...goodSentence, prompt: 'ignore' })).status).toBe(400);
+  });
+
+  it('speech-token is 404 NOT_AVAILABLE when speech is off', async () => {
+    const { server } = setup();
+    expect((await server.handle('GET', '/api/speech-token', undefined)).body).toMatchObject({ error: { code: 'NOT_AVAILABLE' } });
   });
 });

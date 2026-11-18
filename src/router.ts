@@ -1,12 +1,22 @@
-// Hash routing: works on any static host (Netlify, Vercel, GitHub Pages) with no rewrites.
+// Hash routing: works on any static host (GitHub Pages, Netlify, Vercel) with no rewrites.
 import { useSyncExternalStore } from 'react';
+import { readPref } from './lib/prefs';
 
-export type Route = 'sign' | 'speak' | 'phrases' | 'about' | 'conversation' | 'console';
-export const ROUTES: Route[] = ['sign', 'speak', 'phrases', 'about', 'conversation', 'console'];
+export type Route = 'welcome' | 'conversation' | 'phrasebook' | 'contribute' | 'profile' | 'help' | 'signin' | 'register' | 'console';
+export const ROUTES: Route[] = ['welcome', 'conversation', 'phrasebook', 'contribute', 'profile', 'help', 'signin', 'register', 'console'];
+
+/** Links from the earlier version keep working. */
+const LEGACY: Record<string, Route> = { sign: 'conversation', speak: 'conversation', phrases: 'phrasebook', about: 'help' };
+
+export function resolveRoute(hash: string, welcomed: boolean): Route {
+  const r = hash.replace(/^#\/?/, '').split(/[/?]/)[0];
+  if ((ROUTES as string[]).includes(r)) return r as Route;
+  if (r in LEGACY) return LEGACY[r];
+  return welcomed ? 'conversation' : 'welcome';
+}
 
 function current(): Route {
-  const r = window.location.hash.replace(/^#\/?/, '').split(/[/?]/)[0] as Route;
-  return ROUTES.includes(r) ? r : 'sign';
+  return resolveRoute(window.location.hash, readPref('welcomed') === '1');
 }
 
 function subscribe(cb: () => void) {

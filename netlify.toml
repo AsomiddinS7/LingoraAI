@@ -4,7 +4,7 @@
 
 [build.environment]
   NODE_VERSION = "22"
-  VITE_SIGN_CLASSIFIER = "mediapipe"
+  VITE_RECOGNIZER = "static"
 
 [[headers]]
   for = "/*"

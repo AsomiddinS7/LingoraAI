@@ -35,7 +35,13 @@ export type ApiErrorCode =
   | 'RATE_LIMITED'
   | 'CAP_REACHED'
   | 'UPSTREAM_TIMEOUT'
-  | 'UPSTREAM_ERROR';
+  | 'UPSTREAM_ERROR'
+  // v1 platform codes
+  | 'UNAUTHENTICATED'
+  | 'FORBIDDEN'
+  | 'NOT_FOUND'
+  | 'CONFLICT'
+  | 'NOT_AVAILABLE';
 
 export interface ApiErrorBody {
   error: { code: ApiErrorCode; message: string; retry_after_s?: number };
@@ -52,6 +58,8 @@ export interface SentenceRequest {
   context: string;
   signs: { label: SignLabel; confidence: number }[];
   face_hints: FaceHintsPayload | null;
+  /** v1: display name inserted when my_name is signed (max 40). Data, never prompt text. */
+  name?: string;
 }
 
 export type RefusalReason = 'out_of_scope' | 'low_confidence' | 'unsafe_topic';
@@ -125,4 +133,21 @@ export interface TtsProvider {
 export type FaceHint = 'eyebrows_raised' | 'head_shake' | 'head_nod';
 export interface FaceHintProvider {
   subscribe(onHint: (hint: FaceHint | null) => void): () => void;
+}
+
+// ---------- v1 platform contract (Lingora Platform v1, section 6) ----------
+export type FeedbackKind = 'wrong_sign' | 'wrong_translation' | 'other';
+export interface FeedbackRequest {
+  kind: FeedbackKind;
+  sign_ids: string[];
+  model_id: string | null;
+  note?: string;
+}
+
+export interface MeResponse {
+  id: string;
+  email: string;
+  display_name: string;
+  language: Lang;
+  role: 'user' | 'admin';
 }

@@ -1,8 +1,8 @@
 // In-browser mock of the team backend (brief sections 7 and 8). It speaks HTTP shapes
 // (status code + JSON body) so the real API client is exercised unchanged.
-import { checkSentenceRequest, checkSimplifyRequest } from './validate';
+import { checkFeedbackRequest, checkSentenceRequest, checkSimplifyRequest } from './validate';
 import { RATE_LIMIT_RETRY_AFTER_S, SIMPLIFIED_PREFIX, SUCCESS_SENTENCE, type Fixture } from './fixtures';
-import { glossFor, PHRASES, VOCAB_LABELS } from '../data';
+import { SEED_PHRASES, SEED_SIGNS } from '../data';
 import type { ApiErrorBody, ApiErrorCode, Lang, SentenceRequest, SimplifyRequest } from '../types';
 
 export interface MockSettings {
@@ -48,6 +48,10 @@ export function createMockServer(opts: MockServerOptions) {
   const delay = opts.delayMs ?? (() => 300 + Math.floor(Math.random() * 500));
   let callsSession = 0;
   let callsTotal = 0;
+  let feedbackTimes: number[] = [];
+  const activeSigns = () => SEED_SIGNS.filter((s) => s.status === 'active');
+  const gloss = (slug: string, lang: Lang) => SEED_SIGNS.find((s) => s.slug === slug)?.labels[lang] ?? slug;
+  const MY_NAME: Record<Lang, string> = { en: 'My name is {name}', ru: 'Меня зовут {name}', uz: 'Mening ismim {name}' };
 
   /** Fixture-driven failures shared by the two model endpoints. Returns null for the success path. */
   async function failureFor(fixture: Fixture, signal?: AbortSignal): Promise<MockResult | null> {
@@ -72,7 +76,9 @@ export function createMockServer(opts: MockServerOptions) {
       return { status: 200, body: { status: 'refused', reason: 'out_of_scope', sentence: null, needs_human: true } };
     }
     const lang: Lang = req.language;
-    const words = req.signs.map((s) => glossFor(s.label, lang)).join(', ');
+    // The name is data: inserted into the output, never into any prompt text (v1 spec 2.2).
+    const parts = req.signs.map((s) => (s.label === 'my_name' && req.name ? MY_NAME[lang].replace('{name}', req.name.trim()) : gloss(s.label, lang)));
+    const words = parts.join(', ');
     let text = SUCCESS_SENTENCE[lang].replace('{words}', words.charAt(0).toUpperCase() + words.slice(1));
     text += req.face_hints?.question ? '?' : '.';
     return { status: 200, body: { status: 'ok', sentence: text, language: lang, needs_human: false } };
@@ -87,9 +93,9 @@ export function createMockServer(opts: MockServerOptions) {
     const words = first.split(/\s+/).filter(Boolean);
     const short = words.slice(0, 12).join(' ') + (words.length > 12 ? ' …' : '');
     const lower = req.text.toLowerCase();
-    const matches = PHRASES.filter((p) =>
-      Object.values(p.text).some((t) => lower.includes(t.toLowerCase().replace(/[.!?…]/g, '').trim())),
-    ).map((p) => p.id);
+    const matches = SEED_PHRASES.filter((p) =>
+      Object.values(p.texts).some((t) => lower.includes(t.toLowerCase().replace(/[.!?…]/g, '').trim())),
+    ).map((p) => p.slug);
     return {
       status: 200,
       body: { status: 'ok', simplified: SIMPLIFIED_PREFIX + short, phrasebook_matches: matches.length ? matches : ['please_repeat'] },
@@ -108,12 +114,12 @@ export function createMockServer(opts: MockServerOptions) {
         // TODO [CONFIRM]: real cap comes from the team backend; the mock reports 0 (no cap set).
         return { status: 200, body: { calls_session: callsSession, calls_total: callsTotal, cap: 0, mock: true } };
       case 'GET /api/speech-token':
-        if (!speechTokenEnabled) return { status: 404, body: err('BAD_REQUEST', 'Speech token is only available in Plan A') };
+        if (!speechTokenEnabled) return { status: 404, body: err('NOT_AVAILABLE', 'Speech is off') };
         return { status: 200, body: { token: 'mock-token', region: 'mock-region', expires_in_s: 540 } };
       case 'POST /api/sentence': {
         const failure = await failureFor(fixture, signal);
         if (failure) return failure;
-        const problem = checkSentenceRequest(body, VOCAB_LABELS);
+        const problem = checkSentenceRequest(body, activeSigns().map((s) => s.slug));
         if (problem) return { status: 400, body: err('BAD_REQUEST', problem) };
         callsSession++;
         callsTotal++;
@@ -128,8 +134,42 @@ export function createMockServer(opts: MockServerOptions) {
         callsTotal++;
         return simplify(body as SimplifyRequest, fixture);
       }
+      // ---------- v1 platform endpoints ----------
+      case 'GET /api/signs': {
+        const scenario = new URLSearchParams(path.split('?')[1] ?? '').get('scenario');
+        const items = activeSigns()
+          .filter((s) => !scenario || s.scenario === scenario)
+          .sort((a, b) => a.sort_order - b.sort_order);
+        return { status: 200, body: { items, total: items.length } };
+      }
+      case 'GET /api/phrasebook':
+        return { status: 200, body: { items: SEED_PHRASES, total: SEED_PHRASES.length } };
+      case 'GET /api/model/active':
+        // No model registry in mock mode: the app falls back and says so.
+        return { status: 404, body: err('NOT_FOUND', 'No active model') };
+      case 'POST /api/feedback': {
+        const problem = checkFeedbackRequest(body);
+        if (problem) return { status: 400, body: err('BAD_REQUEST', problem) };
+        const now = Date.now();
+        feedbackTimes = feedbackTimes.filter((t) => now - t < 60_000);
+        if (feedbackTimes.length >= 10) return { status: 429, body: err('RATE_LIMITED', 'Too many feedback reports', 30) };
+        feedbackTimes.push(now);
+        return { status: 200, body: { status: 'ok', id: `fb-${now.toString(36)}` } };
+      }
+      case 'POST /api/auth/register':
+      case 'POST /api/auth/login':
+      case 'POST /api/auth/logout':
+      case 'GET /api/auth/me':
+      case 'PATCH /api/me':
+      case 'GET /api/me/export':
+      case 'DELETE /api/me':
+      case 'GET /api/consents/current':
+      case 'POST /api/clips':
+      case 'GET /api/me/clips':
+        // Accounts need the Lingora server (FastAPI + PostgreSQL). Mock mode never fakes them.
+        return { status: 503, body: err('NOT_AVAILABLE', 'Accounts server is not connected') };
       default:
-        return { status: 404, body: err('BAD_REQUEST', `No mock route for ${route}`) };
+        return { status: 404, body: err('NOT_FOUND', `No mock route for ${route}`) };
     }
   }
 
