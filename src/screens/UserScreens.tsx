@@ -333,13 +333,6 @@ export function ContributeScreen() {
           <a className="btn" href={href('register')}>{t('welcome.register')}</a>
         </div>
       </section>
-      <section className="card stack" style={{ marginTop: 16 }}>
-        <p className="small">{t('contribute.local')}</p>
-        <a className="btn" href={href('console')}>
-          <Icon name="sliders" />
-          {t('nav.console')}
-        </a>
-      </section>
     </div>
   );
 }
@@ -402,10 +395,6 @@ export function HelpScreen() {
             {t('about.privacy')}
           </h2>
           <p>{t('about.privacyBody')}</p>
-          <a className="btn" href={href('console')}>
-            <Icon name="sliders" />
-            {t('nav.console')}
-          </a>
         </section>
       </div>
     </div>
