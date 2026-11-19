@@ -1,0 +1,16 @@
+# Render Blueprint: Dashboard -> New -> Blueprint -> pick this repository.
+services:
+  - type: web
+    name: lingora
+    runtime: docker
+    region: singapore        # next to the Supabase database (ap-southeast-1)
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /api/health
+    envVars:
+      - key: LINGORA_DATABASE_URL
+        sync: false            # you paste the Supabase URL in the Render dashboard (secret)
+      - key: LINGORA_SECRET_KEY
+        generateValue: true    # long random value created by Render
+      - key: LINGORA_ALLOWED_ORIGINS
+        value: ""              # the service's own https URL is added automatically

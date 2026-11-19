@@ -1,4 +1,5 @@
 """Settings from environment variables only. Secrets never live in code (section 7)."""
+import os
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -17,12 +18,18 @@ class Settings(BaseSettings):
     cookie_secure: bool = False  # True in staging/production (HTTPS)
     session_ttl_hours: int = 24 * 14
     speech_enabled: bool = False
+    static_dir: str = ""  # path to the built front end (dist/) to serve at "/"
     login_lock_failures: int = 10
     login_lock_minutes: int = 15
 
     @property
     def origins(self) -> list[str]:
-        return [o.strip().rstrip("/") for o in self.allowed_origins.split(",") if o.strip()]
+        out = [o.strip().rstrip("/") for o in self.allowed_origins.split(",") if o.strip()]
+        # Render sets RENDER_EXTERNAL_URL (https://<service>.onrender.com) on the running service.
+        ext = os.environ.get("RENDER_EXTERNAL_URL", "").strip().rstrip("/")
+        if ext and ext not in out:
+            out.append(ext)
+        return out
 
 
 @lru_cache
