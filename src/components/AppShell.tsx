@@ -1,9 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react';
-import { whichPlan } from '../config';
 import { useI18n, type MessageKey } from '../i18n';
-import { usesMockApi } from '../providers';
 import { href, useRoute, type Route } from '../router';
-import { useRuntime } from '../runtime';
 import { LANGS, type Lang } from '../types';
 import { BrandMark, Icon, type IconName } from './Icon';
 import { InterpreterButton } from './InterpreterButton';
@@ -26,8 +23,6 @@ const BOTTOM: { route: Route; key: MessageKey; icon: IconName }[] = [
 export function AppShell({ children }: { children: ReactNode }) {
   const { t, lang, setLang } = useI18n();
   const route = useRoute();
-  const config = useRuntime((s) => s.config);
-  const plan = whichPlan(config);
   const mainRef = useRef<HTMLElement>(null);
 
   // Move focus to the page on navigation so screen readers announce the new screen.
@@ -59,10 +54,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
         <div className="header-tools">
-          <div className="badges">
-            {usesMockApi(config) && <span className="badge">{t('badge.mock')}</span>}
-            <span className="badge plain">{plan === 'custom' ? t('badge.planCustom') : t('badge.plan', { plan })}</span>
-          </div>
           <label className="sr-only" htmlFor="lang-select">{t('lang.label')}</label>
           <select id="lang-select" className="lang-select" value={lang} onChange={(e) => setLang(e.target.value as Lang)}>
             {LANGS.map((l) => (
