@@ -123,18 +123,18 @@ export function AuthScreen({ mode }: { mode: 'signin' | 'register' }) {
       <form className="card stack" onSubmit={submit} noValidate>
         <div className="field">
           <label htmlFor="auth-email">{t('auth.email')}</label>
-          <input id="auth-email" className="input" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} disabled={mock} />
+          <input id="auth-email" className="input" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
         </div>
         <div className="field">
           <label htmlFor="auth-password">{t('auth.password')}</label>
-          <input id="auth-password" className="input" type="password" autoComplete={register ? 'new-password' : 'current-password'} required minLength={register ? 10 : undefined} value={password} onChange={(e) => setPassword(e.target.value)} disabled={mock} aria-describedby={register ? 'pw-hint' : undefined} />
+          <input id="auth-password" className="input" type="password" autoComplete={register ? 'new-password' : 'current-password'} required minLength={register ? 10 : undefined} value={password} onChange={(e) => setPassword(e.target.value)} aria-describedby={register ? 'pw-hint' : undefined} />
           {register && <p id="pw-hint" className="small muted">{t('auth.passwordHint')}</p>}
         </div>
         {register && (
           <>
             <div className="field">
               <label htmlFor="auth-name">{t('auth.displayName')}</label>
-              <input id="auth-name" className="input" autoComplete="nickname" maxLength={40} value={displayName} onChange={(e) => setDisplayName(e.target.value)} disabled={mock} />
+              <input id="auth-name" className="input" autoComplete="nickname" maxLength={40} value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
             </div>
             {consentText && (
               <div className="consent-text" lang={lang}>
@@ -143,7 +143,7 @@ export function AuthScreen({ mode }: { mode: 'signin' | 'register' }) {
               </div>
             )}
             <label className="toggle">
-              <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} disabled={mock || (!consentText && !mock)} />
+              <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
               {t('auth.consentAccount')}
             </label>
             <p className="small muted">{t('auth.consentNote')}</p>
@@ -155,7 +155,7 @@ export function AuthScreen({ mode }: { mode: 'signin' | 'register' }) {
             <p>{t(error)}</p>
           </div>
         )}
-        <button type="submit" className="btn btn-primary btn-lg" disabled={mock || busy || !email || !password || (register && (!consent || !displayName.trim() || !consentText))}>
+        <button type="submit" className="btn btn-primary btn-lg" disabled={busy || !email || !password || (register && (!consent || !displayName.trim() || (!mock && !consentText)))}>
           {busy && <div className="spinner" aria-hidden="true" />}
           {register ? t('auth.submitRegister') : t('auth.submitSignin')}
         </button>
