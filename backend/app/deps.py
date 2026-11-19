@@ -68,7 +68,7 @@ def csrf_guard(request: Request) -> None:
     if origin and origin.rstrip("/") not in get_settings().origins:
         raise ApiError("FORBIDDEN", "Origin not allowed")
     token = request.cookies.get(SESSION_COOKIE)
-    if token and request.url.path not in ("/api/auth/login", "/api/auth/register"):
+    if token and request.url.path not in ("/api/auth/login", "/api/auth/register", "/api/auth/telegram"):
         if request.headers.get("x-csrf-token") != csrf_token_for(sha256(token)):
             raise ApiError("FORBIDDEN", "Missing or invalid CSRF token")
 

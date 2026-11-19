@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { AppShell } from './components/AppShell';
 import { I18nProvider } from './i18n';
 import { account } from './account';
+import { finishTelegramRedirect } from './components/SocialSignIn';
 import { refreshCatalog } from './providers';
 import { useRoute } from './router';
 import { ConsoleScreen } from './screens/ConsoleScreen';
@@ -38,7 +39,7 @@ export function App() {
   // Signs and phrases come from the API (v1 spec 2.2); the bundled seed covers offline use.
   useEffect(() => {
     void refreshCatalog();
-    void account.refresh();
+    void finishTelegramRedirect().then(() => account.refresh());
   }, []);
   return (
     <I18nProvider>

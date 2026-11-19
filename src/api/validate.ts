@@ -79,8 +79,8 @@ export function isActiveModel(v: unknown): v is { manifest_url: string; version:
   return isObj(v) && isStr(v.manifest_url) && isStr(v.version) && isStr(v.sha256);
 }
 
-export function isMe(v: unknown): v is { id: string; email: string; display_name: string; language: 'uz' | 'ru' | 'en'; role: 'user' | 'admin' } {
-  return isObj(v) && isStr(v.id) && isStr(v.email) && isStr(v.display_name) && isLang(v.language) && (v.role === 'user' || v.role === 'admin');
+export function isMe(v: unknown): v is { id: string; email: string | null; display_name: string; language: 'uz' | 'ru' | 'en'; role: 'user' | 'admin' } {
+  return isObj(v) && isStr(v.id) && (isStr(v.email) || v.email === null) && isStr(v.display_name) && isLang(v.language) && (v.role === 'user' || v.role === 'admin');
 }
 
 export function checkSimplifyRequest(v: unknown): string | null {
@@ -149,4 +149,8 @@ export function isOk(v: unknown): v is { status: 'ok' } {
 
 export function isAnyObject(v: unknown): v is Record<string, unknown> {
   return isObj(v);
+}
+
+export function isProviders(v: unknown): v is { google: boolean; telegram: { bot_id: number } | null } {
+  return isObj(v) && isBool(v.google) && (v.telegram === null || (isObj(v.telegram) && isNum(v.telegram.bot_id)));
 }

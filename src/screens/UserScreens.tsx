@@ -7,6 +7,7 @@ import { Icon } from '../components/Icon';
 import { InterpreterButton } from '../components/InterpreterButton';
 import { Modal } from '../components/Modal';
 import { NamePrompt } from '../components/NamePrompt';
+import { SocialSignIn } from '../components/SocialSignIn';
 import { TtsNotice } from '../components/Notices';
 import { PhraseList } from '../components/PhrasePicker';
 import { catalog, useCatalog, type PhraseRow } from '../data';
@@ -119,7 +120,10 @@ export function AuthScreen({ mode }: { mode: 'signin' | 'register' }) {
   return (
     <div className="narrow">
       <h1>{register ? t('auth.register.title') : t('auth.signin.title')}</h1>
-      {mock && <ServerNotice />}
+      <section className="card">
+        <SocialSignIn />
+      </section>
+      <p className="divider"><span>{t('social.orEmail')}</span></p>
       <form className="card stack" onSubmit={submit} noValidate>
         <div className="field">
           <label htmlFor="auth-email">{t('auth.email')}</label>
@@ -173,7 +177,6 @@ export function ProfileScreen() {
   const { t, lang, setLang } = useI18n();
   const { theme, setTheme } = useTheme();
   const conv = useConversation();
-  const mock = useRuntime((s) => usesMockApi(s.config));
   const me = useAccount();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [msg, setMsg] = useState<MessageKey | null>(null);
@@ -198,7 +201,8 @@ export function ProfileScreen() {
         <section className="card stack">
           <h2>{t('profile.account')}</h2>
           <p>
-            <strong>{me.display_name}</strong> · {me.email}
+            <strong>{me.display_name}</strong>
+            {me.email && <> · {me.email}</>}
             {me.role === 'admin' && <span className="badge" style={{ marginLeft: 8 }}>admin</span>}
           </p>
           <div className="btn-row">
@@ -239,9 +243,15 @@ export function ProfileScreen() {
   return (
     <div className="narrow">
       <h1>{t('profile.title')}</h1>
-      <section className="card stack">
-        <h2>{t('profile.session')}</h2>
-        <p className="muted">{t('profile.guest')}</p>
+      <section className="card stack" aria-labelledby="signin-h">
+        <h2 id="signin-h">{t('profile.signInTitle')}</h2>
+        <p className="muted">{t('profile.signInLead')}</p>
+        <SocialSignIn />
+        <a className="link-btn" href={href('signin')}>{t('social.email')}</a>
+      </section>
+
+      <section className="card stack" style={{ marginTop: 16 }} aria-labelledby="session-h">
+        <h2 id="session-h">{t('profile.session')}</h2>
         {conv.name ? (
           <p>
             <strong>{t('profile.name')}:</strong> {conv.name}{' '}
@@ -250,47 +260,36 @@ export function ProfileScreen() {
         ) : (
           <NamePrompt />
         )}
-        <div className="field">
-          <label htmlFor="profile-lang">{t('lang.label')}</label>
-          <select id="profile-lang" className="input" value={lang} onChange={(e) => setLang(e.target.value as Lang)}>
-            {LANGS.map((l) => (
-              <option key={l} value={l} lang={l}>{t(`lang.${l}` as MessageKey)}</option>
-            ))}
-          </select>
-        </div>
-        <fieldset className="field" style={{ border: 0, padding: 0, margin: 0 }}>
-          <legend style={{ fontWeight: 700, marginBottom: 6 }}>{t('profile.theme')}</legend>
-          <div className="btn-row" role="group">
-            {(['system', 'light', 'dark'] as Theme[]).map((th) => (
-              <button key={th} type="button" className={`btn ${theme === th ? 'btn-primary' : ''}`} aria-pressed={theme === th} onClick={() => setTheme(th)}>
-                {t(`theme.${th}` as MessageKey)}
-              </button>
-            ))}
+        <div className="settings-row">
+          <div className="field">
+            <label htmlFor="profile-lang">{t('lang.label')}</label>
+            <select id="profile-lang" className="input" value={lang} onChange={(e) => setLang(e.target.value as Lang)}>
+              {LANGS.map((l) => (
+                <option key={l} value={l} lang={l}>{t(`lang.${l}` as MessageKey)}</option>
+              ))}
+            </select>
           </div>
-        </fieldset>
-      </section>
-      <section className="card stack" style={{ marginTop: 16 }}>
-        <h2>{t('profile.account')}</h2>
-        {mock && <ServerNotice />}
-        <p className="muted">{t('profile.accountOnly')}</p>
-        <ul className="plain-list">
-          <li><Icon name="check" /> {t('profile.consents')}</li>
-          <li><Icon name="hand" /> {t('profile.clips')}</li>
-          <li><Icon name="download" /> {t('profile.export')}</li>
-          <li><Icon name="x" /> {t('profile.delete')}</li>
-        </ul>
-        <div className="btn-row">
-          <a className="btn btn-primary" href={href('signin')}>{t('welcome.signin')}</a>
-          <a className="btn" href={href('register')}>{t('welcome.register')}</a>
+          <fieldset className="field" style={{ border: 0, padding: 0, margin: 0 }}>
+            <legend style={{ fontWeight: 700, marginBottom: 6 }}>{t('profile.theme')}</legend>
+            <div className="segmented" role="group">
+              {(['system', 'light', 'dark'] as Theme[]).map((th) => (
+                <button key={th} type="button" className={theme === th ? 'on' : ''} aria-pressed={theme === th} onClick={() => setTheme(th)}>
+                  {t(`theme.${th}` as MessageKey)}
+                </button>
+              ))}
+            </div>
+          </fieldset>
         </div>
-        <a className="row-link" href={href('contribute')}>
-          <Icon name="hand" />
-          <span>
-            <strong>{t('contribute.title')}</strong>
-            <span className="muted small">{t('profile.contributeHint')}</span>
-          </span>
-        </a>
+        <p className="small muted">{t('profile.guest')}</p>
       </section>
+
+      <a className="card row-link" style={{ marginTop: 16 }} href={href('contribute')}>
+        <Icon name="hand" />
+        <span>
+          <strong>{t('contribute.title')}</strong>
+          <span className="muted small">{t('profile.contributeHint')}</span>
+        </span>
+      </a>
     </div>
   );
 }

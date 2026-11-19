@@ -497,3 +497,20 @@ code { font-family: ui-monospace, Consolas, monospace; font-size: .9em; backgrou
 .chat-end { scroll-margin-bottom: calc(var(--nav-h) + 120px); }
 @media (min-width: 1024px) { .chat-end { scroll-margin-bottom: 120px; } }
 .msg-simplified.msg-latest .msg-text { color: var(--listener); }
+
+/* ---------- Social sign-in + profile ---------- */
+.social-btn { width: 100%; justify-content: center; background: var(--surface); border: 1px solid var(--line-strong); font-weight: 700; }
+.social-btn .ico { width: 22px; height: 22px; }
+.social-btn:hover:not(:disabled) { border-color: var(--ink); }
+.consent-toggle { align-items: flex-start; font-weight: 500; }
+.consent-toggle input { margin-top: 3px; }
+.consent-toggle.attention { outline: 2px solid var(--warn-line); outline-offset: 4px; border-radius: var(--radius-sm); }
+.social .small .ico { width: 16px; height: 16px; vertical-align: -3px; }
+.divider { display: flex; align-items: center; gap: var(--s3); color: var(--muted); margin: var(--s4) 0; font-size: var(--t16); }
+.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.settings-row { display: grid; gap: var(--s3); }
+@media (min-width: 560px) { .settings-row { grid-template-columns: 1fr auto; align-items: end; } }
+.segmented { display: inline-flex; padding: 4px; gap: 4px; border-radius: var(--radius); background: var(--surface-2); border: 1px solid var(--line); }
+.segmented button { min-height: 44px; padding: 0 14px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--muted); font: inherit; font-size: var(--t16); font-weight: 700; cursor: pointer; }
+.segmented button.on { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+a.card.row-link { display: flex; border-top: 1px solid var(--line); padding: var(--s4); margin-top: 0; }

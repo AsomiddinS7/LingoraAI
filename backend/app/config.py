@@ -19,6 +19,15 @@ class Settings(BaseSettings):
     session_ttl_hours: int = 24 * 14
     speech_enabled: bool = False
     static_dir: str = ""  # path to the built front end (dist/) to serve at "/"
+    # Social sign-in (all optional; buttons appear only when configured).
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    telegram_bot_token: str = ""  # from @BotFather; its numeric prefix is the public bot id
+    public_base_url: str = ""  # https://your-domain; defaults to RENDER_EXTERNAL_URL
+
+    @property
+    def base_url(self) -> str:
+        return (self.public_base_url or os.environ.get("RENDER_EXTERNAL_URL", "")).strip().rstrip("/")
     login_lock_failures: int = 10
     login_lock_minutes: int = 15
 

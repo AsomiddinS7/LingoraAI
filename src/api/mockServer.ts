@@ -156,6 +156,9 @@ export function createMockServer(opts: MockServerOptions) {
         feedbackTimes.push(now);
         return { status: 200, body: { status: 'ok', id: `fb-${now.toString(36)}` } };
       }
+      case 'GET /api/auth/providers':
+        return { status: 200, body: { google: false, telegram: null } };
+      case 'POST /api/auth/telegram':
       case 'POST /api/auth/register':
       case 'POST /api/auth/login':
       case 'POST /api/auth/logout':

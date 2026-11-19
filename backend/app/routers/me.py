@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session as Db
 from ..db import get_db
 from ..deps import SESSION_COOKIE, audit, require
 from ..errors import ApiError
-from ..models import Clip, Consent, ConsentText, Feedback, Session, Signer, User, UserPhrase
+from ..models import AuthIdentity, Clip, Consent, ConsentText, Feedback, Session, Signer, User, UserPhrase
 from ..schemas import ConsentIn, MePatch
 from .auth import me_body
 
@@ -42,6 +42,7 @@ def export_me(request: Request, db: Db = Depends(get_db), user: User = Depends(r
     audit(db, request, user, "user.export", "user", user.id)
     return {
         "user": {k: v for k, v in me_body(user, None).items()} | {"created_at": user.created_at.isoformat()},
+        "sign_in_methods": [i.provider for i in db.execute(select(AuthIdentity).where(AuthIdentity.user_id == user.id)).scalars()] + (["email"] if user.password_hash else []),
         "consents": [
             {"type": t.type, "version": t.version, "language": t.language, "accepted_at": c.accepted_at.isoformat(), "withdrawn_at": c.withdrawn_at.isoformat() if c.withdrawn_at else None}
             for c, t in consents

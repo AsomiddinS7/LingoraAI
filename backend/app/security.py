@@ -40,7 +40,9 @@ def hash_password(pw: str) -> str:
     return _ph.hash(pw)
 
 
-def verify_password(stored: str, pw: str) -> bool:
+def verify_password(stored: str | None, pw: str) -> bool:
+    if not stored:
+        return False  # social-only account: no password sign-in
     try:
         return _ph.verify(stored, pw)
     except (VerifyMismatchError, VerificationError, InvalidHashError):

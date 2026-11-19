@@ -14,3 +14,9 @@ services:
         generateValue: true    # long random value created by Render
       - key: LINGORA_ALLOWED_ORIGINS
         value: ""              # the service's own https URL is added automatically
+      - key: LINGORA_GOOGLE_CLIENT_ID
+        sync: false            # optional: Google Cloud -> OAuth client (Web)
+      - key: LINGORA_GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: LINGORA_TELEGRAM_BOT_TOKEN
+        sync: false            # optional: @BotFather token; set the bot domain with /setdomain

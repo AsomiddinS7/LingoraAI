@@ -146,7 +146,7 @@ export interface FeedbackRequest {
 
 export interface MeResponse {
   id: string;
-  email: string;
+  email: string | null;
   display_name: string;
   language: Lang;
   role: 'user' | 'admin';

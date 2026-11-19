@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from . import errors
 from .config import get_settings
 from .deps import csrf_guard
-from .routers import admin, auth, me, public
+from .routers import admin, auth, me, public, social
 
 mimetypes.add_type("application/wasm", ".wasm")
 mimetypes.add_type("application/manifest+json", ".webmanifest")
@@ -55,7 +55,7 @@ def create_app() -> FastAPI:
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         return response
 
-    for r in (auth.router, me.router, public.router, admin.router):
+    for r in (auth.router, social.router, me.router, public.router, admin.router):
         app.include_router(r)
 
     # Serve the built front end (dist/) when LINGORA_STATIC_DIR points at it (production image).

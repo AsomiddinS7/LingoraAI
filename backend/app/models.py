@@ -59,8 +59,9 @@ LANGS = "('uz','ru','en')"
 class User(Base):
     __tablename__ = "users"
     id: Mapped[uuid.UUID] = _id()
-    email: Mapped[str] = mapped_column(String(254), unique=True, nullable=False)
-    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    # Both optional: Telegram accounts have no email, social accounts have no password.
+    email: Mapped[str | None] = mapped_column(String(254), unique=True)
+    password_hash: Mapped[str | None] = mapped_column(String(255))
     display_name: Mapped[str] = mapped_column(String(40), nullable=False)
     language: Mapped[str] = mapped_column(String(2), nullable=False, default="uz")
     role: Mapped[str] = mapped_column(String(10), nullable=False, default="user")
@@ -75,6 +76,22 @@ class User(Base):
         CheckConstraint("email = lower(email)", name="email_lowercase"),
         CheckConstraint(f"language in {LANGS}", name="language"),
         CheckConstraint("role in ('user','admin')", name="role"),
+    )
+
+
+class AuthIdentity(Base):
+    """A sign-in through Google or Telegram, linked to a user. subject = Google 'sub' / Telegram user id."""
+
+    __tablename__ = "auth_identities"
+    id: Mapped[uuid.UUID] = _id()
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    provider: Mapped[str] = mapped_column(String(20), nullable=False)
+    subject: Mapped[str] = mapped_column(String(255), nullable=False)
+    email: Mapped[str | None] = mapped_column(String(254))
+    created_at: Mapped[datetime] = _created()
+    __table_args__ = (
+        UniqueConstraint("provider", "subject", name="uq_auth_identities_provider_subject"),
+        CheckConstraint("provider in ('google','telegram')", name="provider"),
     )
 
 

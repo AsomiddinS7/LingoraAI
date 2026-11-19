@@ -43,6 +43,9 @@ export const account = {
   async register(body: Parameters<typeof backend.register>[0]) {
     set((await backend.register(body)) as Me);
   },
+  async telegram(body: Record<string, unknown>) {
+    set((await backend.telegram(body)) as Me);
+  },
   async logout() {
     try {
       await backend.logout();

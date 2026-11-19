@@ -55,3 +55,22 @@ C:/Users/abdul/lingora-local/pg/bin/pg_ctl -D C:/Users/abdul/lingora-local/pgdat
 ## Deployment note: same site
 
 Session cookies are `SameSite=Lax`, so the site and the API must be on the **same site**. For example, serve the built front end and `/api` from one host, or use `app.example.uz` with `api.example.uz`. A GitHub Pages site (`*.github.io`) cannot send these cookies to an API on another domain. Choosing the API host is the next decision.
+
+## Sign in with Google and Telegram (optional)
+
+Each button appears only when it is configured; without it, email sign-in still works.
+Both are full-page redirects, so no third-party script runs inside Lingora.
+
+**Google** uses OpenID Connect with PKCE. The ID token is fetched from Google's token endpoint, and `iss`, `aud`, `exp`, `nonce` and `email_verified` are checked.
+1. Google Cloud Console: **APIs & Services → OAuth consent screen**. Choose External, set the app name to Lingora and the scopes to `openid email profile`.
+2. Go to **Credentials → Create credentials → OAuth client ID → Web application**.
+   - Authorised JavaScript origin: `https://<your-domain>`
+   - Authorised redirect URI: `https://<your-domain>/api/auth/google/callback`
+3. Set `LINGORA_GOOGLE_CLIENT_ID` and `LINGORA_GOOGLE_CLIENT_SECRET` as secrets on the server.
+
+**Telegram** uses Telegram Login. The payload is verified with HMAC-SHA256, using SHA256 of the bot token as the key, and rejected if it is older than 24 hours.
+1. In Telegram, ask @BotFather for `/newbot` and keep the token secret.
+2. Send `/setdomain` to @BotFather and enter `<your-domain>`. It must be the same domain as the site.
+3. Set `LINGORA_TELEGRAM_BOT_TOKEN` as a secret on the server.
+
+**Accounts:** the first sign-in with a provider creates an account only when the account consent box is ticked. A Google email that matches an existing account is linked to it. Telegram accounts have no email.
