@@ -223,19 +223,26 @@ export function SignWindowPanel() {
         </div>
       )}
       {signsSoFar}
-      <button
-        type="button"
-        className="btn btn-primary sign-now"
-        disabled={cam.status !== 'live' || busyConv}
-        onClick={sw.start}
-        aria-describedby={cam.status !== 'live' ? 'sign-now-hint' : undefined}
-      >
-        <Icon name="hand" />
-        {t('win.signNow')}
-      </button>
+      <div className="action-row">
+        <button
+          type="button"
+          className="btn btn-primary sign-now"
+          disabled={cam.status !== 'live' || busyConv}
+          onClick={sw.start}
+          aria-describedby={cam.status !== 'live' ? 'sign-now-hint' : undefined}
+        >
+          <Icon name="hand" />
+          {t('win.signNow')}
+        </button>
+        <button type="button" className="btn btn-lg phrases-btn" disabled={busyConv} onClick={() => setPicking(true)}>
+          <Icon name="book" />
+          {t('nav.phrasebook')}
+        </button>
+      </div>
       {cam.status !== 'live' && (
         <p id="sign-now-hint" className="small muted">{t('win.cameraFirst')}</p>
       )}
+      <PhrasePickerModal open={picking} onClose={() => setPicking(false)} />
     </div>
   );
 }

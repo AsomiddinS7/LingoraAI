@@ -19,7 +19,9 @@ export function useTheme() {
     const t = readPref('theme');
     return t === 'light' || t === 'dark' ? t : 'system';
   });
-  useEffect(() => apply(theme), [theme]);
+  useEffect(() => {
+    apply(theme);
+  }, [theme]);
   const setTheme = useCallback((t: Theme) => {
     writePref('theme', t);
     set(t);

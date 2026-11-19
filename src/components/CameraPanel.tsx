@@ -15,11 +15,13 @@ export function CameraPanel() {
   const cam = useCamera();
   const sw = useSignWindow();
   const videoRef = useRef<HTMLVideoElement>(null);
-  const perf = useMetrics();
+  useMetrics();
   const recognizer = useRuntime((s) => s.config.recognizer);
 
   // Load the recognizer lazily when a camera screen is shown (first load stays small).
-  useEffect(() => sw.ensure(), [sw.ensure]);
+  useEffect(() => {
+    sw.ensure();
+  }, [sw.ensure]);
 
   // Auto-start only when permission is already granted, so the browser prompt is never a surprise.
   useEffect(() => {
@@ -80,10 +82,10 @@ export function CameraPanel() {
           <>
             {recognizer === 'static' && phase !== 'loading' && phase !== 'unavailable' && <HandOverlay />}
             <div className="camera-overlay top">
-              <span className="pill">
-                <span className="dot" aria-hidden="true" />
-                {perf.cameraFps === null ? t('camera.region') : t('camera.fps', { fps: Math.round(perf.cameraFps) })}
-                {recognizer === 'mock' && ` · ${t('perf.mockShort')}`}
+              <span className="pill" title={t('camera.privacy')}>
+                <Icon name="lock" />
+                {t('camera.onDevice')}
+                {recognizer === 'mock' && ` · ${t('camera.demo')}`}
               </span>
               {(phase === 'countdown' || phase === 'recording') && (
                 <span className={`pill phase-pill ${phase}`}>{phase === 'recording' ? t('win.recShort') : t('win.countdownShort')}</span>
@@ -95,19 +97,12 @@ export function CameraPanel() {
                 <span>{glossFor(sw.win.selected!, lang)}</span>
               </div>
             )}
-            <div className="camera-overlay bottom">
-              <button type="button" className="btn" onClick={cam.stop}>
-                <Icon name="stop" />
-                {t('camera.stop')}
-              </button>
-            </div>
+            <button type="button" className="icon-btn cam-off" onClick={cam.stop} aria-label={t('camera.stop')} title={t('camera.stop')}>
+              <Icon name="x" />
+            </button>
           </>
         )}
       </div>
-      <p className="camera-privacy muted">
-        <Icon name="lock" />
-        {t('camera.privacy')}
-      </p>
     </section>
   );
 }

@@ -21,6 +21,7 @@ const PATHS: Record<string, string> = {
   edit: 'M4 20h4L19 9l-4-4L4 16v4Zm9-13 4 4',
   sparkle: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z',
   download: 'M12 4v11m0 0-4-4m4 4 4-4M5 20h14',
+  send: 'M4 12 20 4l-6 16-2.5-6.5L4 12Zm7.5 1.5L20 4',
   refresh: 'M20 11a8 8 0 0 0-14.3-4.9L4 8m0-4v4h4m-4 5a8 8 0 0 0 14.3 4.9L20 16m0 4v-4h-4',
 };
 

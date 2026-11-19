@@ -377,5 +377,18 @@
   "auth.consentVersion": "Hisob qaydnomasi roziligi, {v}-versiya",
   "profile.signOut": "Chiqish",
   "profile.deleteBody": "Hisobingiz, roziliklaringiz va yozgan kliplaringiz oʻchiriladi. Faol modelni oʻqitishda allaqachon ishlatilgan kliplar hisobingizsiz saqlanadi va belgilanadi. Buni ortga qaytarib boʻlmaydi.",
-  "profile.deleteConfirm": "Ha, hammasini oʻchirish"
+  "profile.deleteConfirm": "Ha, hammasini oʻchirish",
+  "interpreter.short": "Tarjimon",
+  "camera.onDevice": "Qurilmada",
+  "camera.demo": "Namoyish",
+  "conv.emptyTitle": "Suhbatni boshlang",
+  "conv.empty1": "Ishora qiluvchi: «Ishora qilish» yoki «Iboralar» ni bosing.",
+  "conv.empty2": "Suhbatdosh: javobingizni pastda yozing.",
+  "conv.replyLabel": "Javob (suhbatdosh)",
+  "conv.replyPlaceholder": "Javob yozing…",
+  "conv.send": "Yuborish",
+  "conv.showBig": "Katta qilish",
+  "conv.flip": "Aylantirish",
+  "phrases.typeOwn": "Oʻzingiz yozing va oʻqittiring…",
+  "profile.contributeHint": "Aniqlashni yaxshilash uchun ishoralarni yozing (hisob kerak)"
 }

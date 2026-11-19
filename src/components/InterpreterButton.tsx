@@ -14,9 +14,9 @@ export function InterpreterButton({ compact = false }: { compact?: boolean }) {
 
   return (
     <>
-      <button type="button" className="btn interp-btn" onClick={() => setOpen(true)} aria-haspopup="dialog">
+      <button type="button" className="btn interp-btn" onClick={() => setOpen(true)} aria-haspopup="dialog" aria-label={t('interpreter.button')} title={t('interpreter.button')}>
         <Icon name="person" />
-        <span className={compact ? 'interp-label' : undefined}>{t('interpreter.button')}</span>
+        <span aria-hidden="true">{compact ? t('interpreter.short') : t('interpreter.button')}</span>
       </button>
       <Modal
         open={open}

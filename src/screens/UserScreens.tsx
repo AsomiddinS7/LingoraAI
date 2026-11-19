@@ -211,6 +211,13 @@ export function ProfileScreen() {
             </button>
           </div>
           {msg && <p role="alert" className="small">{t(msg)}</p>}
+        <a className="row-link" href={href('contribute')}>
+          <Icon name="hand" />
+          <span>
+            <strong>{t('contribute.title')}</strong>
+            <span className="muted small">{t('profile.contributeHint')}</span>
+          </span>
+        </a>
         </section>
         <section className="card stack" style={{ marginTop: 16, borderColor: 'var(--danger)' }}>
           <h2 style={{ color: 'var(--danger)' }}>{t('profile.delete')}</h2>
@@ -276,6 +283,13 @@ export function ProfileScreen() {
           <a className="btn btn-primary" href={href('signin')}>{t('welcome.signin')}</a>
           <a className="btn" href={href('register')}>{t('welcome.register')}</a>
         </div>
+        <a className="row-link" href={href('contribute')}>
+          <Icon name="hand" />
+          <span>
+            <strong>{t('contribute.title')}</strong>
+            <span className="muted small">{t('profile.contributeHint')}</span>
+          </span>
+        </a>
       </section>
     </div>
   );
@@ -286,13 +300,28 @@ export function PhrasebookScreen() {
   const { t, lang } = useI18n();
   const conv = useConversation();
   const [shown, setShown] = useState<PhraseRow | null>(null);
+  const [own, setOwn] = useState('');
   const busy = ['COMPOSING', 'SPEAKING', 'TRANSCRIBING', 'SIMPLIFYING'].includes(conv.state.phase);
   return (
-    <div>
-      <div className="screen-title">
-        <h1>{t('phrases.title')}</h1>
-        <span className="badge">{t('common.placeholder')}</span>
-      </div>
+    <div className="narrow">
+      <h1>{t('phrases.title')}</h1>
+      <form
+        className="own-text"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (own.trim() && !busy) {
+            conv.speakDirect(own);
+            setShown({ id: 'own', slug: 'own', texts: { en: own, ru: own, uz: own } });
+            setOwn('');
+          }
+        }}
+      >
+        <label className="sr-only" htmlFor="own-text">{t('phrases.typeOwn')}</label>
+        <input id="own-text" className="composer-input" lang={lang} value={own} placeholder={t('phrases.typeOwn')} onChange={(e) => setOwn(e.target.value)} />
+        <button type="submit" className="icon-btn send" disabled={!own.trim() || busy} aria-label={t('speak.readAloud')} title={t('speak.readAloud')}>
+          <Icon name="speaker" />
+        </button>
+      </form>
       <p className="muted">{t('phrases.hint')}</p>
       <TtsNotice />
       <PhraseList
@@ -365,16 +394,11 @@ export function HelpScreen() {
           <InterpreterButton />
         </section>
         <section className="card span-2" aria-labelledby="signs">
-          <div className="card-title">
-            <h2 id="signs">{t('about.signs')}</h2>
-            <span className="badge">{t('common.placeholder')}</span>
-          </div>
+          <h2 id="signs">{t('about.signs')}</h2>
           <ul className="sign-list">
             {catalog.signs().map((s) => (
               <li key={s.id}>
-                <div lang={lang} style={{ fontWeight: 700 }}>{s.labels[lang]}</div>
-                <code>{s.slug}</code>
-                <div className="small muted">{t('help.replayNA')}</div>
+                <span lang={lang}>{s.labels[lang]}</span>
               </li>
             ))}
           </ul>

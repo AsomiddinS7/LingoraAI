@@ -376,5 +376,18 @@
   "auth.consentVersion": "Account consent, version {v}",
   "profile.signOut": "Sign out",
   "profile.deleteBody": "This deletes your account, consents and recorded clips. Clips already used to train an active model are kept without your account and flagged. This cannot be undone.",
-  "profile.deleteConfirm": "Yes, delete everything"
+  "profile.deleteConfirm": "Yes, delete everything",
+  "interpreter.short": "Interpreter",
+  "camera.onDevice": "On device",
+  "camera.demo": "Demo",
+  "conv.emptyTitle": "Start the conversation",
+  "conv.empty1": "Signer: press Sign now, or tap Phrases.",
+  "conv.empty2": "Hearing person: type your reply below.",
+  "conv.replyLabel": "Reply (hearing person)",
+  "conv.replyPlaceholder": "Type a reply…",
+  "conv.send": "Send",
+  "conv.showBig": "Show big",
+  "conv.flip": "Flip",
+  "phrases.typeOwn": "Type your own and read it aloud…",
+  "profile.contributeHint": "Record signs to improve recognition (account needed)"
 }
