@@ -64,6 +64,8 @@ def get_settings() -> Settings:
     if s.env in ("staging", "production"):
         if s.secret_key == "dev-only-change-me" or len(s.secret_key) < 32:
             raise RuntimeError("LINGORA_SECRET_KEY must be set to a long random value outside dev")
+        if "@127.0.0.1" in s.database_url or "@localhost" in s.database_url:
+            raise RuntimeError("LINGORA_DATABASE_URL is not set on the server (still the local dev default)")
         if not s.cookie_secure:
             raise RuntimeError("LINGORA_COOKIE_SECURE must be true outside dev (HTTPS only)")
     return s
