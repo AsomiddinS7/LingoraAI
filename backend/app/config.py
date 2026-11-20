@@ -36,6 +36,12 @@ class Settings(BaseSettings):
     db_port: int = 5432
     db_name: str = "postgres"
 
+    @field_validator("db_password", "db_host", "db_user", "db_name", "secret_key", "allowed_origins", mode="before")
+    @classmethod
+    def _strip(cls, v: object) -> object:
+        # Dashboard text boxes easily add a trailing newline or spaces.
+        return v.strip() if isinstance(v, str) else v
+
     @field_validator("database_url", mode="before")
     @classmethod
     def _normalise_db_url(cls, v: object) -> object:
