@@ -38,6 +38,8 @@ class Settings(BaseSettings):
         for prefix in ("postgres://", "postgresql://"):
             if v.startswith(prefix):
                 v = "postgresql+psycopg://" + v[len(prefix):]
+        if not v.startswith("postgresql+psycopg://") or "\n" in v:
+            raise ValueError("LINGORA_DATABASE_URL must be one line starting with postgresql:// (wrong text pasted?)")
         return v
 
     @property
