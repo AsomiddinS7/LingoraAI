@@ -8,8 +8,13 @@ services:
     autoDeploy: true
     healthCheckPath: /api/health
     envVars:
-      - key: LINGORA_DATABASE_URL
-        sync: false            # you paste the Supabase URL in the Render dashboard (secret)
+      # Supabase Session pooler. Only the password is secret: type it in the Render dashboard.
+      - key: LINGORA_DB_HOST
+        value: aws-0-ap-southeast-1.pooler.supabase.com
+      - key: LINGORA_DB_USER
+        value: postgres.ziyednpoiwrmcpastiib
+      - key: LINGORA_DB_PASSWORD
+        sync: false
       - key: LINGORA_SECRET_KEY
         generateValue: true    # long random value created by Render
       - key: LINGORA_ALLOWED_ORIGINS

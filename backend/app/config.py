@@ -2,7 +2,9 @@
 import os
 from functools import lru_cache
 
-from pydantic import field_validator
+from urllib.parse import quote
+
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -26,6 +28,14 @@ class Settings(BaseSettings):
     telegram_bot_token: str = ""  # from @BotFather; its numeric prefix is the public bot id
     public_base_url: str = ""  # https://your-domain; defaults to RENDER_EXTERNAL_URL
 
+    # Alternative to a full URL: only the password is secret; host/user come from render.yaml.
+    # When LINGORA_DB_PASSWORD is set it wins over LINGORA_DATABASE_URL.
+    db_password: str = ""
+    db_host: str = ""
+    db_user: str = ""
+    db_port: int = 5432
+    db_name: str = "postgres"
+
     @field_validator("database_url", mode="before")
     @classmethod
     def _normalise_db_url(cls, v: object) -> object:
@@ -33,14 +43,27 @@ class Settings(BaseSettings):
         if not isinstance(v, str):
             return v
         v = v.strip().strip('"').strip("'")
-        if not v:
-            raise ValueError("LINGORA_DATABASE_URL is empty: paste the Supabase Session pooler URI")
         for prefix in ("postgres://", "postgresql://"):
             if v.startswith(prefix):
                 v = "postgresql+psycopg://" + v[len(prefix):]
+        return v
+
+    @model_validator(mode="after")
+    def _build_db_url(self) -> "Settings":
+        pw = self.db_password.strip()
+        if pw:
+            if not (self.db_host and self.db_user):
+                raise ValueError("LINGORA_DB_PASSWORD is set but LINGORA_DB_HOST / LINGORA_DB_USER are missing")
+            self.database_url = (
+                f"postgresql+psycopg://{quote(self.db_user, safe='')}:{quote(pw, safe='')}"
+                f"@{self.db_host}:{self.db_port}/{self.db_name}?sslmode=require"
+            )
+        v = self.database_url
         if not v.startswith("postgresql+psycopg://") or "\n" in v:
             raise ValueError("LINGORA_DATABASE_URL must be one line starting with postgresql:// (wrong text pasted?)")
-        return v
+        if "@" not in v or v.split("@", 1)[1].startswith(("/", ":")):
+            raise ValueError("LINGORA_DATABASE_URL has no host after '@' (incomplete text pasted?)")
+        return self
 
     @property
     def base_url(self) -> str:
