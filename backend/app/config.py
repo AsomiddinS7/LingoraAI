@@ -2,6 +2,7 @@
 import os
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -24,6 +25,20 @@ class Settings(BaseSettings):
     google_client_secret: str = ""
     telegram_bot_token: str = ""  # from @BotFather; its numeric prefix is the public bot id
     public_base_url: str = ""  # https://your-domain; defaults to RENDER_EXTERNAL_URL
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def _normalise_db_url(cls, v: object) -> object:
+        # Pasted values often carry spaces/quotes or use the postgres:// scheme Supabase shows.
+        if not isinstance(v, str):
+            return v
+        v = v.strip().strip('"').strip("'")
+        if not v:
+            raise ValueError("LINGORA_DATABASE_URL is empty: paste the Supabase Session pooler URI")
+        for prefix in ("postgres://", "postgresql://"):
+            if v.startswith(prefix):
+                v = "postgresql+psycopg://" + v[len(prefix):]
+        return v
 
     @property
     def base_url(self) -> str:
