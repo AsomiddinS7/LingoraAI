@@ -8,6 +8,7 @@ import { OfflineBanner } from './Notices';
 
 const TOP: { route: Route; key: MessageKey }[] = [
   { route: 'conversation', key: 'nav.conversation' },
+  { route: 'presentation', key: 'presentation.nav' },
   { route: 'phrasebook', key: 'nav.phrasebook' },
   { route: 'help', key: 'nav.help' },
   { route: 'profile', key: 'nav.profile' },

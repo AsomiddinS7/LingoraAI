@@ -12,6 +12,7 @@ import { useI18n, type MessageKey } from '../i18n';
 import { backend, usesMockApi } from '../providers';
 import { metrics, useMetrics } from '../pipeline/metrics';
 import { TrainingCard } from '../components/TrainingCard';
+import { VideoExamples } from '../components/VideoExamples';
 import { delegate } from '../ml/handTracking';
 import { evaluate } from '../ml/knn';
 import { sampleStore, useSampleVersion } from '../ml/samples';
@@ -22,10 +23,10 @@ import { useCamera } from '../state/CameraContext';
 import type { FaceHint, HealthResponse, UsageResponse } from '../types';
 
 const SELECTS: { key: keyof AppConfig; options: string[] }[] = [
-  { key: 'sttProvider', options: ['typed-input', 'browser-speech', 'azure-speech'] },
+  { key: 'sttProvider', options: ['typed-input', 'browser-speech', 'local-stt', 'local-whisper', 'azure-speech'] },
   { key: 'ttsProvider', options: ['browser-synthesis', 'azure-speech'] },
-  { key: 'llmProvider', options: ['azure-openai', 'mock'] },
-  { key: 'recognizer', options: ['static', 'mock', 'sequence'] },
+  { key: 'llmProvider', options: ['local', 'azure-openai', 'mock'] },
+  { key: 'recognizer', options: ['motion', 'static', 'mock', 'sequence'] },
   { key: 'dataCollection', options: ['consenting-teammates', 'tutor-confirmed'] },
 ];
 
@@ -38,6 +39,7 @@ export function ConsoleScreen() {
       </div>
       <p className="muted">{t('console.note')}</p>
       <div className="console-grid">
+        <VideoExamples />
         <PerformanceCard />
         <SwitchesCard />
         <FixtureCard />
@@ -56,6 +58,7 @@ function PerformanceCard() {
   const m = useMetrics();
   const recognizer = useRuntime((st) => st.config.recognizer);
   const mock = recognizer === 'mock';
+  const tracksLandmarks = recognizer === 'static' || recognizer === 'motion';
   useSampleVersion();
   const ms = (x: number | null) => (x === null ? '—' : `${Math.round(x)} ms`);
   const num = (x: number | null, digits = 1) => (x === null ? '—' : x.toFixed(digits));
@@ -80,12 +83,12 @@ function PerformanceCard() {
       </div>
       <div className="kpis">
         <Kpi k={t('perf.cameraFps')} v={num(m.cameraFps)} />
-        <Kpi k={t('perf.processedFps')} v={recognizer === 'static' ? num(m.processedFps) : '—'} />
-        <Kpi k={t('perf.processMs')} v={recognizer === 'static' ? ms(m.avgProcessMs) : '—'} />
-        <Kpi k={t('perf.skipped')} v={recognizer === 'static' ? num(m.skippedPerSec) : '—'} />
+        <Kpi k={t('perf.processedFps')} v={tracksLandmarks ? num(m.processedFps) : '—'} />
+        <Kpi k={t('perf.processMs')} v={tracksLandmarks ? ms(m.avgProcessMs) : '—'} />
+        <Kpi k={t('perf.skipped')} v={tracksLandmarks ? num(m.skippedPerSec) : '—'} />
         <Kpi k={t('perf.windowToResult')} v={ms(m.lastProcessingMs)} />
         <Kpi k={t('perf.latency')} v={m.avgLatencyMs === null ? '—' : `${m.avgLatencyMs.toFixed(1)} ms`} />
-        {recognizer === 'static' && <Kpi k={t('perf.modelLoad')} v={ms(m.modelLoadMs)} />}
+        {tracksLandmarks && <Kpi k={t('perf.modelLoad')} v={ms(m.modelLoadMs)} />}
       </div>
       {mock && <p className="small muted" style={{ marginTop: 8 }}>{t('perf.noFrames')}</p>}
       <p className="small muted">{t('perf.target')}</p>
@@ -376,6 +379,7 @@ function EvaluationCard() {
 
 function DataOrTraining() {
   const classifier = useRuntime((s) => s.config.recognizer);
+  if (classifier === 'motion') return null;
   return classifier === 'static' ? <TrainingCard /> : <DataCollectionCard />;
 }
 

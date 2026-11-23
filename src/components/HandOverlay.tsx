@@ -17,10 +17,10 @@ const BONES: [number, number][] = [
 export function HandOverlay() {
   const { t } = useI18n();
   const ref = useRef<HTMLCanvasElement>(null);
-  const [hand, setHand] = useState(false);
+  const [hand, setHand] = useState(0);
 
   useEffect(() => {
-    let had = false;
+    let had = 0;
     const draw = (f: HandFrame | null) => {
       const c = ref.current;
       if (!c) return;
@@ -33,9 +33,15 @@ export function HandOverlay() {
       const g = c.getContext('2d')!;
       g.clearRect(0, 0, w, h);
       if (f) {
-        const p = f.landmarks.map((l) => [(1 - l.x) * w, l.y * h]); // mirrored like the video
+        // Match object-fit: contain, including letterboxing in a portrait camera.
+        const scale = Math.min(w / f.width, h / f.height);
+        const dw = f.width * scale, dh = f.height * scale;
+        const ox = (w - dw) / 2, oy = (h - dh) / 2;
+        for (const [hand, color] of [[f.left, '#5fd38a'], [f.right, '#68c8ff']] as const) {
+        if (!hand) continue;
+        const p = hand.map((l) => [ox + (1 - l.x) * dw, oy + l.y * dh]);
         g.lineWidth = 3;
-        g.strokeStyle = '#5fd38a';
+        g.strokeStyle = color;
         g.beginPath();
         for (const [a, b] of BONES) {
           g.moveTo(p[a][0], p[a][1]);
@@ -48,9 +54,11 @@ export function HandOverlay() {
           g.arc(x, y, 3.5, 0, Math.PI * 2);
           g.fill();
         }
+        }
       }
-      if (!!f !== had) {
-        had = !!f;
+      const count = f ? Number(!!f.left) + Number(!!f.right) : 0;
+      if (count !== had) {
+        had = count;
         setHand(had);
       }
     };
@@ -61,7 +69,7 @@ export function HandOverlay() {
   return (
     <>
       <canvas ref={ref} className="hand-overlay" aria-hidden="true" />
-      <span className={`pill hand-pill ${hand ? 'on' : ''}`}>{hand ? t('hand.yes') : t('hand.no')}</span>
+      <span className={`pill hand-pill ${hand ? 'on' : ''}`}>{hand ? t('hand.count', { n: hand }) : t('hand.no')}</span>
     </>
   );
 }

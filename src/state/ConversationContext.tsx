@@ -4,10 +4,11 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useReducer,
 import { ApiError } from '../api/client';
 import { NAME_MAX, SIMPLIFY_MAX_CHARS } from '../api/validate';
 import { useI18n } from '../i18n';
-import { backend, getStt, getTts, mockFaceHints, sentenceService } from '../providers';
+import { backend, getStt, getTts, mockFaceHints, sentenceService, setSpeechErrorHandler } from '../providers';
 import { TtsError } from '../providers/tts';
+import { speechInputIssue } from '../providers/speechErrors';
 import { runtime, useRuntime } from '../runtime';
-import type { FaceHint, FeedbackKind } from '../types';
+import type { FaceHint, FeedbackKind, Lang } from '../types';
 import { uuidv4 } from '../lib/id';
 import { initialState, reducer, type ConvEvent, type ConvState } from './machine';
 
@@ -19,10 +20,11 @@ interface ConversationValue {
   name: string;
   setName: (n: string) => void;
   acceptSentence: () => void;
-  speakDirect: (text: string) => void;
+  speakDirect: (text: string, language?: Lang) => void;
   sayListener: (text: string) => void;
   pttStart: () => Promise<void>;
   pttStop: () => Promise<void>;
+  pttCancel: () => void;
   simplify: (turnId: string) => void;
   cancelSpeech: () => void;
   sendFeedback: (kind: FeedbackKind, signIds: string[]) => Promise<'ok' | 'failed'>;
@@ -76,7 +78,7 @@ export function ConversationProvider({ children }: { children: ReactNode }) {
       .then(
         (res) => {
           if (stateRef.current.requestId !== id || stateRef.current.phase !== 'COMPOSING') return;
-          if (res.status === 'ok') dispatch({ type: 'COMPOSE_OK', sentence: res.sentence });
+          if (res.status === 'ok') dispatch({ type: 'COMPOSE_OK', sentence: res.sentence, language: res.language, source: runtime.get().config.llmProvider === 'local' ? 'local' : 'model' });
           else dispatch({ type: 'COMPOSE_REFUSED', reason: res.reason });
         },
         (err) => {
@@ -93,7 +95,7 @@ export function ConversationProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (state.phase !== 'SPEAKING' || !state.speaking) return;
     let alive = true;
-    tts.speak(state.speaking, lang).then(
+    tts.speak(state.speaking, state.speakingLanguage ?? lang).then(
       () => alive && dispatch({ type: 'SPEAK_DONE' }),
       (err) => alive && dispatch({ type: 'SPEAK_DONE', issue: err instanceof TtsError ? err.code : 'failed' }),
     );
@@ -132,42 +134,75 @@ export function ConversationProvider({ children }: { children: ReactNode }) {
 
   // ----- push-to-talk -----
   const sttRef = useRef<ReturnType<typeof getStt> | null>(null);
+  const sttGeneration = useRef(0);
+  useEffect(() => {
+    setSpeechErrorHandler(error => dispatch({ type: 'PTT_FAILED', issue: speechInputIssue(error) }));
+    return () => { setSpeechErrorHandler(); };
+  }, []);
   const pttStart = useCallback(async () => {
     const choice = getStt(runtime.get().config);
     if (choice.kind !== 'ptt') return;
+    const generation = ++sttGeneration.current;
     sttRef.current = choice;
     dispatch({ type: 'PTT_START' });
     try {
       await choice.provider.start(lang, (text, final) => {
+        if (generation !== sttGeneration.current) return;
         if (final) dispatch({ type: 'FINAL', text, id: uuidv4(), at: Date.now() });
         else dispatch({ type: 'PARTIAL', text });
       });
     } catch (err) {
+      if (generation !== sttGeneration.current) return;
       console.warn('[Lingora] speech input failed', err);
-      dispatch({ type: 'PTT_FAILED' });
+      dispatch({ type: 'PTT_FAILED', issue: speechInputIssue(err) });
     }
   }, [lang]);
 
   const pttStop = useCallback(async () => {
+    const generation = sttGeneration.current;
     const choice = sttRef.current;
-    sttRef.current = null;
     if (choice?.kind !== 'ptt') return;
     try {
       await choice.provider.stop();
-    } catch {
-      dispatch({ type: 'PTT_FAILED' });
+      } catch (error) {
+        if (generation === sttGeneration.current) dispatch({ type: 'PTT_FAILED', issue: speechInputIssue(error) });
+    } finally {
+      if (sttRef.current === choice) sttRef.current = null;
     }
+    if (generation !== sttGeneration.current) return;
     if (stateRef.current.phase === 'TRANSCRIBING') dispatch({ type: 'FINAL', text: stateRef.current.partial, id: uuidv4(), at: Date.now() });
   }, []);
+  const pttCancel = useCallback(() => {
+    ++sttGeneration.current;
+    const choice = sttRef.current;
+    sttRef.current = null;
+    if (choice?.kind === 'ptt') {
+      if (choice.provider.cancel) choice.provider.cancel();
+      else void choice.provider.stop().catch(() => {});
+    }
+    dispatch({ type: 'STOP' });
+  }, []);
+
+  useEffect(() => {
+    if (state.phase !== 'TRANSCRIBING') return;
+    const timer = setTimeout(() => void pttStop(), 60000);
+    const stopWhenHidden = () => { if (document.hidden) void pttStop(); };
+    document.addEventListener('visibilitychange', stopWhenHidden);
+    return () => { clearTimeout(timer); document.removeEventListener('visibilitychange', stopWhenHidden); };
+  }, [state.phase, pttStop]);
 
   // ----- STOP cancels everything in flight -----
   const wrappedDispatch = useCallback(
     (e: ConvEvent) => {
       if (e.type === 'STOP') {
+        ++sttGeneration.current;
         tts.cancel();
         const stt = sttRef.current;
         sttRef.current = null;
-        if (stt?.kind === 'ptt') void stt.provider.stop();
+        if (stt?.kind === 'ptt') {
+          if (stt.provider.cancel) stt.provider.cancel();
+          else void stt.provider.stop().catch(() => {});
+        }
       }
       dispatch(e);
     },
@@ -191,10 +226,11 @@ export function ConversationProvider({ children }: { children: ReactNode }) {
     name,
     setName,
     acceptSentence: () => dispatch({ type: 'ACCEPT_SENTENCE', id: uuidv4(), at: Date.now() }),
-    speakDirect: (text) => dispatch({ type: 'SPEAK_DIRECT', text, id: uuidv4(), at: Date.now() }),
+    speakDirect: (text, language) => dispatch({ type: 'SPEAK_DIRECT', text, language, id: uuidv4(), at: Date.now() }),
     sayListener: (text) => dispatch({ type: 'LISTENER_TYPED', text, id: uuidv4(), at: Date.now() }),
     pttStart,
     pttStop,
+    pttCancel,
     simplify: (turnId) => dispatch({ type: 'SIMPLIFY', turnId }),
     cancelSpeech,
     sendFeedback,

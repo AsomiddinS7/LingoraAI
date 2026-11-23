@@ -1,0 +1,17 @@
+# Separate from the account/database platform blueprint. No database is required.
+services:
+  - type: web
+    name: lingora-mvp
+    runtime: docker
+    dockerfilePath: ./Dockerfile.mvp
+    healthCheckPath: /api/health
+    autoDeploy: false
+    envVars:
+      - key: AZURE_SPEECH_KEY
+        sync: false
+      - key: AZURE_SPEECH_REGION
+        sync: false
+      - key: SPEECH_PUBLIC_ORIGIN
+        sync: false
+      - key: SPEECH_ALLOWED_ORIGINS
+        sync: false

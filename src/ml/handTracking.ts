@@ -1,104 +1,169 @@
-// Real hand tracking with MediaPipe Hand Landmarker, on device. WASM runtime and model are
-// served from this site (public/mediapipe, public/model) and loaded lazily: the first screen
-// does not pay for them (N1). Frames never leave the browser.
-import type { HandLandmarker } from '@mediapipe/tasks-vision';
+// Both hands and the upper body are processed locally. Raw video is never uploaded.
+import type { HandLandmarker, PoseLandmarker } from '@mediapipe/tasks-vision';
 import { startFramePump } from '../pipeline/framePump';
 import { metrics } from '../pipeline/metrics';
 import { landmarksToFeatures, type Landmark } from './features';
+import { createTrackingClock } from './trackingClock';
+
+export const TRACKING_PROFILE = 'hands-pose-video-v1';
+export const HAND_TRACKING_OPTIONS = {
+  runningMode: 'VIDEO' as const, numHands: 2,
+  minHandDetectionConfidence: 0.4, minHandPresenceConfidence: 0.4, minTrackingConfidence: 0.5,
+};
 
 export interface HandFrame {
+  /** Primary hand, retained for the older static recognizer. */
   landmarks: Landmark[];
   handedness: string;
   features: number[];
-  /** frame time (ms, performance clock) */
+  left: Landmark[] | null;
+  right: Landmark[] | null;
+  /** [nose, left shoulder, right shoulder, left elbow, right elbow, left wrist, right wrist]. */
+  pose: Landmark[] | null;
+  aspect: number;
+  width: number;
+  height: number;
   at: number;
 }
 
 let landmarker: HandLandmarker | null = null;
+let poseLandmarker: PoseLandmarker | null = null;
 let loading: Promise<HandLandmarker> | null = null;
 export let delegate: 'GPU' | 'CPU' | null = null;
 
+function preferredDelegate(): 'GPU' | 'CPU' {
+  if (import.meta.env.VITE_TRACKING_DELEGATE === 'CPU') return 'CPU';
+  // Software WebGL can initialize successfully but make inference unusably slow.
+  const canvas = document.createElement('canvas');
+  const gl = canvas.getContext('webgl2') ?? canvas.getContext('webgl');
+  if (!gl) return 'CPU';
+  const debug = gl.getExtension('WEBGL_debug_renderer_info');
+  const renderer = String(gl.getParameter(debug ? debug.UNMASKED_RENDERER_WEBGL : gl.RENDERER));
+  gl.getExtension('WEBGL_lose_context')?.loseContext();
+  return /swiftshader|llvmpipe|software|basic render/i.test(renderer) ? 'CPU' : 'GPU';
+}
+
 export function loadHandLandmarker(): Promise<HandLandmarker> {
-  if (landmarker) return Promise.resolve(landmarker);
+  if (landmarker && poseLandmarker) return Promise.resolve(landmarker);
   loading ??= (async () => {
     const t0 = performance.now();
-    const { FilesetResolver, HandLandmarker } = await import('@mediapipe/tasks-vision');
+    const { FilesetResolver, HandLandmarker, PoseLandmarker } = await import('@mediapipe/tasks-vision');
     const base = document.baseURI;
     const fileset = await FilesetResolver.forVisionTasks(new URL('mediapipe/wasm', base).href);
-    const make = (d: 'GPU' | 'CPU') =>
-      HandLandmarker.createFromOptions(fileset, {
-        baseOptions: { modelAssetPath: new URL('model/hand_landmarker.task', base).href, delegate: d },
-        runningMode: 'VIDEO',
-        numHands: 1, // placeholder vocabulary is one-handed; 1 hand is ~2x faster than 2
-        minHandDetectionConfidence: 0.5,
-        minHandPresenceConfidence: 0.5,
-        minTrackingConfidence: 0.5,
-      });
-    try {
-      landmarker = await make('GPU');
-      delegate = 'GPU';
-    } catch (err) {
-      console.warn('[SignConnect] GPU delegate unavailable, using CPU', err);
-      landmarker = await make('CPU');
-      delegate = 'CPU';
+    const makeHand = (d: 'GPU' | 'CPU') => HandLandmarker.createFromOptions(fileset, {
+      baseOptions: { modelAssetPath: new URL('model/hand_landmarker.task', base).href, delegate: d },
+      ...HAND_TRACKING_OPTIONS,
+    });
+    const preferred = preferredDelegate();
+    try { landmarker = await makeHand(preferred); delegate = preferred; }
+    catch { landmarker = await makeHand('CPU'); delegate = 'CPU'; }
+    const makePose = (d: 'GPU' | 'CPU') => PoseLandmarker.createFromOptions(fileset, {
+      baseOptions: { modelAssetPath: new URL('model/pose_landmarker.task', base).href, delegate: d },
+      runningMode: 'VIDEO', numPoses: 1, outputSegmentationMasks: false,
+      minPoseDetectionConfidence: 0.5, minPosePresenceConfidence: 0.5, minTrackingConfidence: 0.5,
+    });
+    try { poseLandmarker = await makePose(delegate!); }
+    catch {
+      try { poseLandmarker = await makePose('CPU'); }
+      catch (err) { landmarker.close(); landmarker = null; throw err; }
     }
-    // Warm-up: the first inference compiles GPU shaders / allocates buffers and can take seconds.
-    // Pay that cost here (behind "Loading sign recognition…"), not on the signer's first frame.
-    const warm = document.createElement('canvas');
-    warm.width = 256;
-    warm.height = 256;
-    warm.getContext('2d')!.fillRect(0, 0, 256, 256);
-    landmarker.detectForVideo(warm, performance.now());
-    lastTs = performance.now();
     metrics.set({ modelLoadMs: performance.now() - t0 });
     return landmarker;
   })();
-  loading.catch(() => (loading = null));
+  loading.catch(() => { loading = null; });
   return loading;
 }
 
-// ---------- shared tracking loop (one video at a time, reference counted) ----------
+/** Assign hands using body wrists, including when hands cross or labels flicker. */
+export function assignHands(hands: Landmark[][], labels: string[], pose: Landmark[] | null) {
+  let left: Landmark[] | null = null;
+  let right: Landmark[] | null = null;
+  if (pose && hands.length) {
+    const dist = (a: Landmark, b: Landmark) => Math.hypot(a.x - b.x, a.y - b.y);
+    if (hands.length > 1) {
+      const normal = dist(hands[0][0], pose[5]) + dist(hands[1][0], pose[6]);
+      const swapped = dist(hands[0][0], pose[6]) + dist(hands[1][0], pose[5]);
+      [left, right] = normal <= swapped ? [hands[0], hands[1]] : [hands[1], hands[0]];
+    } else if (dist(hands[0][0], pose[5]) <= dist(hands[0][0], pose[6])) left = hands[0];
+    else right = hands[0];
+  } else {
+    hands.slice(0, 2).forEach((hand, i) => {
+      if (labels[i] === 'Left' && !left) left = hand;
+      else if (!right) right = hand;
+      else if (!left) left = hand;
+    });
+  }
+  return { left, right };
+}
+
+const videoClock = createTrackingClock();
+let snapshot: HTMLCanvasElement | null = null;
+
+/** Independent videos must not inherit the previous stream's tracked regions. */
+export function beginTrackingSequence(): void {
+  if (!landmarker || !poseLandmarker) throw new Error('Tracking models not loaded');
+  const empty = document.createElement('canvas');
+  empty.width = empty.height = 32;
+  videoClock.restart();
+  const timestamp = videoClock.next(0);
+  // A blank warm-up frame clears tracked regions without fabricating observations.
+  landmarker.detectForVideo(empty, timestamp);
+  poseLandmarker.detectForVideo(empty, timestamp);
+  videoClock.restart();
+}
+
+/** Shared sequential live/offline processing. Call only after loadHandLandmarker(). */
+export function trackVideoFrame(video: HTMLVideoElement, at = performance.now()): HandFrame | null {
+  if (!landmarker || !poseLandmarker) throw new Error('Tracking models not loaded');
+  snapshot ??= document.createElement('canvas');
+  const width = video.videoWidth || 640;
+  const height = video.videoHeight || 480;
+  if (snapshot.width !== width) snapshot.width = width;
+  if (snapshot.height !== height) snapshot.height = height;
+  // Both models see the same instant, even when inference is slower than the camera.
+  snapshot.getContext('2d')!.drawImage(video, 0, 0, width, height);
+  const timestamp = videoClock.next(at);
+  const result = landmarker.detectForVideo(snapshot, timestamp);
+  const body = poseLandmarker.detectForVideo(snapshot, timestamp).landmarks[0];
+  const indices = [0, 11, 12, 13, 14, 15, 16];
+  const pose = body ? indices.map((i) => ({ x: body[i].x, y: body[i].y, z: body[i].z })) : null;
+  if (!result.landmarks.length) return null;
+  const hands = result.landmarks.map((h) => h.map(({ x, y, z }) => ({ x, y, z })));
+  const labels = result.handedness.map((h) => h[0]?.categoryName ?? 'Right');
+  // Keep the body for normalization, but trust wrist assignment only when both
+  // anatomical wrists are visible. References use this same VIDEO pipeline.
+  const slotPose = body && (body[15].visibility ?? 1) >= 0.3 && (body[16].visibility ?? 1) >= 0.3 ? pose : null;
+  const { left, right } = assignHands(hands, labels, slotPose);
+  const landmarks = right ?? left!;
+  const handedness = right ? 'Right' : 'Left';
+  return { landmarks, handedness, features: landmarksToFeatures(landmarks, handedness),
+    left, right, pose, aspect: width / height, width, height, at };
+}
+
 type Listener = (f: HandFrame | null) => void;
 const listeners = new Set<Listener>();
 let latest: HandFrame | null = null;
 let current: { video: HTMLVideoElement; stop: () => void; users: number } | null = null;
-let lastTs = 0;
 
 export const handTracking = {
   latest: () => latest,
-  subscribe(l: Listener): () => void {
-    listeners.add(l);
-    return () => {
-      listeners.delete(l);
-    };
-  },
-  /** Starts tracking on this video (needs loadHandLandmarker() first). Returns a release function. */
+  active: () => current !== null,
+  subscribe(l: Listener): () => void { listeners.add(l); return () => { listeners.delete(l); }; },
   acquire(video: HTMLVideoElement): () => void {
     if (!landmarker) throw new Error('Hand landmarker not loaded');
-    if (current && current.video !== video) {
-      current.stop();
-      current = null;
-    }
+    if (current && current.video !== video) { current.stop(); current = null; }
     if (!current) {
-      const lmk = landmarker;
-      const stop = startFramePump(
-        video,
-        (v, frameTime) => {
-          const ts = Math.max(frameTime, lastTs + 1); // MediaPipe needs strictly increasing timestamps
-          lastTs = ts;
-          const r = lmk.detectForVideo(v, ts);
-          const lm = r.landmarks?.[0];
-          if (lm) {
-            const handedness = r.handedness?.[0]?.[0]?.categoryName ?? 'Right';
-            latest = { landmarks: lm, handedness, features: landmarksToFeatures(lm, handedness), at: frameTime };
-          } else latest = null;
-          listeners.forEach((l) => l(latest));
-        },
-        {
-          maxFps: 30,
-          onStats: (s) => metrics.set({ processedFps: s.processedFps, avgProcessMs: s.avgProcessMs, skippedPerSec: s.skippedPerSec }),
-        },
-      );
+      beginTrackingSequence();
+      latest = null;
+      listeners.forEach((l) => l(null));
+      const stop = startFramePump(video, (v, frameTime) => {
+        try { latest = trackVideoFrame(v, frameTime); }
+        catch (error) { latest = null; listeners.forEach((l) => l(null)); throw error; }
+        listeners.forEach((l) => l(latest));
+      }, {
+        maxFps: 30,
+        onStats: (s) => metrics.set({ processedFps: s.processedFps, avgProcessMs: s.avgProcessMs, skippedPerSec: s.skippedPerSec }),
+      });
       current = { video, stop, users: 0 };
     }
     current.users++;
@@ -107,11 +172,8 @@ export const handTracking = {
     return () => {
       if (released || current !== mine) return;
       released = true;
-      mine.users--;
-      if (mine.users <= 0) {
-        mine.stop();
-        current = null;
-        latest = null;
+      if (--mine.users <= 0) {
+        mine.stop(); current = null; latest = null;
         listeners.forEach((l) => l(null));
       }
     };

@@ -1,0 +1,25 @@
+# Stateless MVP: one HTTPS origin for the site and Azure Speech authorization.
+FROM node:22-slim AS build
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY index.html tsconfig.json vite.config.ts ./
+COPY scripts ./scripts
+COPY public ./public
+COPY src ./src
+ARG VITE_MOTION_MODEL_URL=model/motion-model.json
+ARG VITE_SIGNED_SPEECH_MODEL_URL=model/signed-speech-model.json
+ENV VITE_RECOGNIZER=motion VITE_LLM_PROVIDER=local VITE_MOCK_AZURE=true
+ENV VITE_STT_PROVIDER=azure-speech VITE_TTS_PROVIDER=azure-speech VITE_SPEECH_TOKEN_URL=/api/speech-token
+ENV VITE_MOTION_MODEL_URL=${VITE_MOTION_MODEL_URL}
+ENV VITE_SIGNED_SPEECH_MODEL_URL=${VITE_SIGNED_SPEECH_MODEL_URL}
+RUN npm run build
+
+FROM node:22-slim
+WORKDIR /app
+COPY --from=build --chown=node:node /app/dist ./dist
+COPY --chown=node:node scripts/speech-server.mjs ./scripts/speech-server.mjs
+ENV NODE_ENV=production SPEECH_HOST=0.0.0.0 SPEECH_SERVE_DIST=true PORT=8787
+USER node
+EXPOSE 8787
+CMD ["node", "scripts/speech-server.mjs"]

@@ -8,7 +8,7 @@ import { runtime, useRuntime } from '../runtime';
 import { useConversation } from './ConversationContext';
 import { initialWindow, windowReducer, type WindowState } from './signWindow';
 
-interface SignWindowValue {
+export interface SignWindowValue {
   win: WindowState;
   /** Load the recognizer (lazy: only when a camera screen opens). */
   ensure: () => void;
@@ -16,6 +16,7 @@ interface SignWindowValue {
   setVideo: (v: HTMLVideoElement | null) => void;
   start: () => void;
   cancel: () => void;
+  finish: () => void;
   pickAnother: () => void;
   select: (label: string) => void;
   /** Confirm the selected sign; compose=true writes the sentence, false collects another sign. */
@@ -49,7 +50,9 @@ export function SignWindowProvider({ children }: { children: ReactNode }) {
         rec.on('progress', (p) => dispatch({ type: 'PROGRESS', phase: p.phase, ms: p.ms, totalMs: p.totalMs }));
         rec.on('result', (r) => {
           const t0 = performance.now();
-          dispatch({ type: 'RESULT', result: r, threshold: runtime.get().config.confidenceThreshold });
+          // Template matching applies distance + ambiguity rejection itself. Its score
+          // is similarity, not a calibrated probability from the static classifier.
+          dispatch({ type: 'RESULT', result: r, threshold: recognizerName === 'motion' ? 0 : runtime.get().config.confidenceThreshold });
           requestAnimationFrame(() => setTimeout(() => metrics.recordLatency(performance.now() - t0), 0));
         });
         rec.on('error', (e) => dispatch({ type: 'ERROR', message: e.message }));
@@ -121,6 +124,7 @@ export function SignWindowProvider({ children }: { children: ReactNode }) {
     setVideo,
     start,
     cancel,
+    finish: () => recRef.current?.finishWindow?.(),
     pickAnother: () => dispatch({ type: 'PICK_ANOTHER' }),
     select: (label) => dispatch({ type: 'SELECT', label }),
     confirm,

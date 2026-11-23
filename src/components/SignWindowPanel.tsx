@@ -31,6 +31,8 @@ export function ConfidenceText({ c }: { c: number }) {
   const { t } = useI18n();
   const threshold = useRuntime((s) => s.config.confidenceThreshold);
   const sureAt = useRuntime((s) => s.config.signWindow.sureAt);
+  const recognizer = useRuntime((s) => s.config.recognizer);
+  if (recognizer === 'motion') return <span className="conf">{t('motion.similarity', { n: Math.round(c * 100) })}</span>;
   const w = confidenceWord(c, threshold, sureAt);
   return (
     <span className={`conf conf-${w}`}>
@@ -47,6 +49,7 @@ export function SignWindowPanel() {
   const [picking, setPicking] = useState(false);
   const [report, setReport] = useState<'ok' | 'failed' | null>(null);
   const { win } = sw;
+  const recognizer = useRuntime((s) => s.config.recognizer);
   const busyConv = ['COMPOSING', 'SPEAKING', 'TRANSCRIBING', 'SIMPLIFYING', 'CONFIRM_SENTENCE'].includes(conv.state.phase);
   const buffer = conv.state.buffer;
 
@@ -108,6 +111,7 @@ export function SignWindowPanel() {
         ) : (
           <Ring value={value} label={label} />
         )}
+        {win.phase === 'recording' && recognizer === 'motion' && <button type="button" className="btn btn-primary btn-lg" onClick={sw.finish}>{t('motion.finish')}</button>}
         <button type="button" className="btn btn-lg" onClick={sw.cancel}>
           <Icon name="x" />
           {t('win.cancel')}
@@ -123,7 +127,8 @@ export function SignWindowPanel() {
       return (
         <div className="card result-card" role="alert">
           <p className="result-text">{t('win.notRecognized')}</p>
-          {r.reason === 'no_hands' && <p className="muted">{t('win.noHands')}</p>}
+          {(r.reason === 'no_hands' || r.reason === 'insufficient_tracking') && <p className="muted">{t('win.noHands')}</p>}
+          {recognizer === 'motion' && <p className="muted">{t('motion.notRecognized')}</p>}
           {r.label !== 'none' && (
             <p className="muted">
               {glossFor(r.label, lang)} · <ConfidenceText c={r.confidence} />
@@ -208,7 +213,9 @@ export function SignWindowPanel() {
   // idle or error
   const errorKey: MessageKey | null =
     win.phase === 'error'
-      ? win.error === 'not_trained'
+      ? win.error === 'no_templates'
+        ? 'motion.noExamples'
+        : win.error === 'not_trained'
         ? 'win.notTrained'
         : win.error === 'timeout'
           ? 'win.timeout'

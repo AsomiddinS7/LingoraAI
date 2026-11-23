@@ -45,6 +45,8 @@ export interface SequenceRecognizer {
   detach(): void;
   startWindow(): void; // user pressed Sign now
   cancelWindow(): void;
+  /** Finish a complete sign before the maximum recording time. */
+  finishWindow?(): void;
   on(event: 'progress', cb: (e: RecognitionProgress) => void): void;
   on(event: 'result', cb: (e: RecognitionResult) => void): void;
   on(event: 'error', cb: (e: { message: string }) => void): void;

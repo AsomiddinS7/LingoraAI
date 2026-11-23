@@ -19,7 +19,7 @@ export function TtsNotice() {
   const { state } = useConversation();
   const config = useRuntime((s) => s.config);
   const providerNotice = getTts(config).notice;
-  const langName = t(`lang.${lang}` as MessageKey);
+  const langName = t(`lang.${state.speakingLanguage ?? lang}` as MessageKey);
   return (
     <>
       {providerNotice && (

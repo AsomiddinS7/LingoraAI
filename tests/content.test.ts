@@ -65,19 +65,21 @@ describe('language files', () => {
 });
 
 describe('config switches', () => {
-  it('defaults to Plan B, mocks on and the mock recognizer when nothing is set', () => {
+  it('defaults to local wording and real motion recognition, without invented predictions', () => {
     const c = configFromEnv({});
     expect(whichPlan(c)).toBe('B');
     expect(c.mockAzure).toBe(true);
-    expect(c.recognizer).toBe('mock');
+    expect(c.recognizer).toBe('motion');
+    expect(c.llmProvider).toBe('local');
     expect(c.confidenceThreshold).toBe(0.8);
     expect(c.signWindow).toMatchObject({ countdownMs: 1000, restMs: 500, maxRecordingMs: 3500 });
   });
-  it('recognizer = sequence | static | mock, with the old switch still understood', () => {
+  it('supports motion, sequence, static and explicit mock modes', () => {
+    expect(configFromEnv({ VITE_RECOGNIZER: 'motion' }).recognizer).toBe('motion');
     expect(configFromEnv({ VITE_RECOGNIZER: 'sequence' }).recognizer).toBe('sequence');
     expect(configFromEnv({ VITE_RECOGNIZER: 'static' }).recognizer).toBe('static');
     expect(configFromEnv({ VITE_SIGN_CLASSIFIER: 'mediapipe' }).recognizer).toBe('static');
-    expect(configFromEnv({ VITE_RECOGNIZER: 'nonsense' }).recognizer).toBe('mock');
+    expect(configFromEnv({ VITE_RECOGNIZER: 'nonsense' }).recognizer).toBe('motion');
   });
   it('Plan A from environment', () => {
     const c = configFromEnv({ VITE_STT_PROVIDER: 'azure-speech', VITE_TTS_PROVIDER: 'azure-speech', VITE_FACE_HINTS: 'on', VITE_MOCK_AZURE: 'false' });

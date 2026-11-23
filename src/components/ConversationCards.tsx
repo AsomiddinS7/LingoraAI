@@ -68,7 +68,7 @@ export function SentenceCard() {
             </div>
           </form>
         ) : (
-          <p className="result-text" lang={lang}>{state.proposal.text}</p>
+          <p className="result-text" lang={state.proposal.language ?? lang}>{state.proposal.text}</p>
         )}
         <p className="small muted">
           {t(`conv.source.${state.proposal.source}` as MessageKey)} · {t('conv.proposedHint')}

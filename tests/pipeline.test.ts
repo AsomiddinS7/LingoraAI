@@ -1,5 +1,5 @@
 // Frame pump tests.
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { startFramePump } from '../src/pipeline/framePump';
 
 function fakeVideo() {
@@ -18,6 +18,21 @@ function fakeVideo() {
 }
 
 describe('frame pump', () => {
+  it('does not repeat the same camera frame in the animation-frame fallback', () => {
+    let next: (time: number) => void = () => {};
+    vi.stubGlobal('requestAnimationFrame', (cb: (time: number) => void) => { next = cb; return 1; });
+    vi.stubGlobal('cancelAnimationFrame', () => {});
+    try {
+      const video = { readyState: 4, currentTime: 0 } as HTMLVideoElement;
+      const process = vi.fn();
+      const stop = startFramePump(video, process);
+      next(0); next(16); next(32);
+      video.currentTime = 1 / 30;
+      next(48); next(64);
+      expect(process).toHaveBeenCalledTimes(2);
+      stop();
+    } finally { vi.unstubAllGlobals(); }
+  });
   it('processes each new frame exactly once', () => {
     const { video, frame } = fakeVideo();
     let n = 0;

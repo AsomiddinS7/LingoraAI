@@ -12,6 +12,11 @@ import { runtime } from '../runtime';
 import type { FaceHintProvider, FeedbackRequest, SentenceService, SttProvider, TtsProvider } from '../types';
 import { BrowserSpeechStt, MockStt } from './stt';
 import { BrowserSynthesisTts } from './tts';
+import { AzureSpeechStt, AzureSpeechTts, createSpeechTokenSource } from './azureSpeech';
+import { composeLocally } from './localSentence';
+import { MotionRecognizer } from '../recognition/motionRecognizer';
+import { LocalWhisperStt, type LocalSttStatus } from './localStt';
+import { useSyncExternalStore } from 'react';
 
 // ---------- Team plug-in points ----------
 // The team registers real providers at startup (e.g. in src/team/index.ts) without touching the UI:
@@ -45,8 +50,11 @@ export const api = createApiClient({
 });
 
 export const sentenceService: SentenceService = {
-  compose: (req) => api.post('/api/sentence', req, isSentenceResponse),
-  simplify: (req) => api.post('/api/simplify', req, isSimplifyResponse),
+  compose: (req) => runtime.get().config.llmProvider === 'local'
+    ? Promise.resolve(composeLocally(req)) : api.post('/api/sentence', req, isSentenceResponse),
+  simplify: (req) => runtime.get().config.llmProvider === 'local'
+    ? Promise.reject(new Error('Simplification is not enabled in the local MVP'))
+    : api.post('/api/simplify', req, isSimplifyResponse),
 };
 
 export const backend = {
@@ -87,6 +95,11 @@ export async function refreshCatalog(): Promise<'api' | 'seed'> {
 // ---------- Sign recognizer (v1 spec section 8): sequence | static | mock ----------
 /** Creates and loads the configured recognizer. The caller owns attach/detach. */
 export async function createRecognizer(c: AppConfig): Promise<SequenceRecognizer> {
+  if (c.recognizer === 'motion') {
+    const r = new MotionRecognizer();
+    await r.load();
+    return r;
+  }
   if (c.recognizer === 'sequence') {
     // The ML team's model from the registry. If none is active this throws and the UI falls back.
     return loadSequenceRecognizer(() => backend.activeModel());
@@ -98,10 +111,25 @@ export async function createRecognizer(c: AppConfig): Promise<SequenceRecognizer
 
 // ---------- Text to speech ----------
 const browserTts = new BrowserSynthesisTts();
+let speech: { url: string; stt: AzureSpeechStt; tts: AzureSpeechTts } | null = null;
+let speechErrorHandler: ((error?: unknown) => void) | undefined;
+export function setSpeechErrorHandler(handler?: (error?: unknown) => void): void { speechErrorHandler = handler; }
+function azure(c: AppConfig) {
+  if (!speech || speech.url !== c.speechTokenUrl) {
+    speech?.tts.cancel();
+    if (speech) void speech.stt.stop().catch(() => {});
+    const getToken = createSpeechTokenSource({ tokenUrl: c.speechTokenUrl });
+    speech = { url: c.speechTokenUrl,
+      stt: new AzureSpeechStt({ getToken, onError: () => speechErrorHandler?.() }),
+      tts: new AzureSpeechTts({ getToken }) };
+  }
+  return speech;
+}
 export function getTts(c: AppConfig): { provider: TtsProvider; notice: MessageKey | null } {
   if (c.ttsProvider === 'azure-speech') {
     if (registered.tts) return { provider: registered.tts(), notice: null };
-    return { provider: browserTts, notice: c.mockAzure ? null : 'tts.azureMissing' };
+    if (c.speechTokenUrl) return { provider: azure(c).tts, notice: null };
+    return { provider: browserTts, notice: 'tts.azureMissing' };
   }
   return { provider: browserTts, notice: null };
 }
@@ -113,16 +141,33 @@ export type SttChoice =
 
 const mockStt = new MockStt();
 let browserStt: BrowserSpeechStt | null = null;
+let localStt: { url: string; provider: LocalWhisperStt } | null = null;
+let localStatus: LocalSttStatus = 'idle';
+const sttListeners = new Set<() => void>();
+export function useLocalSttStatus() {
+  return useSyncExternalStore((l) => { sttListeners.add(l); return () => { sttListeners.delete(l); }; }, () => localStatus, () => 'idle' as LocalSttStatus);
+}
 
 export function getStt(c: AppConfig): SttChoice {
+  if (c.sttProvider === 'local-stt' || c.sttProvider === 'local-whisper') {
+    if (!localStt || localStt.url !== c.localSttUrl) {
+      localStt?.provider.cancel();
+      localStt = { url: c.localSttUrl, provider: new LocalWhisperStt({ url: c.localSttUrl,
+        onStatus: (status) => { localStatus = status; sttListeners.forEach(l => l()); },
+        onError: error => speechErrorHandler?.(error),
+      }) };
+    }
+    return { kind: 'ptt', provider: localStt.provider, notice: null };
+  }
   if (c.sttProvider === 'azure-speech') {
     if (registered.stt) return { kind: 'ptt', provider: registered.stt(), notice: null };
-    if (c.mockAzure) return { kind: 'ptt', provider: mockStt, notice: null };
+    if (c.speechTokenUrl) return { kind: 'ptt', provider: azure(c).stt, notice: 'speech.cloud' };
+    if (c.mockAzure && c.recognizer === 'mock') return { kind: 'ptt', provider: mockStt, notice: null };
     return { kind: 'typed', notice: 'listener.sttMissing' };
   }
   if (c.sttProvider === 'browser-speech') {
     if (!BrowserSpeechStt.isSupported()) return { kind: 'typed', notice: 'listener.sttFailed' };
-    browserStt ??= new BrowserSpeechStt();
+    browserStt ??= new BrowserSpeechStt(error => speechErrorHandler?.(error));
     return { kind: 'ptt', provider: browserStt, notice: 'listener.sttExperimental' };
   }
   return { kind: 'typed', notice: 'listener.typedOnly' };

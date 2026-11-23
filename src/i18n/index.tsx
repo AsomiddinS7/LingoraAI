@@ -27,10 +27,7 @@ const I18nContext = createContext<I18nValue | null>(null);
 function initialLang(): Lang {
   const saved = readPref('lang');
   if (saved && (LANGS as string[]).includes(saved)) return saved as Lang;
-  const nav = (typeof navigator !== 'undefined' ? navigator.language : 'en').slice(0, 2);
-  // TODO [CONFIRM]: default UI language for the event. Uzbek first if the browser does not say otherwise.
-  if (nav === 'ru') return 'ru';
-  if (nav === 'en') return 'en';
+  // The MVP is Uzbek-first; an explicit saved preference still takes precedence.
   return 'uz';
 }
 

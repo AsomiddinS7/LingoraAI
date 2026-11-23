@@ -16,6 +16,7 @@ import { writePref } from '../lib/prefs';
 import { backend, usesMockApi } from '../providers';
 import { href } from '../router';
 import { useRuntime } from '../runtime';
+import { sequenceStore, useSequenceVersion } from '../ml/sequenceStore';
 import { useConversation } from '../state/ConversationContext';
 import { useTheme, type Theme } from '../theme';
 import { LANGS, type Lang } from '../types';
@@ -369,6 +370,9 @@ export function ContributeScreen() {
 export function HelpScreen() {
   const { t, lang } = useI18n();
   useCatalog();
+  useSequenceVersion();
+  const motion = useRuntime((s) => s.config.recognizer === 'motion');
+  const supported = motion ? catalog.signs().filter((s) => Object.hasOwn(sequenceStore.counts(), s.slug)) : catalog.signs();
   return (
     <div>
       <div className="screen-title">
@@ -395,12 +399,13 @@ export function HelpScreen() {
         <section className="card span-2" aria-labelledby="signs">
           <h2 id="signs">{t('about.signs')}</h2>
           <ul className="sign-list">
-            {catalog.signs().map((s) => (
+            {supported.map((s) => (
               <li key={s.id}>
                 <span lang={lang}>{s.labels[lang]}</span>
               </li>
             ))}
           </ul>
+          {supported.length === 0 && <p>{t('motion.empty')}</p>}
           <p className="small muted" style={{ marginTop: 10 }}>{t('about.signsNote')}</p>
         </section>
         <section className="card">

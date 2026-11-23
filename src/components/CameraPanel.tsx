@@ -5,18 +5,21 @@ import { startFpsMeter } from '../pipeline/framePump';
 import { metrics, useMetrics } from '../pipeline/metrics';
 import { useRuntime } from '../runtime';
 import { useCamera } from '../state/CameraContext';
-import { useSignWindow } from '../state/SignWindowContext';
+import { useSignWindow, type SignWindowValue } from '../state/SignWindowContext';
 import { HandOverlay } from './HandOverlay';
 import { Icon } from './Icon';
 
 /** Camera with permission flow, landmark overlay and a visible state for every window phase. */
-export function CameraPanel() {
+export type CameraController = Pick<SignWindowValue, 'ensure' | 'cancel' | 'setVideo' | 'win'>;
+export function CameraPanel({ controller, recognizedText }: { controller?: CameraController; recognizedText?: string } = {}) {
   const { t, lang } = useI18n();
   const cam = useCamera();
-  const sw = useSignWindow();
+  const defaultController = useSignWindow();
+  const sw = controller ?? defaultController;
   const videoRef = useRef<HTMLVideoElement>(null);
   useMetrics();
-  const recognizer = useRuntime((s) => s.config.recognizer);
+  const configuredRecognizer = useRuntime((s) => s.config.recognizer);
+  const recognizer = controller ? 'motion' : configuredRecognizer;
 
   // Load the recognizer lazily when a camera screen is shown (first load stays small).
   useEffect(() => {
@@ -80,7 +83,7 @@ export function CameraPanel() {
         {!live && <CameraMessage />}
         {live && (
           <>
-            {recognizer === 'static' && phase !== 'loading' && phase !== 'unavailable' && <HandOverlay />}
+            {(recognizer === 'static' || recognizer === 'motion') && phase !== 'loading' && phase !== 'unavailable' && <HandOverlay />}
             <div className="camera-overlay top">
               <span className="pill" title={t('camera.privacy')}>
                 <Icon name="lock" />
@@ -92,9 +95,9 @@ export function CameraPanel() {
               )}
             </div>
             {recognized && (
-              <div className="detect-banner" aria-hidden="true">
+              <div className="detect-banner" aria-hidden="true" style={recognizedText ? { width: 'calc(100% - 24px)', maxHeight: '70%', overflow: 'auto', fontSize: '1rem', borderRadius: 12, padding: 12 } : undefined}>
                 <Icon name="check" />
-                <span>{glossFor(sw.win.selected!, lang)}</span>
+                <span>{recognizedText ?? glossFor(sw.win.selected!, lang)}</span>
               </div>
             )}
             <button type="button" className="icon-btn cam-off" onClick={cam.stop} aria-label={t('camera.stop')} title={t('camera.stop')}>
@@ -103,6 +106,7 @@ export function CameraPanel() {
           </>
         )}
       </div>
+      {live && <p className="small muted">{t('camera.framing')}</p>}
     </section>
   );
 }

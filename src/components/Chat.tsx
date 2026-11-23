@@ -2,11 +2,11 @@
 // Signer messages on one side, hearing-person messages on the other, newest reply largest.
 // Every message can be shown full screen and flipped for the person across the table
 // (pattern from Microsoft Translator's face-to-face mode).
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { SIMPLIFY_MAX_CHARS } from '../api/validate';
 import { phraseBySlug } from '../data';
 import { useI18n } from '../i18n';
-import { getStt } from '../providers';
+import { getStt, useLocalSttStatus } from '../providers';
 import { useRuntime } from '../runtime';
 import { useConversation } from '../state/ConversationContext';
 import { LISTENER_ENTRY } from '../state/machine';
@@ -44,7 +44,9 @@ export function Chat() {
   const { t, lang } = useI18n();
   const conv = useConversation();
   const { state } = conv;
+  const localSttStatus = useLocalSttStatus();
   const errorText = useErrorText();
+  const simplificationEnabled = useRuntime((s) => s.config.llmProvider !== 'local');
   const endRef = useRef<HTMLDivElement>(null);
   const [big, setBig] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
@@ -92,7 +94,7 @@ export function Chat() {
             </div>
           </form>
         ) : (
-          <p className="msg-text" lang={lang}>{turn.text}</p>
+          <p className="msg-text" lang={turn.language ?? lang}>{turn.text}</p>
         )}
         {editing !== turn.id && (
           <div className="msg-actions">
@@ -101,12 +103,12 @@ export function Chat() {
               {t('conv.showBig')}
             </button>
             {mine && (
-              <button type="button" className="chip-btn" disabled={busy} onClick={() => conv.dispatch({ type: 'REPEAT', text: turn.text })}>
+              <button type="button" className="chip-btn" disabled={busy} onClick={() => conv.dispatch({ type: 'REPEAT', text: turn.text, language: turn.language })}>
                 <Icon name="speaker" />
                 {t('conv.readAgain')}
               </button>
             )}
-            {!mine && !turn.simplifiedFrom && !simplifiedChild && (
+            {simplificationEnabled && !mine && !turn.simplifiedFrom && !simplifiedChild && (
               <button
                 type="button"
                 className="chip-btn"
@@ -144,7 +146,7 @@ export function Chat() {
   };
 
   return (
-    <section className="chat" aria-label={t('transcript.title')}>
+    <section className={`chat${state.turns.length === 0 && state.phase !== 'TRANSCRIBING' ? ' chat-new' : ''}`} aria-label={t('transcript.title')}>
       {state.turns.length === 0 && state.phase !== 'TRANSCRIBING' ? (
         <div className="chat-empty">
           <p className="chat-empty-title">{t('conv.emptyTitle')}</p>
@@ -160,7 +162,7 @@ export function Chat() {
           {state.turns.map(bubble)}
           {state.phase === 'TRANSCRIBING' && (
             <li className="msg msg-listener msg-live">
-              <p className="msg-text">{state.partial || t('conv.transcribing')}</p>
+              <p className="msg-text">{state.partial || t(localSttStatus === 'processing' ? 'speech.processing' : 'conv.transcribing')}</p>
             </li>
           )}
         </ol>
@@ -172,9 +174,9 @@ export function Chat() {
         </div>
       )}
       {state.sttIssue && (
-        <div className="notice bad" role="alert">
+        <div className={`notice ${state.sttIssue === 'no_speech' ? 'warn' : 'bad'}`} role="alert">
           <Icon name="alert" />
-          <p>{t('listener.sttFailed')}</p>
+          <p>{t(state.sttIssue === 'failed' ? 'listener.sttFailed' : `speech.issue.${state.sttIssue}`)}</p>
         </div>
       )}
       <div ref={endRef} className="chat-end" />
@@ -191,6 +193,7 @@ export function Composer() {
   const conv = useConversation();
   const config = useRuntime((s) => s.config);
   const stt = getStt(config);
+  const localStatus = useLocalSttStatus();
   const [text, setText] = useState('');
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [accepted, setAccepted] = useState(noticeAcceptedThisSession);
@@ -204,22 +207,10 @@ export function Composer() {
     setText('');
   };
   const begin = () => {
-    if (!accepted) return setNoticeOpen(true);
+    if (stt.notice && !accepted) return setNoticeOpen(true);
     if (!talking && can) void conv.pttStart();
   };
   const end = () => talking && void conv.pttStop();
-  const keyDown = (e: KeyboardEvent) => {
-    if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) {
-      e.preventDefault();
-      begin();
-    }
-  };
-  const keyUp = (e: KeyboardEvent) => {
-    if (e.key === ' ' || e.key === 'Enter') {
-      e.preventDefault();
-      end();
-    }
-  };
 
   return (
     <form className="composer" onSubmit={submit}>
@@ -244,17 +235,10 @@ export function Composer() {
           type="button"
           className={`icon-btn mic ${talking ? 'on' : ''}`}
           aria-pressed={talking}
-          aria-label={talking ? t('listener.release') : t('listener.holdToTalk')}
-          title={talking ? t('listener.release') : t('listener.holdToTalk')}
-          disabled={!can && !talking}
-          onPointerDown={(e) => {
-            e.currentTarget.setPointerCapture?.(e.pointerId);
-            begin();
-          }}
-          onPointerUp={end}
-          onPointerCancel={end}
-          onKeyDown={keyDown}
-          onKeyUp={keyUp}
+          aria-label={talking ? t('speech.stop') : t('speech.start')}
+          title={talking ? t('speech.stop') : t('speech.start')}
+          disabled={(!can && !talking) || localStatus === 'processing'}
+          onClick={() => talking ? end() : begin()}
           onContextMenu={(e) => e.preventDefault()}
         >
           <Icon name="mic" />
@@ -264,7 +248,7 @@ export function Composer() {
         <Icon name="send" />
       </button>
       <Modal open={noticeOpen} onClose={() => setNoticeOpen(false)} title={t('listener.noticeTitle')}>
-        <p style={{ fontSize: '1.25rem', fontWeight: 600 }}>{t('listener.notice')}</p>
+        <p style={{ fontSize: '1.25rem', fontWeight: 600 }}>{t('speech.cloud')}</p>
         <button
           type="button"
           className="btn btn-primary btn-lg btn-block"
@@ -272,6 +256,7 @@ export function Composer() {
             noticeAcceptedThisSession = true;
             setAccepted(true);
             setNoticeOpen(false);
+            if (can && !talking) void conv.pttStart();
           }}
         >
           {t('listener.noticeOk')}

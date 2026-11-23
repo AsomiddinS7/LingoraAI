@@ -6,6 +6,28 @@ const run = (events: ConvEvent[], from: ConvState = initialState) => events.redu
 const sign = (label: string, confidence: number): ConvEvent => ({ type: 'SIGN_EVENT', label, confidence, at: 1, threshold: 0.8 });
 
 describe('conversation state machine', () => {
+  it('shows a no-speech issue instead of silently discarding an empty recording result', () => {
+    let state = run([{ type: 'PTT_START' }, { type: 'FINAL', text: '  ', id: 'empty', at: 1 }]);
+    expect(state.phase).toBe('LISTENER_TURN');
+    expect(state.turns).toEqual([]);
+    expect(state.sttIssue).toBe('no_speech');
+    state = run([{ type: 'PTT_START' }, { type: 'FINAL', text: 'Salom', id: 'heard', at: 2 }], state);
+    expect(state.sttIssue).toBe(false);
+    expect(state.turns.map(turn => turn.text)).toEqual(['Salom']);
+  });
+  it('preserves a specific speech failure and clears it when the next recording starts', () => {
+    const state = run([{ type: 'PTT_START' }, { type: 'PTT_FAILED', issue: 'service_unavailable' }]);
+    expect(state.sttIssue).toBe('service_unavailable');
+    expect(state.turns).toHaveLength(0);
+    expect(run([{ type: 'PTT_START' }], state).sttIssue).toBe(false);
+  });
+  it('preserves the language of a matched speech phrase through playback and repeat', () => {
+    const spoken = run([{ type: 'SPEAK_DIRECT', text: 'Assalomu alaykum!', language: 'uz', id: 'uz', at: 1 }]);
+    expect(spoken.speakingLanguage).toBe('uz');
+    expect(spoken.turns[0].language).toBe('uz');
+    const repeated = run([{ type: 'SPEAK_DONE' }, { type: 'REPEAT', text: spoken.turns[0].text, language: spoken.turns[0].language }], spoken);
+    expect(repeated.speakingLanguage).toBe('uz');
+  });
   it('full signer flow: start, confirm sign, compose, confirm sentence, speak, listener turn', () => {
     let s = run([{ type: 'START' }]);
     expect(s.phase).toBe('SIGNER_LISTENING');

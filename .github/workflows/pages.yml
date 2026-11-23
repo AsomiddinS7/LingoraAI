@@ -1,4 +1,4 @@
-name: Deploy preview to GitHub Pages
+name: Deploy Lingora to GitHub Pages
 
 on:
   push:
@@ -17,6 +17,20 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      VITE_RECOGNIZER: motion
+      VITE_LLM_PROVIDER: local
+      VITE_MOCK_AZURE: 'true'
+      VITE_FACE_HINTS: 'off'
+      # These committed assets are checked before and after the build. Public
+      # Pages builds must never depend on an ignored local training artifact.
+      VITE_MOTION_MODEL_URL: model/motion-model.json
+      VITE_SIGNED_SPEECH_MODEL_URL: model/signed-speech-model.json
+      VITE_STT_PROVIDER: ${{ vars.LINGORA_SPEECH_TOKEN_URL && 'azure-speech' || 'browser-speech' }}
+      VITE_TTS_PROVIDER: ${{ vars.LINGORA_SPEECH_TOKEN_URL && 'azure-speech' || 'browser-synthesis' }}
+      VITE_SPEECH_TOKEN_URL: ${{ vars.LINGORA_SPEECH_TOKEN_URL }}
+      # A static website cannot start a Python service on visitors' computers.
+      VITE_LOCAL_STT_URL: ''
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,10 +38,23 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Check committed public assets and hosting configuration
+        run: node scripts/check-deployment.mjs
       - run: npm test
+      - name: Check model, speech and deployment tools
+        run: >-
+          node --test
+          tests/training-export.test.mjs
+          tests/model-provenance.test.mjs
+          tests/temporal-inference.test.mjs
+          tests/quantize-motion.test.mjs
+          tests/masked-dtw.test.mjs
+          tests/speech-server.test.mjs
+          tests/speech-readiness.test.mjs
+          tests/deployment.test.mjs
       - run: npm run build
-        env:
-          VITE_RECOGNIZER: static
+      - name: Verify the actual Pages artifact
+        run: node scripts/check-deployment.mjs --built
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

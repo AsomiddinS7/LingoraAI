@@ -18,6 +18,7 @@ export interface Turn {
   speaker: 'signer' | 'listener';
   text: string;
   at: number;
+  language?: Lang;
   /** UI-only: marks a listener turn that is the simplified version of another turn. */
   simplifiedFrom?: string;
 }
@@ -122,6 +123,8 @@ export interface SentenceService {
 export interface SttProvider {
   start(lang: Lang, onText: (t: string, final: boolean) => void): Promise<void>;
   stop(): Promise<void>;
+  /** Discard a turn when leaving or resetting; must not submit a recording. */
+  cancel?(): void;
 }
 
 export interface TtsProvider {

@@ -4,6 +4,56 @@
    Font: system UI stack. Segoe UI (Windows), Roboto (Android), SF Pro (iOS/macOS) and Noto Sans
    all include Cyrillic and the Uzbek modifier letter ʻ (U+02BB) used in oʻ and gʻ. */
 
+/* Existing-video workflow and honest recognition state, using the app's tokens. */
+.presentation-screen { max-width: 1100px; margin-inline: auto; }
+.presentation-screen h1 { font-size: 28px; }
+.presentation-disclosure { color: var(--muted); font-size: 16px; }
+.presentation-stage { display: grid; grid-template-rows: auto 1fr auto; gap: 24px; min-height: 420px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; }
+.presentation-meta { display: flex; justify-content: space-between; gap: 12px; font-size: 16px; color: var(--muted); }
+.presentation-cue { align-self: center; font-size: clamp(30px, 3.5vw, 52px); line-height: 1.3; font-weight: 600; max-width: 34ch; margin: 16px auto; overflow-wrap: anywhere; }
+.presentation-controls { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+.presentation-tools { margin: 16px 0 24px; }
+.presentation-cues { display: grid; gap: 0; border-top: 1px solid var(--line); }
+.presentation-cues button { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 16px; text-align: left; font: inherit; font-size: 16px; color: var(--ink); background: transparent; border: 0; border-bottom: 1px solid var(--line); padding: 16px 12px; cursor: pointer; }
+.presentation-cues button.selected { background: var(--primary-soft); }
+.presentation-cues button:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+.cue-number { color: var(--muted); font-variant-numeric: tabular-nums; }
+.presentation-stage:fullscreen { height: 100dvh; border: 0; border-radius: 0; padding: clamp(20px, 4vw, 60px); overflow: auto; }
+.presentation-stage:fullscreen .presentation-cue { font-size: clamp(30px, 4.5vw, 72px); }
+@media (max-width: 640px) {
+  .presentation-stage { padding: 20px 16px; min-height: 360px; gap: 16px; }
+  .presentation-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .presentation-controls .btn-primary { grid-column: 1 / -1; grid-row: 1; }
+  .presentation-controls .btn { padding: 12px; }
+}
+.recognition-status { border-top: 1px solid var(--line); padding-top: 16px; font-size: 16px; }
+.recognition-status p { margin: 6px 0; }
+.supported-signs { font-weight: 600; color: var(--primary); }
+.typed-message { font-size: 16px; }
+.typed-message summary { cursor: pointer; min-height: 44px; padding: 10px 0; }
+.typed-message form { margin-top: 8px; }
+.video-examples > p { max-width: 70ch; }
+.source-video { display: block; width: 100%; max-height: 380px; margin: 16px 0 8px; background: #111; object-fit: contain; }
+.source-video[hidden] { display: none; }
+.source-filename { overflow-wrap: anywhere; }
+.video-fields { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px; display: grid; grid-template-columns: minmax(150px, 2fr) minmax(90px, 1fr) auto; align-items: end; gap: 12px; }
+.video-fields legend { padding: 0 8px; font-size: 16px; }
+.video-fields label { display: grid; gap: 6px; min-width: 0; font-size: 16px; }
+.video-fields input, .video-fields select { width: 100%; }
+.video-progress { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; }
+.video-progress progress { max-width: 100%; accent-color: var(--primary); }
+.example-counts { list-style: none; padding: 0; margin: 16px 0; }
+.example-counts li { display: flex; justify-content: space-between; gap: 16px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.file-button { position: relative; overflow: hidden; cursor: pointer; }
+.file-button input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.file-button:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
+@media (max-width: 640px) {
+  .video-fields { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); padding: 12px; }
+  .video-fields label:first-of-type, .video-fields > .btn:last-child { grid-column: 1 / -1; }
+  .video-fields .btn { white-space: normal; }
+  .video-examples .btn-row { gap: 8px; }
+}
+
 :root {
   color-scheme: light;
   --font: 'Segoe UI', Roboto, -apple-system, BlinkMacSystemFont, 'Noto Sans', 'Helvetica Neue', Arial, sans-serif;
@@ -119,7 +169,7 @@ a { color: var(--primary); }
 .brand-mark { width: 32px; height: 32px; }
 .top-nav { display: none; gap: 4px; }
 .top-nav a {
-  padding: 10px 14px; border-radius: 999px; color: var(--muted); font-weight: 600;
+  padding: 10px 10px; border-radius: 999px; color: var(--muted); font-weight: 600; font-size: 16px;
   text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; white-space: nowrap;
 }
 .top-nav a:hover { background: var(--surface-2); color: var(--ink); }
@@ -188,7 +238,7 @@ main { flex: 1; width: 100%; max-width: 1320px; margin: 0 auto; padding: 16px 16
   position: relative; overflow: hidden; border-radius: var(--radius);
   background: var(--camera-bg); color: #fff; aspect-ratio: 4 / 3; display: grid; place-items: center;
 }
-.camera video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+.camera video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; transform: scaleX(-1); }
 .camera-msg { position: relative; z-index: 1; text-align: center; padding: 20px; max-width: 34ch; }
 .camera-msg h3 { color: #fff; }
 .camera-msg p { color: #dfe6ea; }
@@ -452,6 +502,7 @@ code { font-family: ui-monospace, Consolas, monospace; font-size: .9em; backgrou
 }
 
 .chat { display: grid; gap: var(--s3); align-content: end; min-height: 30vh; }
+.chat-new { min-height: 0; align-content: start; }
 .chat-empty { text-align: center; color: var(--muted); padding: var(--s6) var(--s4); border: 2px dashed var(--line); border-radius: var(--radius); }
 .chat-empty p { display: flex; gap: 8px; justify-content: center; align-items: center; margin: 6px 0; }
 .chat-empty .ico { width: 18px; height: 18px; }
@@ -476,6 +527,7 @@ code { font-family: ui-monospace, Consolas, monospace; font-size: .9em; backgrou
 
 .composer, .own-text { display: flex; align-items: flex-end; gap: var(--s2); padding: var(--s2); background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--radius); box-shadow: var(--shadow); }
 .composer { position: sticky; bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 8px); z-index: 5; }
+@media (max-width: 1023px) { .composer { position: static; } }
 @media (min-width: 1024px) { .composer { bottom: var(--s4); } }
 .composer-input { flex: 1; min-height: 48px; max-height: 160px; padding: 12px 8px; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: var(--t18); resize: none; }
 .composer-input:focus { outline: none; }

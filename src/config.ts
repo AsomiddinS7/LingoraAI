@@ -1,11 +1,11 @@
 // One config object (brief section 2). Set by environment at build time,
 // overridable at runtime from the Console screen for demos (in memory only).
 
-export type SttProviderName = 'azure-speech' | 'typed-input' | 'browser-speech';
+export type SttProviderName = 'azure-speech' | 'typed-input' | 'browser-speech' | 'local-stt' | 'local-whisper';
 export type TtsProviderName = 'azure-speech' | 'browser-synthesis';
-export type LlmProviderName = 'azure-openai' | 'mock';
+export type LlmProviderName = 'local' | 'azure-openai' | 'mock';
 /** v1 spec section 8: sequence (ML team's model via manifest), static (v0 held shapes), mock. */
-export type RecognizerName = 'sequence' | 'static' | 'mock';
+export type RecognizerName = 'motion' | 'sequence' | 'static' | 'mock';
 export type DataCollectionPolicy = 'consenting-teammates' | 'tutor-confirmed';
 
 export interface AppConfig {
@@ -20,6 +20,10 @@ export interface AppConfig {
   dataCollection: DataCollectionPolicy;
   confidenceThreshold: number;
   apiBase: string;
+  speechTokenUrl: string;
+  motionModelUrl: string;
+  localSttUrl: string;
+  signedSpeechModelUrl: string;
 }
 
 export interface SignWindowConfig {
@@ -63,16 +67,16 @@ function readEnv(): Env {
 export function configFromEnv(env: Env = readEnv()): AppConfig {
   const threshold = Number(env.VITE_CONFIDENCE_THRESHOLD);
   return {
-    sttProvider: pick(env.VITE_STT_PROVIDER, ['azure-speech', 'typed-input', 'browser-speech'] as const, 'typed-input'),
+    sttProvider: pick(env.VITE_STT_PROVIDER, ['azure-speech', 'typed-input', 'browser-speech', 'local-stt', 'local-whisper'] as const, 'typed-input'),
     ttsProvider: pick(env.VITE_TTS_PROVIDER, ['azure-speech', 'browser-synthesis'] as const, 'browser-synthesis'),
     faceHints: env.VITE_FACE_HINTS === 'on',
-    llmProvider: pick(env.VITE_LLM_PROVIDER, ['azure-openai', 'mock'] as const, 'azure-openai'),
+    llmProvider: pick(env.VITE_LLM_PROVIDER, ['local', 'azure-openai', 'mock'] as const, 'local'),
     // Mock stays on unless explicitly turned off, so a fresh checkout runs with no keys.
     mockAzure: env.VITE_MOCK_AZURE !== 'false',
     recognizer: pick(
       env.VITE_RECOGNIZER ?? ({ mediapipe: 'static', model: 'sequence', mock: 'mock' } as Record<string, string>)[env.VITE_SIGN_CLASSIFIER ?? ''],
-      ['sequence', 'static', 'mock'] as const,
-      'mock',
+      ['motion', 'sequence', 'static', 'mock'] as const,
+      'motion',
     ),
     signWindow: { ...DEFAULT_SIGN_WINDOW },
     dataCollection: pick(
@@ -82,6 +86,10 @@ export function configFromEnv(env: Env = readEnv()): AppConfig {
     ),
     confidenceThreshold: Number.isFinite(threshold) && threshold > 0 && threshold < 1 ? threshold : 0.8,
     apiBase: (env.VITE_API_BASE ?? '').replace(/\/$/, ''),
+    speechTokenUrl: env.VITE_SPEECH_TOKEN_URL ?? '',
+    motionModelUrl: env.VITE_MOTION_MODEL_URL ?? 'model/motion-model.json',
+    localSttUrl: env.VITE_LOCAL_STT_URL ?? 'http://127.0.0.1:8790',
+    signedSpeechModelUrl: env.VITE_SIGNED_SPEECH_MODEL_URL ?? 'model/signed-speech-model.json',
   };
 }
 
@@ -89,14 +97,14 @@ export const PLAN_A: Partial<AppConfig> = {
   sttProvider: 'azure-speech',
   ttsProvider: 'azure-speech',
   faceHints: true,
-  llmProvider: 'azure-openai',
+  llmProvider: 'local',
 };
 
 export const PLAN_B: Partial<AppConfig> = {
   sttProvider: 'typed-input',
   ttsProvider: 'browser-synthesis',
   faceHints: false,
-  llmProvider: 'azure-openai',
+  llmProvider: 'local',
 };
 
 export function whichPlan(c: AppConfig): 'A' | 'B' | 'custom' {

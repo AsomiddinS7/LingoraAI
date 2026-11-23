@@ -26,7 +26,7 @@ export interface PipelineMetrics {
   modelLoadMs: number | null;
   /** Sign window end -> result, ms (spec target: under 1 s). */
   lastProcessingMs: number | null;
-  classifier: 'mock' | 'static' | 'sequence' | null;
+  classifier: 'mock' | 'static' | 'sequence' | 'motion' | null;
 }
 
 const empty: PipelineMetrics = {

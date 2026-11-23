@@ -26,6 +26,7 @@ export function startFramePump(video: HTMLVideoElement, process: FrameProcessor,
   let running = true;
   let busy = false;
   let lastRun = -Infinity;
+  let lastVideoTime = -Infinity;
   let handle = 0;
   let processed = 0;
   let skipped = 0;
@@ -54,12 +55,14 @@ export function startFramePump(video: HTMLVideoElement, process: FrameProcessor,
     schedule(); // ask for the next frame first so processing never delays scheduling
     report(now);
     if (video.readyState < 2) return; // no decoded frame yet
+    if (!v.requestVideoFrameCallback && video.currentTime === lastVideoTime) return;
     if (busy || now - lastRun < minGap) {
       skipped++;
       return;
     }
     busy = true;
     lastRun = now;
+    lastVideoTime = video.currentTime;
     const t0 = performance.now();
     const done = () => {
       totalMs += performance.now() - t0;

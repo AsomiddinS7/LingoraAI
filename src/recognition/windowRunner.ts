@@ -30,6 +30,7 @@ export function createWindowRunner(o: RunnerOptions) {
   let timer: ReturnType<typeof setInterval> | null = null;
   let unsub: (() => void) | null = null;
   let run = 0; // invalidates late callbacks after cancel
+  let recordingRun: number | null = null;
   const tick = o.tickMs ?? 50;
 
   const clear = () => {
@@ -40,6 +41,7 @@ export function createWindowRunner(o: RunnerOptions) {
   };
 
   function processing(id: number) {
+    recordingRun = null;
     clear();
     o.onRecordingEnd?.();
     const t0 = performance.now();
@@ -57,6 +59,7 @@ export function createWindowRunner(o: RunnerOptions) {
   }
 
   function recording(id: number) {
+    recordingRun = id;
     const cfg = o.timing();
     const start = performance.now();
     let seenHand = false;
@@ -86,6 +89,7 @@ export function createWindowRunner(o: RunnerOptions) {
   return {
     start() {
       clear();
+      recordingRun = null;
       const id = ++run;
       const cfg = o.timing();
       const start = performance.now();
@@ -101,7 +105,11 @@ export function createWindowRunner(o: RunnerOptions) {
     },
     cancel() {
       run++;
+      recordingRun = null;
       clear();
+    },
+    finish() {
+      if (recordingRun !== null) processing(recordingRun);
     },
   };
 }

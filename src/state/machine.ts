@@ -2,7 +2,8 @@
 // Rule: nothing reaches SPEAKING unless the signer accepted it (or typed it themselves).
 import type { ClientErrorCode } from '../api/client';
 import type { TtsErrorCode } from '../providers/tts';
-import type { Recognition, RefusalReason, Turn } from '../types';
+import type { SpeechInputIssue } from '../providers/speechErrors';
+import type { Lang, Recognition, RefusalReason, Turn } from '../types';
 
 export type Phase =
   | 'IDLE'
@@ -16,7 +17,7 @@ export type Phase =
   | 'SIMPLIFYING'
   | 'ERROR';
 
-export type SentenceSource = 'model' | 'phrase' | 'fallback' | 'typed';
+export type SentenceSource = 'model' | 'local' | 'phrase' | 'fallback' | 'typed';
 
 export type ConvError =
   | { kind: 'api'; code: ClientErrorCode; retryAfterS?: number }
@@ -31,8 +32,9 @@ export interface ConvState {
   /** Latest classifier event, for the status chip. */
   last: { label: string; confidence: number } | null;
   notRecognized: boolean;
-  proposal: { text: string; source: SentenceSource } | null;
+  proposal: { text: string; source: SentenceSource; language?: Lang } | null;
   speaking: string | null;
+  speakingLanguage?: Lang;
   partial: string;
   error: ConvError | null;
   turns: Turn[];
@@ -41,7 +43,7 @@ export interface ConvState {
   simplifyError: ConvError | null;
   matches: string[];
   ttsIssue: TtsErrorCode | null;
-  sttIssue: boolean;
+  sttIssue: SpeechInputIssue | false;
   /** Increments every time a compose request must be sent. */
   requestId: number;
 }
@@ -82,20 +84,20 @@ export type ConvEvent =
   | { type: 'CLEAR_SIGNS' }
   /** Write the sentence from the signs collected so far. */
   | { type: 'COMPOSE_BUFFER' }
-  | { type: 'COMPOSE_OK'; sentence: string }
+  | { type: 'COMPOSE_OK'; sentence: string; source?: SentenceSource; language?: Lang }
   | { type: 'COMPOSE_REFUSED'; reason: RefusalReason }
   | { type: 'COMPOSE_FAILED'; code: ClientErrorCode; retryAfterS?: number }
   | { type: 'RETRY' }
   | { type: 'USE_WORDS'; text: string }
   | { type: 'ACCEPT_SENTENCE'; id: string; at: number }
   | { type: 'REJECT_SENTENCE' }
-  | { type: 'SPEAK_DIRECT'; text: string; id: string; at: number }
-  | { type: 'REPEAT'; text: string }
+  | { type: 'SPEAK_DIRECT'; text: string; id: string; at: number; language?: Lang }
+  | { type: 'REPEAT'; text: string; language?: Lang }
   | { type: 'SPEAK_DONE'; issue?: TtsErrorCode }
   | { type: 'PTT_START' }
   | { type: 'PARTIAL'; text: string }
   | { type: 'FINAL'; text: string; id: string; at: number }
-  | { type: 'PTT_FAILED' }
+  | { type: 'PTT_FAILED'; issue?: SpeechInputIssue }
   | { type: 'LISTENER_TYPED'; text: string; id: string; at: number }
   | { type: 'EDIT_TURN'; id: string; text: string }
   | { type: 'SIMPLIFY'; turnId: string }
@@ -172,7 +174,7 @@ export function reducer(s: ConvState, e: ConvEvent): ConvState {
     case 'EDIT_PROPOSAL': {
       const text = e.text.trim();
       if (s.phase !== 'CONFIRM_SENTENCE' || !s.proposal || !text) return s;
-      return { ...s, proposal: { text, source: 'typed' } };
+      return { ...s, proposal: { ...s.proposal, text, source: 'typed' } };
     }
 
     case 'CHOOSE_PHRASE':
@@ -181,7 +183,7 @@ export function reducer(s: ConvState, e: ConvEvent): ConvState {
 
     case 'COMPOSE_OK':
       if (s.phase !== 'COMPOSING') return s;
-      return { ...s, phase: 'CONFIRM_SENTENCE', proposal: { text: e.sentence, source: 'model' } };
+      return { ...s, phase: 'CONFIRM_SENTENCE', proposal: { text: e.sentence, source: e.source ?? 'model', ...(e.language ? { language: e.language } : {}) } };
 
     case 'COMPOSE_REFUSED':
       if (s.phase !== 'COMPOSING') return s;
@@ -205,7 +207,8 @@ export function reducer(s: ConvState, e: ConvEvent): ConvState {
         ...s,
         phase: 'SPEAKING',
         speaking: s.proposal.text,
-        turns: [...s.turns, { id: e.id, speaker: 'signer', text: s.proposal.text, at: e.at }],
+        speakingLanguage: s.proposal.language,
+        turns: [...s.turns, { id: e.id, speaker: 'signer', text: s.proposal.text, at: e.at, ...(s.proposal.language ? { language: s.proposal.language } : {}) }],
         proposal: null,
         buffer: [],
         ttsIssue: null,
@@ -221,7 +224,8 @@ export function reducer(s: ConvState, e: ConvEvent): ConvState {
         ...s,
         phase: 'SPEAKING',
         speaking: e.text.trim(),
-        turns: [...s.turns, { id: e.id, speaker: 'signer', text: e.text.trim(), at: e.at }],
+        speakingLanguage: e.language,
+        turns: [...s.turns, { id: e.id, speaker: 'signer', text: e.text.trim(), at: e.at, ...(e.language ? { language: e.language } : {}) }],
         proposal: null,
         candidate: null,
         buffer: [],
@@ -231,7 +235,7 @@ export function reducer(s: ConvState, e: ConvEvent): ConvState {
     case 'REPEAT':
       // Re-read text the signer already accepted earlier; no new turn.
       if (BUSY.includes(s.phase)) return s;
-      return { ...s, phase: 'SPEAKING', speaking: e.text, ttsIssue: null };
+      return { ...s, phase: 'SPEAKING', speaking: e.text, speakingLanguage: e.language, ttsIssue: null };
 
     case 'SPEAK_DONE':
       if (s.phase !== 'SPEAKING') return s;
@@ -253,12 +257,13 @@ export function reducer(s: ConvState, e: ConvEvent): ConvState {
         phase: 'LISTENER_TURN',
         partial: '',
         turns: text ? [...s.turns, { id: e.id, speaker: 'listener', text, at: e.at }] : s.turns,
+        sttIssue: text ? false : 'no_speech',
       };
     }
 
     case 'PTT_FAILED':
       if (s.phase !== 'TRANSCRIBING') return s;
-      return { ...s, phase: 'LISTENER_TURN', partial: '', sttIssue: true };
+      return { ...s, phase: 'LISTENER_TURN', partial: '', sttIssue: e.issue ?? 'failed' };
 
     case 'LISTENER_TYPED': {
       const text = e.text.trim();

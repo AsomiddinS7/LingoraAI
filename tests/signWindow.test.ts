@@ -207,4 +207,18 @@ describe('window runner timing (fake timers)', () => {
     expect(t.progress.length).toBe(n);
     expect(t.results).toHaveLength(0);
   });
+  it('finishes a bounded turn once, and ignores Done outside recording', async () => {
+    const t = setup(false);
+    t.runner.finish();
+    t.runner.start();
+    t.runner.finish();
+    await vi.advanceTimersByTimeAsync(1000);
+    await vi.advanceTimersByTimeAsync(800);
+    t.runner.finish();
+    t.runner.finish();
+    await vi.advanceTimersByTimeAsync(10);
+    expect(t.results).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(t.results).toHaveLength(1);
+  });
 });

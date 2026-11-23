@@ -1,0 +1,11 @@
+/** User-supplied presentation script. These are prepared words, never recognition results. */
+export const PRESENTATION_CUES = [
+  'Assalomu alaykum!',
+  'Biz — eshitish qobiliyati cheklangan insonlar uchun zamonaviy sun’iy intellekt platformasini yaratayotgan jamoamiz.',
+  'Kundalik hayotda imo-ishora tilini tushunadigan tarjimonlar har doim ham topilmaydi.',
+  'Bizning platformamiz kamera orqali imo-ishoralarni real vaqt rejimida oʻqib, ularni matn va ovozga aylantirib beradi.',
+  'Jamoamiz dasturchilar, sun’iy intellekt muhandislari va imo-ishora tili mutaxassislaridan iborat.',
+  'Biz texnologiya hamma uchun ochiq va qulay boʻlishi kerak deb hisoblaymiz.',
+] as const;
+
+export const PRESENTATION_TEXT = PRESENTATION_CUES.join(' ');

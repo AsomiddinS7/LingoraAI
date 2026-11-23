@@ -4,13 +4,14 @@
 
 [build.environment]
   NODE_VERSION = "22"
-  VITE_RECOGNIZER = "static"
+  VITE_RECOGNIZER = "motion"
+  VITE_LLM_PROVIDER = "local"
 
 [[headers]]
   for = "/*"
   [headers.values]
     # 'wasm-unsafe-eval' lets MediaPipe compile its WebAssembly; blob: covers its worker/model buffers.
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https: blob: data:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https: wss://*.speech.microsoft.com wss://*.stt.speech.microsoft.com wss://*.tts.speech.microsoft.com blob: data:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
     Referrer-Policy = "no-referrer"
     Permissions-Policy = "camera=(self), microphone=(self), geolocation=()"
     X-Content-Type-Options = "nosniff"
