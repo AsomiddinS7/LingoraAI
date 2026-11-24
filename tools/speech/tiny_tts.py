@@ -17,8 +17,11 @@ class TinyVocaEngine:
     provider = 'tiny-voca'
     languages = {'uz'}
 
-    def __init__(self, directory=DEFAULT_DIRECTORY):
+    def __init__(self, directory=DEFAULT_DIRECTORY, device='cpu'):
         self.directory = Path(directory)
+        if device not in {'cpu', 'cuda'}:
+            raise ValueError('Unsupported speech synthesis device')
+        self.device = device
         self.model_name = f'{REPO}@{REVISION}'
         self.model = None
         self.lock = threading.Lock()
@@ -29,7 +32,7 @@ class TinyVocaEngine:
         return {'ok': True, 'provider': self.provider, 'model': self.model_name, 'task': 'text-to-speech',
                 'ready': self.model is not None, 'loading': self.loading, 'load_failed': self.failed,
                 'busy': self.lock.locked(), 'languages': ['uz'], 'max_text_characters': MAX_TEXT,
-                'voice': 'M2 (synthetic)', 'sample_rate': 24000}
+                'voice': 'M2 (synthetic)', 'sample_rate': 24000, 'device': self.device}
 
     def load(self):
         if self.model is not None:
@@ -53,7 +56,7 @@ class TinyVocaEngine:
             self.normalize = normalizer.normalize
             self.speak_text = speak_text
             # The reviewed upstream loader uses torch.load(weights_only=True).
-            self.model = load_model(self.directory/'inference.pt', device='cpu')
+            self.model = load_model(self.directory/'inference.pt', device=self.device)
             self.failed = False
         except Exception:
             self.failed = True

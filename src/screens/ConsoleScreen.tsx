@@ -23,8 +23,8 @@ import { useCamera } from '../state/CameraContext';
 import type { FaceHint, HealthResponse, UsageResponse } from '../types';
 
 const SELECTS: { key: keyof AppConfig; options: string[] }[] = [
-  { key: 'sttProvider', options: ['typed-input', 'browser-speech', 'local-stt', 'local-whisper', 'azure-speech'] },
-  { key: 'ttsProvider', options: ['browser-synthesis', 'local-tts', 'azure-speech'] },
+  { key: 'sttProvider', options: ['typed-input', 'browser-speech', 'local-stt', 'local-whisper', 'huggingface', 'azure-speech'] },
+  { key: 'ttsProvider', options: ['browser-synthesis', 'local-tts', 'huggingface', 'azure-speech'] },
   { key: 'llmProvider', options: ['local', 'azure-openai', 'mock'] },
   { key: 'recognizer', options: ['motion', 'static', 'mock', 'sequence'] },
   { key: 'dataCollection', options: ['consenting-teammates', 'tutor-confirmed'] },

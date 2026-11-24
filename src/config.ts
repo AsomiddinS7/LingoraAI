@@ -1,8 +1,8 @@
 // One config object (brief section 2). Set by environment at build time,
 // overridable at runtime from the Console screen for demos (in memory only).
 
-export type SttProviderName = 'azure-speech' | 'typed-input' | 'browser-speech' | 'local-stt' | 'local-whisper';
-export type TtsProviderName = 'azure-speech' | 'browser-synthesis' | 'local-tts';
+export type SttProviderName = 'azure-speech' | 'typed-input' | 'browser-speech' | 'local-stt' | 'local-whisper' | 'huggingface';
+export type TtsProviderName = 'azure-speech' | 'browser-synthesis' | 'local-tts' | 'huggingface';
 export type LlmProviderName = 'local' | 'azure-openai' | 'mock';
 /** v1 spec section 8: sequence (ML team's model via manifest), static (v0 held shapes), mock. */
 export type RecognizerName = 'motion' | 'sequence' | 'static' | 'mock';
@@ -24,6 +24,7 @@ export interface AppConfig {
   motionModelUrl: string;
   localSttUrl: string;
   localTtsUrl: string;
+  speechSpaceUrl: string;
   signedSpeechModelUrl: string;
 }
 
@@ -68,8 +69,8 @@ function readEnv(): Env {
 export function configFromEnv(env: Env = readEnv()): AppConfig {
   const threshold = Number(env.VITE_CONFIDENCE_THRESHOLD);
   return {
-    sttProvider: pick(env.VITE_STT_PROVIDER, ['azure-speech', 'typed-input', 'browser-speech', 'local-stt', 'local-whisper'] as const, 'typed-input'),
-    ttsProvider: pick(env.VITE_TTS_PROVIDER, ['azure-speech', 'browser-synthesis', 'local-tts'] as const, 'browser-synthesis'),
+    sttProvider: pick(env.VITE_STT_PROVIDER, ['azure-speech', 'typed-input', 'browser-speech', 'local-stt', 'local-whisper', 'huggingface'] as const, 'typed-input'),
+    ttsProvider: pick(env.VITE_TTS_PROVIDER, ['azure-speech', 'browser-synthesis', 'local-tts', 'huggingface'] as const, 'browser-synthesis'),
     faceHints: env.VITE_FACE_HINTS === 'on',
     llmProvider: pick(env.VITE_LLM_PROVIDER, ['local', 'azure-openai', 'mock'] as const, 'local'),
     // Mock stays on unless explicitly turned off, so a fresh checkout runs with no keys.
@@ -91,6 +92,7 @@ export function configFromEnv(env: Env = readEnv()): AppConfig {
     motionModelUrl: env.VITE_MOTION_MODEL_URL ?? 'model/trained-sign-model.json',
     localSttUrl: env.VITE_LOCAL_STT_URL ?? 'http://127.0.0.1:8790',
     localTtsUrl: env.VITE_LOCAL_TTS_URL ?? 'http://127.0.0.1:8792',
+    speechSpaceUrl: env.VITE_SPEECH_SPACE_URL ?? '',
     signedSpeechModelUrl: env.VITE_SIGNED_SPEECH_MODEL_URL ?? 'model/signed-speech-model.json',
   };
 }

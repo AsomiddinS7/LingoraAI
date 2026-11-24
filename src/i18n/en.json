@@ -173,6 +173,8 @@
   "tts.failed": "Read aloud failed. The text is shown on screen instead.",
   "tts.azureMissing": "The Azure voice is not connected yet. Using the browser voice.",
   "tts.localNotice": "Experimental synthetic Uzbek voice. Start the free local voice service on this computer to use it.",
+  "speech.huggingFaceNotice": "Microphone recordings and confirmed text are processed by Lingora’s Hugging Face Space. Its free queue and daily limits may delay speech results.",
+  "speech.huggingFaceMissing": "Hugging Face speech is not connected yet. You can type a message.",
   "speak.title": "Text to speech",
   "speak.tabType": "I type",
   "speak.tabReply": "Their reply",

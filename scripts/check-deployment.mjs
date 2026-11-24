@@ -38,8 +38,15 @@ export function inspectStaticConfig(env) {
   const issues = [];
   const stt = env.VITE_STT_PROVIDER ?? 'typed-input';
   const tts = env.VITE_TTS_PROVIDER ?? 'browser-synthesis';
-  if (!['browser-speech', 'azure-speech'].includes(stt)) issues.push('static_site_requires_browser_or_azure_stt');
-  if (!['browser-synthesis', 'azure-speech'].includes(tts)) issues.push('invalid_tts_provider');
+  if (!['browser-speech', 'azure-speech', 'huggingface'].includes(stt)) issues.push('static_site_requires_browser_or_azure_stt');
+  if (!['browser-synthesis', 'azure-speech', 'huggingface'].includes(tts)) issues.push('invalid_tts_provider');
+  if(stt==='huggingface'||tts==='huggingface'){
+    try{
+      const url=new URL(env.VITE_SPEECH_SPACE_URL);
+      if(url.protocol!=='https:'||!url.hostname.endsWith('.hf.space')||url.username||url.password||url.search||url.hash
+        ||url.port||!['','/'].includes(url.pathname))throw Error();
+    }catch{issues.push('huggingface_requires_public_https_space_url');}
+  }
   if (env.VITE_RECOGNIZER !== 'motion') issues.push('selected_recognizer_is_not_motion');
   if (!['model/motion-model.json', './model/motion-model.json', 'model/trained-sign-model.json', './model/trained-sign-model.json'].includes(env.VITE_MOTION_MODEL_URL)) issues.push('greeting_model_must_use_checked_bundled_asset');
   if (!['model/signed-speech-model.json', './model/signed-speech-model.json'].includes(env.VITE_SIGNED_SPEECH_MODEL_URL)) issues.push('speech_model_must_use_checked_bundled_asset');
@@ -51,8 +58,8 @@ export function inspectStaticConfig(env) {
         url.username || url.password || url.search || url.hash || !url.pathname.endsWith('/api/speech-token')) throw new Error();
     } catch { issues.push('azure_requires_public_https_token_broker'); }
   }
-  return { issues, selected: { stt: ['browser-speech', 'azure-speech', 'local-stt', 'local-whisper', 'typed-input'].includes(stt) ? stt : 'invalid',
-    tts: ['browser-synthesis', 'azure-speech'].includes(tts) ? tts : 'invalid' } };
+  return { issues, selected: { stt: ['browser-speech', 'azure-speech', 'local-stt', 'local-whisper', 'typed-input', 'huggingface'].includes(stt) ? stt : 'invalid',
+    tts: ['browser-synthesis', 'azure-speech', 'huggingface'].includes(tts) ? tts : 'invalid' } };
 }
 
 export function auditPublishedPaths(paths) {

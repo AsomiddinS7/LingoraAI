@@ -24,6 +24,9 @@ PASSWORD = "correct horse battery"
 
 @pytest.fixture(scope="session", autouse=True)
 def schema():
+    name = engine.url.database or ''
+    if not (name.endswith('_test') or name.startswith('lingora_test_')):
+        raise RuntimeError('Refusing schema reset outside a dedicated test database')
     with engine.begin() as c:
         c.execute(text("drop schema public cascade; create schema public;"))
     cfg = Config(os.path.join(os.path.dirname(__file__), "..", "alembic.ini"))

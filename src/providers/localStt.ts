@@ -4,6 +4,7 @@ import { SpeechInputError } from './speechErrors';
 export type LocalSttStatus = 'idle' | 'requesting-microphone' | 'recording' | 'processing' | 'error';
 
 export interface LocalSttOptions {
+  serviceKind?: 'local' | 'hosted';
   /** Base URL of the optional service running on this computer. */
   url?: string;
   onStatus?: (status: LocalSttStatus) => void;
@@ -176,7 +177,9 @@ export class LocalWhisperStt implements SttProvider {
       } catch (error) {
         if (generation !== this.generation) return;
         if (timedOut) throw new SpeechInputError('timeout', 'Local speech recognition timed out. Check the speech server and try a shorter turn.');
-        if (error instanceof TypeError) throw new SpeechInputError('service_unavailable', 'Cannot reach the local speech service. Start the Python speech server on this computer.');
+        if (error instanceof TypeError) throw new SpeechInputError('service_unavailable', this.options.serviceKind === 'hosted'
+          ? 'Cannot reach the configured speech server. It may be starting up or busy.'
+          : 'Cannot reach the local speech service. Start the Python speech server on this computer.');
         throw error;
       } finally {
         clearTimeout(timeout);

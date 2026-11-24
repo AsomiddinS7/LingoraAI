@@ -49,7 +49,9 @@ def create_app() -> FastAPI:
             # The site itself (same origin as the API, so session cookies work).
             response.headers["Content-Security-Policy"] = SITE_CSP
             response.headers["Permissions-Policy"] = "camera=(self), microphone=(self), geolocation=()"
-            long_lived = path.startswith(("/assets/", "/mediapipe/", "/model/"))
+            # Compiled sign bundles use stable filenames and change between
+            # releases. Only hashed/runtime assets get the long immutable cache.
+            long_lived = path.startswith(("/assets/", "/mediapipe/"))
             response.headers["Cache-Control"] = "public, max-age=604800, immutable" if long_lived else "no-cache"
         if s.cookie_secure:
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"

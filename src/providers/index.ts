@@ -17,6 +17,7 @@ import { composeLocally } from './localSentence';
 import { MotionRecognizer } from '../recognition/motionRecognizer';
 import { LocalWhisperStt, type LocalSttStatus } from './localStt';
 import { LocalNeuralTts } from './localTts';
+import { createHuggingFaceSpeech, speechSpaceUrl } from './huggingFaceSpeech';
 import { useSyncExternalStore } from 'react';
 
 // ---------- Team plug-in points ----------
@@ -113,6 +114,18 @@ export async function createRecognizer(c: AppConfig): Promise<SequenceRecognizer
 // ---------- Text to speech ----------
 const browserTts = new BrowserSynthesisTts();
 let localTts: { url: string; provider: LocalNeuralTts } | null = null;
+let hostedSpeech: {url:string;providers:ReturnType<typeof createHuggingFaceSpeech>} | null = null;
+function huggingFace(c: AppConfig) {
+  try{speechSpaceUrl(c.speechSpaceUrl);}catch{return null;}
+  if(!hostedSpeech||hostedSpeech.url!==c.speechSpaceUrl){
+    hostedSpeech?.providers.tts.cancel();hostedSpeech?.providers.stt.cancel();
+    hostedSpeech={url:c.speechSpaceUrl,providers:createHuggingFaceSpeech(c.speechSpaceUrl,{
+      onStatus:status=>{localStatus=status;sttListeners.forEach(l=>l());},
+      onError:error=>speechErrorHandler?.(error),
+    })};
+  }
+  return hostedSpeech.providers;
+}
 let speech: { url: string; stt: AzureSpeechStt; tts: AzureSpeechTts } | null = null;
 let speechErrorHandler: ((error?: unknown) => void) | undefined;
 export function setSpeechErrorHandler(handler?: (error?: unknown) => void): void { speechErrorHandler = handler; }
@@ -128,6 +141,10 @@ function azure(c: AppConfig) {
   return speech;
 }
 export function getTts(c: AppConfig): { provider: TtsProvider; notice: MessageKey | null } {
+  if(c.ttsProvider==='huggingface'){
+    const hosted=huggingFace(c);
+    return hosted?{provider:hosted.tts,notice:'speech.huggingFaceNotice'}:{provider:browserTts,notice:'speech.huggingFaceMissing'};
+  }
   if (c.ttsProvider === 'local-tts') {
     if (!localTts || localTts.url !== c.localTtsUrl) {
       localTts?.provider.cancel();
@@ -158,6 +175,10 @@ export function useLocalSttStatus() {
 }
 
 export function getStt(c: AppConfig): SttChoice {
+  if(c.sttProvider==='huggingface'){
+    const hosted=huggingFace(c);
+    return hosted?{kind:'ptt',provider:hosted.stt,notice:'speech.huggingFaceNotice'}:{kind:'typed',notice:'speech.huggingFaceMissing'};
+  }
   if (c.sttProvider === 'local-stt' || c.sttProvider === 'local-whisper') {
     if (!localStt || localStt.url !== c.localSttUrl) {
       localStt?.provider.cancel();

@@ -19,6 +19,13 @@ test('expanded release selects the actual production parser and requires its tra
 
 const publicEnv = () => ({ VITE_RECOGNIZER: 'motion', VITE_STT_PROVIDER: 'browser-speech', VITE_TTS_PROVIDER: 'browser-synthesis',
   VITE_MOTION_MODEL_URL: 'model/motion-model.json', VITE_SIGNED_SPEECH_MODEL_URL: 'model/signed-speech-model.json' });
+
+test('Hugging Face hosting requires a public HTTPS app URL and no inline credentials',()=>{
+  const env={...publicEnv(),VITE_STT_PROVIDER:'huggingface',VITE_TTS_PROVIDER:'huggingface'};
+  for(const url of ['', 'http://localhost:7860','https://huggingface.co/spaces/user/demo','https://secret@user-demo.hf.space','https://user-demo.hf.space?token=private'])
+    assert(inspectStaticConfig({...env,VITE_SPEECH_SPACE_URL:url}).issues.includes('huggingface_requires_public_https_space_url'));
+  assert.deepEqual(inspectStaticConfig({...env,VITE_SPEECH_SPACE_URL:'https://asomiddinsaidov07-lingora-speech.hf.space'}).issues,[]);
+});
 const model = (labels) => ({ format: 'lingora-motion-model', version: 1, feature_version: 'two-hand-body-v2', input_frames: 32, feature_dim: 128,
   templates: labels.map((label, index) => ({ id: `reference-${index}`, label, normalized: { reference: 'hands', durationMs: 1000, handCoverage: 1,
     vectors: Array.from({ length: 32 }, () => Array.from({ length: 128 }, (_, i) => i === 0 || i === 64 ? 1 : 0)) } })) });
