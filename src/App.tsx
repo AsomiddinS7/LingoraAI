@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { platformApiEnabled } from './config';
 import { AppShell } from './components/AppShell';
 import { I18nProvider } from './i18n';
 import { account } from './account';
@@ -22,15 +23,15 @@ function Screen() {
     case 'presentation':
       return <SignedSpeechScreen />;
     case 'contribute':
-      return <ContributeScreen />;
+      return platformApiEnabled ? <ContributeScreen /> : <HelpScreen />;
     case 'profile':
       return <ProfileScreen />;
     case 'help':
       return <HelpScreen />;
     case 'signin':
-      return <AuthScreen mode="signin" />;
+      return platformApiEnabled ? <AuthScreen mode="signin" /> : <HelpScreen />;
     case 'register':
-      return <AuthScreen mode="register" />;
+      return platformApiEnabled ? <AuthScreen mode="register" /> : <HelpScreen />;
     case 'console':
       return <ConsoleScreen />;
     default:
@@ -41,8 +42,10 @@ function Screen() {
 export function App() {
   // Signs and phrases come from the API (v1 spec 2.2); the bundled seed covers offline use.
   useEffect(() => {
-    void refreshCatalog();
-    void finishTelegramRedirect().then(() => account.refresh());
+    if (platformApiEnabled) {
+      void refreshCatalog();
+      void finishTelegramRedirect().then(() => account.refresh());
+    }
   }, []);
   return (
     <I18nProvider>

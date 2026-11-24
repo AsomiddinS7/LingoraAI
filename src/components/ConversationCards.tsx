@@ -1,6 +1,7 @@
 // Sentence flow after a sign is confirmed: composing -> proposed sentence (Speak / Edit / Reject)
 // -> speaking. Nothing is spoken before the signer confirms (v1 spec 8, step 6).
 import { useState } from 'react';
+import { platformApiEnabled } from '../config';
 import { glossFor, signsAsWords } from '../data';
 import { useI18n, type MessageKey } from '../i18n';
 import { useConversation } from '../state/ConversationContext';
@@ -96,7 +97,7 @@ export function SentenceCard() {
             </button>
           </div>
         )}
-        {state.proposal.source === 'model' && (
+        {platformApiEnabled && state.proposal.source === 'model' && (
           <div className="feedback-row">
             {report === null ? (
               <button type="button" className="link-btn" onClick={async () => setReport(await conv.sendFeedback('wrong_translation', state.buffer.map((b) => b.label)))}>

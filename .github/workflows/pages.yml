@@ -20,7 +20,7 @@ jobs:
     env:
       VITE_RECOGNIZER: motion
       VITE_LLM_PROVIDER: local
-      VITE_MOCK_AZURE: 'true'
+      VITE_MOCK_AZURE: 'false'
       VITE_FACE_HINTS: 'off'
       # These committed assets are checked before and after the build. Public
       # Pages builds must never depend on an ignored local training artifact.

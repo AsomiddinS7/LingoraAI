@@ -42,8 +42,8 @@ export function ConsoleScreen() {
         <VideoExamples />
         <PerformanceCard />
         <SwitchesCard />
-        <FixtureCard />
-        <SimulateCard />
+        {!import.meta.env.PROD && <FixtureCard />}
+        {!import.meta.env.PROD && <SimulateCard />}
         <UsageCard />
         <EvaluationCard />
         <DataOrTraining />
@@ -126,14 +126,14 @@ function SwitchesCard() {
                 <th scope="row"><label htmlFor={`sw-${key}`}>{key}</label></th>
                 <td>
                   <select id={`sw-${key}`} className="input" value={String(config[key])} onChange={(e) => runtime.setConfig({ [key]: e.target.value } as Partial<AppConfig>)}>
-                    {options.map((o) => (
+                    {options.filter((o) => !import.meta.env.PROD || o !== 'mock').map((o) => (
                       <option key={o} value={o}>{o}</option>
                     ))}
                   </select>
                 </td>
               </tr>
             ))}
-            {(['faceHints', 'mockAzure'] as const).map((key) => (
+            {(['faceHints', 'mockAzure'] as const).filter((key) => !import.meta.env.PROD || key !== 'mockAzure').map((key) => (
               <tr key={key}>
                 <th scope="row">{key}</th>
                 <td>

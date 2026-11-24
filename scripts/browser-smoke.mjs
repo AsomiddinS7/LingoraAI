@@ -54,6 +54,7 @@ try {
   // select that provider instead of inheriting the operator's local STT setting.
   await page.evaluate(() => { location.hash = '/console'; });
   await page.locator('#sw-sttProvider').selectOption('browser-speech');
+  await page.locator('#sw-ttsProvider').selectOption('browser-synthesis');
   await page.evaluate(() => { location.hash = '/conversation'; });
   console.log('browser: model ready');
   checks.push(`real local motion model loaded: ${expectedMotionLabels} labels`);

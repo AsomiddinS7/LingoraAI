@@ -20,6 +20,7 @@ import { sequenceStore, useSequenceVersion } from '../ml/sequenceStore';
 import { useConversation } from '../state/ConversationContext';
 import { useTheme, type Theme } from '../theme';
 import { LANGS, type Lang } from '../types';
+import { platformApiEnabled } from '../config';
 
 function ServerNotice() {
   const { t } = useI18n();
@@ -61,10 +62,10 @@ export function WelcomeScreen() {
             {t('welcome.guest')}
           </button>
           <p className="small muted" style={{ textAlign: 'center' }}>{t('welcome.guestNote')}</p>
-          <div className="btn-row" style={{ justifyContent: 'center' }}>
+          {platformApiEnabled && <div className="btn-row" style={{ justifyContent: 'center' }}>
             <button type="button" className="btn" onClick={() => go(href('signin'))}>{t('welcome.signin')}</button>
             <button type="button" className="btn" onClick={() => go(href('register'))}>{t('welcome.register')}</button>
-          </div>
+          </div>}
         </div>
         <div className="notice warn" role="note">
           <Icon name="alert" />
@@ -244,12 +245,12 @@ export function ProfileScreen() {
   return (
     <div className="narrow">
       <h1>{t('profile.title')}</h1>
-      <section className="card stack" aria-labelledby="signin-h">
+      {platformApiEnabled && <section className="card stack" aria-labelledby="signin-h">
         <h2 id="signin-h">{t('profile.signInTitle')}</h2>
         <p className="muted">{t('profile.signInLead')}</p>
         <SocialSignIn />
         <a className="link-btn" href={href('signin')}>{t('social.email')}</a>
-      </section>
+      </section>}
 
       <section className="card stack" style={{ marginTop: 16 }} aria-labelledby="session-h">
         <h2 id="session-h">{t('profile.session')}</h2>
@@ -284,13 +285,13 @@ export function ProfileScreen() {
         <p className="small muted">{t('profile.guest')}</p>
       </section>
 
-      <a className="card row-link" style={{ marginTop: 16 }} href={href('contribute')}>
+      {platformApiEnabled && <a className="card row-link" style={{ marginTop: 16 }} href={href('contribute')}>
         <Icon name="hand" />
         <span>
           <strong>{t('contribute.title')}</strong>
           <span className="muted small">{t('profile.contributeHint')}</span>
         </span>
-      </a>
+      </a>}
     </div>
   );
 }

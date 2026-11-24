@@ -1,5 +1,6 @@
 // The core v1 interaction: Sign now -> countdown ring -> recording ring -> processing -> result.
 import { useState } from 'react';
+import { platformApiEnabled } from '../config';
 import { glossFor } from '../data';
 import { useI18n, type MessageKey } from '../i18n';
 import { useRuntime } from '../runtime';
@@ -197,7 +198,7 @@ export function SignWindowPanel() {
             {t('win.tryAgain')}
           </button>
         </div>
-        <div className="feedback-row">
+        {platformApiEnabled && <div className="feedback-row">
           {report === null ? (
             <button type="button" className="link-btn" onClick={() => void sendWrong()}>
               {t('win.wrongSign')}
@@ -205,7 +206,7 @@ export function SignWindowPanel() {
           ) : (
             <span role="status" className="small muted">{report === 'ok' ? t('win.reported') : t('win.reportFailed')}</span>
           )}
-        </div>
+        </div>}
       </div>
     );
   }

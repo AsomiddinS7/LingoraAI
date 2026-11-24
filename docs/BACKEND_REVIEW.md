@@ -29,11 +29,11 @@ GitHub CI now runs the backend suite against its own PostgreSQL 16 service.
 
 ## Current deployment limits
 
-The GitHub Pages build still uses mock account/catalog API responses
-(`VITE_MOCK_AZURE=true`). Sign recognition and confirmed-label wording are real
-local inference, but mock login/registration does not create a persistent cloud
-account. The frontend and speech Space must not be described as a fully deployed
-account/admin platform.
+The GitHub Pages build uses the bundled catalog and real local sign inference.
+Mock API transport is disabled in production. Account, registration, contribution
+and feedback controls are unavailable until a persistent platform API is deployed;
+the speech Space does not provide an account database. Confirmed labels are
+composed locally. This is not yet a deployed account/admin platform.
 
 The database's existing seed vocabulary also remains the original 12 signs. The
 website supplements it with its compiled 48-word model vocabulary at runtime;

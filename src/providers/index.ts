@@ -42,7 +42,7 @@ export const mockServer = createMockServer({
 });
 
 export function usesMockApi(c: AppConfig): boolean {
-  return c.mockAzure || c.llmProvider === 'mock';
+  return !import.meta.env.PROD && (c.mockAzure || c.llmProvider === 'mock');
 }
 
 export const api = createApiClient({
