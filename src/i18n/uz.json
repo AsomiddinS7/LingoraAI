@@ -173,6 +173,7 @@
   "tts.unsupported": "Bu brauzerda ovozli oʻqish ishlamaydi. Matn ekranda koʻrsatiladi.",
   "tts.failed": "Ovozli oʻqish ishlamadi. Matn ekranda koʻrsatiladi.",
   "tts.azureMissing": "Azure ovozi hali ulanmagan. Brauzer ovozi ishlatilmoqda.",
+  "tts.localNotice": "Tajribaviy sun’iy o‘zbek ovozi. Ishlatish uchun shu kompyuterda bepul mahalliy ovoz xizmatini ishga tushiring.",
   "speak.title": "Matndan nutqqa",
   "speak.tabType": "Men yozaman",
   "speak.tabReply": "Suhbatdosh javobi",

@@ -10,7 +10,7 @@ test('expanded release selects the actual production parser and requires its tra
   assert.deepEqual(inspectStaticConfig(env).issues, []);
   const text = await readFile(new URL('../public/model/trained-sign-model.json', import.meta.url), 'utf8');
   const result = await inspectTrainedModel(text);
-  assert.equal(result.templates, 85); assert.equal(result.positiveLabels.length, 40);
+  assert.equal(result.templates, 101); assert.equal(result.positiveLabels.length, 48);
   const raw = JSON.parse(text); raw.classifier.data_audit = { private: 'source.mp4' };
   await assert.rejects(inspectTrainedModel(JSON.stringify(raw)), /metadata/);
   const report = await checkDeployment({ env, trackedPaths: REQUIRED_ASSETS.map(p => `public/${p}`) });

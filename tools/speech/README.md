@@ -1,5 +1,75 @@
 # Local Uzbek speech recognition
 
+## Free local Uzbek neural voice
+
+The optional `local-tts` provider uses the pinned Apache-licensed
+[Uzbek tiny-voca model](https://huggingface.co/Inomjonov/tiny-voca-uzbek-navoiy),
+with one synthetic male voice and Latin-script Uzbek input. It needs no API key,
+installed browser Uzbek voice, or voice cloning. Its 18 MB checkpoint and verified
+runtime are downloaded separately and stay outside the public website artifact.
+
+```powershell
+python -m venv .venv-tts
+.venv-tts/Scripts/python.exe -m pip install -r tools/speech/requirements-tts.txt
+.venv-tts/Scripts/python.exe tools/speech/download_tts.py
+.venv-tts/Scripts/python.exe tools/speech/server.py --engine tiny-voca --port 8792 --warmup
+```
+
+Open Lingora locally, select **local-tts** in Console, and choose Uzbek. Text is
+sent only after the normal confirmation action. Requests and generated WAV stay
+in memory; cancelling aborts the request, stops playback and releases the audio
+object. Unsupported languages and failed synthesis preserve the visible text.
+Requests are limited to 300 characters, inference is serialized, and service
+origins/hosts have the same explicit checks as local STT.
+
+For a local build, set `VITE_TTS_PROVIDER=local-tts` and
+`VITE_LOCAL_TTS_URL=http://127.0.0.1:8792`. Add `--allow-origin` for an explicitly
+chosen additional frontend origin. GitHub Pages still defaults to browser TTS;
+a static host cannot run this Python model for its visitors.
+
+Eight fixed phrases passed an independent NVIDIA ASR round-trip diagnostic with
+zero word errors. The real website confirmation, synthesis HTTP request and native
+browser playback also passed with a2.848-second generated utterance. Generation
+after loading was subsecond on the tested CPU. These checks are not human MOS,
+speaker preference, every-word pronunciation or a physical loudspeaker assessment.
+
+Run `python tools/speech/evaluate_tts.py --generate`, followed by
+`.venv-stt/Scripts/python.exe tools/speech/evaluate_tts.py`, to reproduce the private
+samples and independent ASR diagnostic. See `MODEL_NOTICES.md` for attribution.
+
+## Speech robustness update
+
+NVIDIA service inference now removes DC, raises quiet audio by at most8? with a
+peak bound, then keeps one contiguous interval around detected speech with 200 ms
+padding. Internal pauses are retained. No reference text, expected phrase,
+language-model correction, or hotwords are supplied. Silence still returns empty
+text. The cached-model resolver now checks only the actual ONNX and token files,
+so a newer Hugging Face client does not require unrelated source NeMo weights.
+
+A32-recording Google FLEURS Uzbek corpus sample was assigned to 16 development and
+16 holdout recordings using sentence hashes before inference. Development selected
+the audio profile; the holdout was used only for the final comparison:
+
+| Holdout audio | Previous WER | Updated WER |
+| --- | --- | --- |
+| Clean | 18.08% | 17.34% |
+| Quiet (6% amplitude) | 23.25% | 18.08% |
+| Added noise, 18 dB SNR | 29.52% | 27.31% |
+| Equal-weight average | 23.62% | 20.91% |
+
+All silence, low-noise and DC-offset checks returned empty transcripts. The prior
+presentation regression retained20.63% WER. No ASR weights were fine-tuned. These
+are small, recorded-audio checks; fresh microphones, speaker disjointness from
+pretraining and general Uzbek accuracy are not established. Noisy-audio character
+error rose slightly (12.91% to 13.37%) despite the word-error improvement.
+
+```powershell
+python tools/speech/prepare_public_benchmark.py
+.venv-stt/Scripts/python.exe tools/speech/evaluate_public.py --role dev --out private-video-work/speech-evaluation/public-v1/dev-results.json
+.venv-stt/Scripts/python.exe tools/speech/evaluate_public.py --role holdout --profiles raw level --out private-video-work/speech-evaluation/public-v1/holdout-results.json
+.venv-stt/Scripts/python.exe -m unittest discover -s tools/speech -p 'test*.py'
+```
+
 ## Recommended local demo: NVIDIA Uzbek CTC
 
 The current local build selects `local-stt` at `http://127.0.0.1:8791`. It requires this separate Python service. No paid API key is required; model downloads need internet, and subsequent inference runs locally. This is turn-based recognition: stop the microphone to receive text. The NVIDIA backend supports **Uzbek only**; keep browser speech or Whisper for English/Russian.
@@ -15,7 +85,7 @@ python -m venv .venv-stt
 
 The download helper fetches the pinned 174 MB community ONNX conversion of NVIDIA's Uzbek FastConformer CTC branch and writes a hash manifest. It never uploads audio. Startup resolves that pinned cache offline; missing weights require running the download command first. This conversion uses MatMul int8 and float32 convolutions; it is not the original default Transducer decoder. See [MODEL_NOTICES.md](MODEL_NOTICES.md) for NVIDIA attribution, OpenVoiceOS/Algorithco conversion credit, and CC BY 4.0 terms.
 
-The NVIDIA wrapper uses Silero speech detection before decoding, because the ungated model produced a stray letter on silence. Speech detection suppresses non-speech turns; it does not replace words or add expected text. No presentation script is passed to recognition.
+The NVIDIA wrapper uses Silero speech detection before decoding, because the ungated model produced a stray letter on silence. The service applies the bounded leveling and contiguous speech trim described above. It never replaces words, splices internal pauses or adds expected text. No presentation script is passed to recognition.
 
 With this service running, open `http://localhost:8787/#/conversation`. For a source build, set `VITE_STT_PROVIDER=local-stt` and `VITE_LOCAL_STT_URL=http://127.0.0.1:8791` in `.env.local`, then rebuild. The legacy `local-whisper` provider name remains supported. To return to browser STT, select `browser-speech` in Console or change the build setting and rebuild.
 

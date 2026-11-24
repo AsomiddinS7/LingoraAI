@@ -16,6 +16,7 @@ import { AzureSpeechStt, AzureSpeechTts, createSpeechTokenSource } from './azure
 import { composeLocally } from './localSentence';
 import { MotionRecognizer } from '../recognition/motionRecognizer';
 import { LocalWhisperStt, type LocalSttStatus } from './localStt';
+import { LocalNeuralTts } from './localTts';
 import { useSyncExternalStore } from 'react';
 
 // ---------- Team plug-in points ----------
@@ -111,6 +112,7 @@ export async function createRecognizer(c: AppConfig): Promise<SequenceRecognizer
 
 // ---------- Text to speech ----------
 const browserTts = new BrowserSynthesisTts();
+let localTts: { url: string; provider: LocalNeuralTts } | null = null;
 let speech: { url: string; stt: AzureSpeechStt; tts: AzureSpeechTts } | null = null;
 let speechErrorHandler: ((error?: unknown) => void) | undefined;
 export function setSpeechErrorHandler(handler?: (error?: unknown) => void): void { speechErrorHandler = handler; }
@@ -126,6 +128,13 @@ function azure(c: AppConfig) {
   return speech;
 }
 export function getTts(c: AppConfig): { provider: TtsProvider; notice: MessageKey | null } {
+  if (c.ttsProvider === 'local-tts') {
+    if (!localTts || localTts.url !== c.localTtsUrl) {
+      localTts?.provider.cancel();
+      localTts = { url: c.localTtsUrl, provider: new LocalNeuralTts({ url: c.localTtsUrl }) };
+    }
+    return { provider: localTts.provider, notice: 'tts.localNotice' };
+  }
   if (c.ttsProvider === 'azure-speech') {
     if (registered.tts) return { provider: registered.tts(), notice: null };
     if (c.speechTokenUrl) return { provider: azure(c).tts, notice: null };

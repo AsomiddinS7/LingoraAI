@@ -7,7 +7,7 @@ replay evaluation. Scores are similarities, not calibrated probabilities.
 
 | File | Role |
 | --- | --- |
-| `trained-sign-model.json` | Default: 40 Uzbek word labels, 85 camera-adapted references and fitted classifier coefficients. |
+| `trained-sign-model.json` | Default: 48 Uzbek word labels, 101 camera-adapted references and fitted classifier coefficients. |
 | `motion-model.json` | Legacy fallback: eight references for `hello`, `goodbye`, `no`, `please`, and `thank_you`. |
 | `signed-speech-model.json` | Separate six-phrase presentation demo, `speech_01` through `speech_06`. |
 | `hand_landmarker.task` | Google MediaPipe Hand Landmarker; detects up to two hands. |
@@ -23,17 +23,18 @@ are rejected using a floor fitted exclusively from training performances.
 Editing/importing a legacy gallery removes the fitted head. The six-phrase model
 keeps its own strict matching policy and never shares the word classifier.
 
-**Measured scope.** Training uses 85 usable camera views of 43 existing training
-performances, covering 40 words. Camera views are augmentations, not independent
+**Measured scope.** Training uses 101 usable camera views of 51 existing training
+performances, covering 48 words. Camera views are augmentations, not independent
 participants. Reserved second takes remain excluded from fitting and calibration.
 With recovery tracking, recorded-video checks recognized 34/40 nominal cases and
-30/38 adverse cases, with no wrong accepted known word in these two groups; three
+32/38 adverse cases, with no wrong accepted known word in these two groups; three
 unknown/idle cases were rejected. A separate replay through the app's real-time
-recording window returned 33/38 correct words, one wrong word and four rejections.
+recording window returned 40/46 correct words, one wrong word and five rejections.
+The eight added words scored 8/8 in both pixel conditions and 7/8 in real time.
 Accuracy on new signers has not been established. These measurements do not
 establish unrestricted Uzbek sign-language translation. Two number labels have
 only training-source replays, and each presentation phrase has one source take.
-See `docs/TRACKING_AND_MODEL_V2.md` for procedures and limitations.
+See `docs/MODEL_AND_VOICE_V3.md` for procedures and limitations.
 
 **Deployment.** GitHub Pages selects committed inference assets:
 
@@ -43,7 +44,7 @@ VITE_SIGNED_SPEECH_MODEL_URL=model/signed-speech-model.json
 ```
 
 Paths are relative for `/LingoraAI/`. CI validates the production parser and
-40-word vocabulary contract, requires selected assets to be tracked and verifies
+48-word vocabulary contract, requires selected assets to be tracked and verifies
 that built bytes match source assets. Model requests bypass the service-worker
 cache. WASM is copied from the pinned MediaPipe npm package.
 

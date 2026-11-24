@@ -62,8 +62,20 @@ jobs:
         with:
           path: dist
 
+  speech-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install lightweight speech test dependencies
+        run: python -m pip install 'numpy>=2,<3' 'huggingface_hub>=0.34,<2'
+      - name: Check local speech protocols and offline model resolution
+        run: python -m unittest discover -s tools/speech -p 'test*.py'
+
   deploy:
-    needs: build
+    needs: [build, speech-checks]
     runs-on: ubuntu-latest
     environment:
       name: github-pages

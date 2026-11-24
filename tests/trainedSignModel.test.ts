@@ -19,10 +19,10 @@ function frames(input: NormalizedSequence): SequenceFrame[] {
 }
 afterEach(() => registerModelWords([]));
 describe('published trained model integration', () => {
-  it('loads all 40 words and preserves the trained decision when imported/exported', () => {
+  it('loads all 48 words and preserves the trained decision when imported/exported', () => {
     const store = createSequenceStore();
-    expect(store.importJson(text)).toBe(85);
-    expect(Object.keys(store.counts())).toHaveLength(40);
+    expect(store.importJson(text)).toBe(101);
+    expect(Object.keys(store.counts())).toHaveLength(48);
     expect(store.isTrained()).toBe(true);
     const input = frames(model.gallery.templates[0].normalized);
     expect(store.match(input)).toEqual(createTrainedMatcher(model)(input));
@@ -35,7 +35,7 @@ describe('published trained model integration', () => {
     expect(store.match(Array.from({ length: 32 }, (_, i) => ({ t: i * 50, left: null, right: null }))).label).toBe('none');
     expect(() => store.importJson(text, ['speech_01'])).toThrow();
     expect(() => store.importJson('{"format":"wrong"}')).toThrow();
-    expect(store.isTrained()).toBe(true); expect(store.all()).toHaveLength(85);
+    expect(store.isTrained()).toBe(true); expect(store.all()).toHaveLength(101);
     store.replace([store.all()[0]]); expect(store.isTrained()).toBe(false);
     store.importJson(text); store.clear(); expect(store.isTrained()).toBe(false);
     expect(store.match([]).reason).toBe('no_templates');

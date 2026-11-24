@@ -142,7 +142,10 @@ class NvidiaCtcEngine(WhisperEngine):
 
     def _load_model(self):
         from nvidia_ctc import NvidiaCtcModel
-        return NvidiaCtcModel(self.model_name)
+        return NvidiaCtcModel(self.model_name, preprocessing='level')
+
+    def health(self):
+        return {**super().health(), 'preprocessing': 'bounded-level-contiguous-vad-trim-v1'}
 
     def recognize(self, audio, language):
         return self.model.transcribe(audio)
@@ -163,8 +166,8 @@ def create_server(host="127.0.0.1", port=8790, *, engine=None, allowed_origins=N
         def log_message(self, _format, *_args):
             pass
 
-        def reply(self, status, body):
-            payload = json.dumps(body, ensure_ascii=False).encode("utf-8")
+        def reply(self, status, body, content_type="application/json; charset=utf-8"):
+            payload = body if isinstance(body, bytes) else json.dumps(body, ensure_ascii=False).encode("utf-8")
             self.send_response(status)
             origin = self.headers.get("Origin")
             if origin in origins:
@@ -176,7 +179,7 @@ def create_server(host="127.0.0.1", port=8790, *, engine=None, allowed_origins=N
             self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
             self.send_header("Access-Control-Allow-Headers", "Content-Type")
             self.send_header("Cache-Control", "no-store")
-            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Type", content_type)
             self.send_header("Content-Length", str(len(payload)))
             self.send_header("Connection", "close")
             self.end_headers()
@@ -203,7 +206,9 @@ def create_server(host="127.0.0.1", port=8790, *, engine=None, allowed_origins=N
                 self.reply(408, {"error": "Audio upload timed out.", "code": "upload_timeout"})
             else:
                 # Never expose exception strings that may include private input.
-                self.reply(500, {"error": "Local speech recognition failed. Check the service dependencies and retry.", "code": "transcription_failed"})
+                generation = hasattr(engine, 'synthesize')
+                self.reply(500, {"error": "Local speech failed. Check the service dependencies and retry.",
+                                 "code": "synthesis_failed" if generation else "transcription_failed"})
 
         def do_OPTIONS(self):
             try:
@@ -225,7 +230,29 @@ def create_server(host="127.0.0.1", port=8790, *, engine=None, allowed_origins=N
             try:
                 self.check_origin()
                 url = urlsplit(self.path)
-                if url.path != "/api/transcribe":
+                if url.path == "/api/synthesize" and hasattr(engine, 'synthesize'):
+                    if self.headers.get('Transfer-Encoding'):
+                        raise SpeechError(400, 'invalid_request', 'Content-Length is required.')
+                    if self.headers.get('Content-Type', '').split(';', 1)[0].lower() != 'application/json':
+                        raise SpeechError(415, 'unsupported_request', 'Send a JSON text request.')
+                    try:
+                        length = int(self.headers.get('Content-Length', '0'))
+                    except ValueError:
+                        raise SpeechError(400, 'invalid_request', 'Invalid Content-Length.') from None
+                    if not 0 < length <= 5000:
+                        raise SpeechError(413, 'text_too_large', 'Text request exceeds the size limit.')
+                    payload = self.rfile.read(length)
+                    if len(payload) != length:
+                        raise SpeechError(400, 'incomplete_request', 'The text upload was interrupted.')
+                    try:
+                        body = json.loads(payload.decode('utf-8'))
+                        if not isinstance(body, dict) or set(body) != {'text', 'language'}:
+                            raise ValueError()
+                    except (ValueError, UnicodeError):
+                        raise SpeechError(400, 'invalid_request', 'Send text and language in JSON.') from None
+                    self.reply(200, engine.synthesize(body['text'], body['language']), 'audio/wav')
+                    return
+                if url.path != "/api/transcribe" or not hasattr(engine, 'transcribe'):
                     raise SpeechError(404, "not_found", "Unknown endpoint.")
                 language = parse_qs(url.query).get("language", ["uz"])[0]
                 if language not in LANGUAGES:
@@ -259,7 +286,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--port", type=int, default=8790)
     parser.add_argument("--model", default=os.getenv("LINGORA_STT_MODEL"))
-    parser.add_argument("--engine", choices=["whisper", "nvidia-ctc"], default="whisper")
+    parser.add_argument("--engine", choices=["whisper", "nvidia-ctc", "tiny-voca"], default="whisper")
     parser.add_argument("--warmup", action="store_true", help="Download/load the model before accepting requests")
     parser.add_argument("--allow-origin", action="append", default=[], help="Explicitly allow an additional frontend origin")
     args = parser.parse_args()
@@ -267,9 +294,16 @@ def main():
         if args.engine == "nvidia-ctc":
             from nvidia_ctc import cached_model_directory
             args.model = cached_model_directory()
+        elif args.engine == 'tiny-voca':
+            from download_tts import DEFAULT_DIRECTORY
+            args.model = str(DEFAULT_DIRECTORY)
         else:
             args.model = "small"
-    engine = NvidiaCtcEngine(args.model) if args.engine == "nvidia-ctc" else WhisperEngine(args.model)
+    if args.engine == 'tiny-voca':
+        from tiny_tts import TinyVocaEngine
+        engine = TinyVocaEngine(args.model)
+    else:
+        engine = NvidiaCtcEngine(args.model) if args.engine == "nvidia-ctc" else WhisperEngine(args.model)
     if args.warmup:
         print(f"Loading local speech model {args.model} on CPU ({args.engine})...", flush=True)
         engine.load()

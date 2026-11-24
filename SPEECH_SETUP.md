@@ -1,5 +1,13 @@
 # Uzbek speech setup
 
+**Free voice update:** an optional local neural Uzbek TTS provider now generates
+speech without a browser Uzbek voice or paid API. Confirmed-text-to-native-browser
+playback has been tested. The local NVIDIA STT audio profile also improved mean
+word error from 23.62% to 20.91% on 16 reserved FLEURS recordings across three audio
+conditions. Setup, per-condition scores and limits are in
+[tools/speech/README.md](tools/speech/README.md). The older single-recording
+comparisons below remain experiment history; Azure playback remains unverified.
+
 Run build/configuration commands from the full source checkout. The prebuilt local
 archive runs the existing build; changing its build-time provider URLs requires a
 rebuild from source. Server credentials stay separate from the frontend build.
@@ -22,8 +30,8 @@ the local demo default on port 8791. Both new free candidates passed the silence
 check with detection enabled. Generic Whisper/Turbo remain optional experiments.
 NVIDIA processed the full 58.112 s recording in 3.95 s, Ovozify in 10.47 s.
 The original NVIDIA default Transducer decoder was not benchmarked; these figures
-refer to the community CTC ONNX conversion. Azure and audible Uzbek TTS still
-need live validation with configured credentials.
+refer to the community CTC ONNX conversion. Azure still needs live validation
+with configured credentials; the new free local neural voice has separate checks.
 
 Lingora supports `local-stt` for the tested local NVIDIA Uzbek service; see [tools/speech/README.md](tools/speech/README.md) for installation and startup. It needs no paid API key. The microphone-to-Chat flow passed in the production preview with an existing lesson recording as the Chromium virtual microphone (17.58 s capture, 1.234 s processing). `browser-speech` remains available through the browser vendor; `local-whisper` is the legacy local-service option; `azure-speech` uses the Azure token broker. These choices do not change sign recognition or train the hand movement model.
 

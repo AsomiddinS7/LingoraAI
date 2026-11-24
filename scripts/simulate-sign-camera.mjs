@@ -27,6 +27,7 @@ const report = { format: 'lingora-camera-simulation-results-v1', startedAt: new 
   limitations: manifest.limitations, realLifeSignerTest: false, neuralSha256: hash(neuralText), gallerySha256: hash(galleryText),
   pixelScenarios: manifest.scenarios, pixelCases: [], liveCases: [], errors: [] };
 const tracked = [];
+const liveTracked = [];
 const browser = await chromium.launch({ channel: 'msedge', headless: true, args: ['--use-angle=d3d11', '--autoplay-policy=no-user-gesture-required'] });
 try {
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
@@ -116,10 +117,11 @@ try {
       const { MotionRecognizer } = await import('/src/recognition/motionRecognizer.ts');
       const { runtime } = await import('/src/runtime.ts');
       runtime.setConfig({ signWindow: { ...runtime.get().config.signWindow, countdownMs: 0 } });
-      let diagnostics, capturedFrames = 0;
+      let diagnostics, capturedFrames = 0, observedFrames = [];
       const references = test.scope === 'phrase' ? s.phrase : s.gallery;
       const store = { all: () => references.templates, match: frames => {
         capturedFrames = frames.length;
+        observedFrames = frames;
         diagnostics = test.scope === 'phrase'
           ? { result: s.matcher.matchSequence(frames, s.phrase.templates, { matching: s.phrase.matching }) }
           : s.classify(frames);
@@ -142,10 +144,14 @@ try {
         const liveDiagnostics=s.tracking.trackingDiagnostics();
         if(liveDiagnostics.frames<capturedFrames || (test.trackingMode&&liveDiagnostics.mode!==test.trackingMode))
           throw new Error('Live tracker instance mismatch');
-        return { ...diagnostics, result: outcome, capturedFrames,trackingDiagnostics:liveDiagnostics,elapsedMs: performance.now() - started };
+        return { ...diagnostics, result: outcome, frames:observedFrames, capturedFrames,trackingDiagnostics:liveDiagnostics,elapsedMs: performance.now() - started };
       } finally { video.pause(); video.onended = null; recognizer.detach(); }
     }, {...test,trackingMode});
-    report.liveCases.push({ ...test, ...result, predicted: result.result.label });
+    const {frames:liveFrames,...liveResult}=result;
+    liveTracked.push({...test,frames:liveFrames});
+    report.runtime.sharedTrackerVerified=true;
+    await writeFile(resolve(directory,'tracked-live.json'),JSON.stringify({cases:liveTracked}));
+    report.liveCases.push({ ...test, ...liveResult, predicted: result.result.label });
     await writeFile(resolve(directory, reportFile), JSON.stringify(report, null, 2));
     if(!quiet)console.log(JSON.stringify({ mode: 'live', expected: test.expected, predicted: result.result.label, frames: result.capturedFrames }));
   }

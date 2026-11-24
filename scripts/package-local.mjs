@@ -22,7 +22,8 @@ await cp('SPEECH_SETUP.md', resolve(root, 'SPEECH_SETUP.md'));
 await mkdir(resolve(root, 'docs'), { recursive: true });
 await cp('docs/SIGN_MODEL_RESEARCH.md', resolve(root, 'docs/SIGN_MODEL_RESEARCH.md'));
 await mkdir(resolve(root, 'tools/speech'), { recursive: true });
-for (const file of ['server.py', 'requirements.txt', 'requirements-candidates.txt', 'README.md', 'nvidia_ctc.py', 'download_candidates.py', 'MODEL_NOTICES.md'])
+for (const file of ['server.py', 'requirements.txt', 'requirements-candidates.txt', 'requirements-tts.txt', 'README.md',
+  'nvidia_ctc.py', 'speech_audio.py', 'tiny_tts.py', 'download_tts.py', 'download_candidates.py', 'MODEL_NOTICES.md'])
   await cp(`tools/speech/${file}`, resolve(root, `tools/speech/${file}`));
 await writeFile(resolve(root, 'README.txt'), `LINGORA LOCAL MVP
 
@@ -41,7 +42,7 @@ No paid API key is needed. Weights are downloaded separately, not bundled.
 Select browser-speech in Console to use the browser vendor's service instead.
 Browser STT needs internet and may send audio to its vendor.
 
-Includes four lesson-sign labels and six references from the existing speech recording.
+Includes 48 experimental word labels and six references from the existing speech recording.
 Sign one phrase per turn and press Finish. Confirm a matched sentence to request audio.
 These are reference-matching demos; new-signer accuracy has not been established.
 Raw footage, source landmark datasets, transcripts and credentials are not included.
@@ -53,7 +54,11 @@ recognition. Physical microphones remain untested and spelling is imperfect.
 NVIDIA's provisional single-recording word error was 20.63%, Ovozify's 23.81%,
 and the prior Chrome run's 30.16%; the reference was the intended script.
 See tools/speech/MODEL_NOTICES.md for speech model attribution and licensing.
-Uzbek TTS requires an installed Uzbek voice or configured Azure credentials;
-live TTS has not been verified. See MVP.md and SPEECH_SETUP.md for details.
+For a free local Uzbek neural voice, install the optional TTS requirements,
+run tools/speech/download_tts.py, then start tools/speech/server.py with
+--engine tiny-voca --port 8792 --warmup. Select local-tts in Console.
+Real synthesis and native browser playback passed; pronunciation quality remains
+experimental. Browser and Azure voices remain alternatives.
+See tools/speech/README.md and SPEECH_SETUP.md for details.
 `, 'utf8');
 console.log(`Prepared local package: ${root}`);

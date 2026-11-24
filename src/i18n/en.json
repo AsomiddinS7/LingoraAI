@@ -172,6 +172,7 @@
   "tts.unsupported": "Read aloud is not supported in this browser. The text is shown on screen instead.",
   "tts.failed": "Read aloud failed. The text is shown on screen instead.",
   "tts.azureMissing": "The Azure voice is not connected yet. Using the browser voice.",
+  "tts.localNotice": "Experimental synthetic Uzbek voice. Start the free local voice service on this computer to use it.",
   "speak.title": "Text to speech",
   "speak.tabType": "I type",
   "speak.tabReply": "Their reply",

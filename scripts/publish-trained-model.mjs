@@ -18,7 +18,7 @@ export function publicBundle(privateBundle) {
     vocabulary: privateBundle.vocabulary.map(v => pick(v, ['label','textUz'])) };
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  const input = process.argv[2] ?? 'private-video-work/training-expanded-v2/trained-sign-model.json';
+  const input = process.argv[2] ?? 'private-video-work/training-expanded-v3/trained-sign-model.json';
   const model = publicBundle(JSON.parse(await readFile(input, 'utf8')));
   await writeFile('public/model/trained-sign-model.json', JSON.stringify(model));
   await writeFile('src/data/trainedVocabulary.json', JSON.stringify(model.vocabulary, null, 2) + '\n');

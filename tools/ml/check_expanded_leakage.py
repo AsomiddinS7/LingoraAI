@@ -10,7 +10,9 @@ from train_skeletal import main as fit
 
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--root',type=Path,default=Path('private-video-work/training-expanded-v1'))
-root = parser.parse_args().root
+parser.add_argument('--seed',type=int,default=20261125)
+args=parser.parse_args()
+root = args.root
 original = json.loads((root / 'normalized-words.json').read_text(encoding='utf-8'))
 changed = copy.deepcopy(original)
 altered = []
@@ -27,7 +29,7 @@ folder.mkdir(exist_ok=True)
 for name, data in [('original', original), ('modified', changed)]:
     path = folder / (name + '.json')
     path.write_text(json.dumps(data), encoding='utf-8')
-    fit(SimpleNamespace(input=path, out=folder/name, seed=20261125, augmentations=24, ridge=1., descriptor='body'))
+    fit(SimpleNamespace(input=path, out=folder/name, seed=args.seed, augmentations=24, ridge=1., descriptor='body'))
 models = [json.loads((folder/name/'candidate-model.json').read_text(encoding='utf-8')) for name in ('original','modified')]
 checks = {}
 for key in ('mean','scale','weight','bias','minimum_score','minimum_margin'):

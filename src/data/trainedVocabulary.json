@@ -68,8 +68,20 @@
     "textUz": "Menga"
   },
   {
+    "label": "uzsl_1715_bermoq",
+    "textUz": "Bermoq"
+  },
+  {
+    "label": "uzsl_1716_bilmoq",
+    "textUz": "Bilmoq"
+  },
+  {
     "label": "uzsl_1718_bormoq",
     "textUz": "Bormoq"
+  },
+  {
+    "label": "uzsl_1721_chaqirmoq",
+    "textUz": "Chaqirmoq"
   },
   {
     "label": "uzsl_1727_eshitmoq",
@@ -84,6 +96,10 @@
     "textUz": "Ichmoq"
   },
   {
+    "label": "uzsl_1742_javob_bermoq",
+    "textUz": "Javob bermoq"
+  },
+  {
     "label": "uzsl_1745_kelmoq",
     "textUz": "Kelmoq"
   },
@@ -94,6 +110,10 @@
   {
     "label": "uzsl_1755_kutmoq",
     "textUz": "Kutmoq"
+  },
+  {
+    "label": "uzsl_1778_qongiroq_qilmoq",
+    "textUz": "Qo‘ng‘iroq qilmoq"
   },
   {
     "label": "uzsl_1799_soramoq",
@@ -116,6 +136,10 @@
     "textUz": "Tushunmoq"
   },
   {
+    "label": "uzsl_1819_tushuntirmoq",
+    "textUz": "Tushuntirmoq"
+  },
+  {
     "label": "uzsl_1837_yemoq",
     "textUz": "Yemoq"
   },
@@ -136,6 +160,10 @@
     "textUz": "Tanishmoq"
   },
   {
+    "label": "uzsl_385_bemor",
+    "textUz": "Bemor"
+  },
+  {
     "label": "uzsl_395_dori",
     "textUz": "Dori"
   },
@@ -150,6 +178,10 @@
   {
     "label": "uzsl_531_tez_yordam",
     "textUz": "Tez yordam"
+  },
+  {
+    "label": "uzsl_805_manzil_805",
+    "textUz": "Manzil"
   },
   {
     "label": "uzsl_895_damlama_choy",

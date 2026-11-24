@@ -1,5 +1,8 @@
 # Hand tracking and camera-adapted recognition
 
+This records the40-word release. The subsequent48-word model and free speech
+update are documented in [MODEL_AND_VOICE_V3.md](MODEL_AND_VOICE_V3.md).
+
 The app now defaults to `hands-pose-recovery-video-v2`. It associates only hands
 detected in the current frame. Short-lived wrist history stabilizes anatomical
 identity when detector labels flicker or the hands cross; it expires after300ms
@@ -102,4 +105,4 @@ node scripts/report-tracking-upgrade.mjs
 These are previously inspected same-recording development tests. Numbers5/6
 and all six existing script phrases have training-source replays only. Fresh
 signer generalization and specialist semantic accuracy remain unverified.
-The40-label trained bundle is local research; deployment vocabulary is unchanged.
+The40-label trained bundle was published with the preceding tracking release.

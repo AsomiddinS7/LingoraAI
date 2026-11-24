@@ -1,0 +1,3 @@
+# Optional separate environment; NVIDIA STT does not require PyTorch.
+torch>=2.4,<3
+numpy>=1.24,<3
