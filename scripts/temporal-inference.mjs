@@ -20,7 +20,7 @@ export function parseTemporalCandidate(text) {
     || raw.architecture.embedding !== 'L2 normalize pooled vector' || raw.architecture.normalization_epsilon !== 1e-8)
     throw new Error('Unsupported candidate architecture');
   const classes = raw.classes;
-  if (!Array.isArray(classes) || classes.length < 2 || classes.length > 32 || new Set(classes).size !== classes.length
+  if (!Array.isArray(classes) || classes.length < 2 || classes.length > 128 || new Set(classes).size !== classes.length
     || classes.some(label => typeof label !== 'string' || !/^[a-z][a-z0-9_]{0,63}$/.test(label) || label === 'none'))
     throw new Error('Invalid candidate classes');
   const weights = raw.weights;

@@ -71,7 +71,7 @@ export interface MotionModel {
 
 export interface SequenceMatch extends RecognitionResult {
   distance: number;
-  reason: 'matched' | 'no_templates' | 'insufficient_tracking' | 'no_compatible_templates' | 'too_distant' | 'ambiguous' | 'background_reference';
+  reason: 'matched' | 'trained_dtw_agreement' | 'no_templates' | 'insufficient_tracking' | 'insufficient_motion' | 'no_compatible_templates' | 'too_distant' | 'ambiguous' | 'background_reference';
   templateId?: string;
 }
 

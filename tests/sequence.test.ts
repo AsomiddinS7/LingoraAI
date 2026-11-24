@@ -22,6 +22,16 @@ function template(label: string, frames: SequenceFrame[]): MotionTemplate { retu
 function dataset(templates: MotionTemplate[]) { return JSON.stringify({ format: 'lingora-motion-templates', version: 1, templates }); }
 
 describe('two-hand sequence matching', () => {
+  it('rejects resting hands using only the loaded reference movement, and clears that floor on reset',()=>{
+    const store=createSequenceStore(),frames=clip(false,{body:true});
+    store.importJson(dataset([template('hello',frames)]));
+    const idle=frames.map(f=>({...f,left:frames[0].left,right:frames[0].right}));
+    expect(store.match(frames).label).toBe('hello');
+    expect(store.match(idle).reason).toBe('insufficient_motion');
+    store.clear();expect(store.match(idle).reason).toBe('no_templates');
+    store.importJson(dataset([template('held_shape',idle)]));
+    expect(store.match(idle).label).toBe('held_shape');
+  });
   it('keeps conversation and signed-speech references isolated and rejects cross-scope labels atomically', () => {
     const conversation = createSequenceStore(), speech = createSequenceStore();
     conversation.importJson(dataset([template('hello', clip())]), ['hello']);

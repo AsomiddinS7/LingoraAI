@@ -1,0 +1,162 @@
+[
+  {
+    "label": "at_me",
+    "textUz": "Menda"
+  },
+  {
+    "label": "at_you",
+    "textUz": "Sizda"
+  },
+  {
+    "label": "goodbye",
+    "textUz": "Xayr"
+  },
+  {
+    "label": "hello",
+    "textUz": "Salom"
+  },
+  {
+    "label": "my",
+    "textUz": "Mening"
+  },
+  {
+    "label": "no",
+    "textUz": "Yo‘q"
+  },
+  {
+    "label": "number_eight",
+    "textUz": "Sakkiz / 8"
+  },
+  {
+    "label": "number_five",
+    "textUz": "Besh / 5"
+  },
+  {
+    "label": "number_four",
+    "textUz": "To'rt / 4"
+  },
+  {
+    "label": "number_nine",
+    "textUz": "To'qqiz / 9"
+  },
+  {
+    "label": "number_one",
+    "textUz": "Bir / 1"
+  },
+  {
+    "label": "number_seven",
+    "textUz": "Yetti / 7"
+  },
+  {
+    "label": "number_six",
+    "textUz": "Olti / 6"
+  },
+  {
+    "label": "number_two",
+    "textUz": "Ikki / 2"
+  },
+  {
+    "label": "please",
+    "textUz": "Iltimos"
+  },
+  {
+    "label": "thank_you",
+    "textUz": "Rahmat"
+  },
+  {
+    "label": "to_me",
+    "textUz": "Menga"
+  },
+  {
+    "label": "uzsl_1718_bormoq",
+    "textUz": "Bormoq"
+  },
+  {
+    "label": "uzsl_1727_eshitmoq",
+    "textUz": "Eshitmoq"
+  },
+  {
+    "label": "uzsl_1731_gapirmoq",
+    "textUz": "Gapirmoq"
+  },
+  {
+    "label": "uzsl_1738_ichmoq",
+    "textUz": "Ichmoq"
+  },
+  {
+    "label": "uzsl_1745_kelmoq",
+    "textUz": "Kelmoq"
+  },
+  {
+    "label": "uzsl_1751_korsatmoq",
+    "textUz": "Ko‘rsatmoq"
+  },
+  {
+    "label": "uzsl_1755_kutmoq",
+    "textUz": "Kutmoq"
+  },
+  {
+    "label": "uzsl_1799_soramoq",
+    "textUz": "So‘ramoq"
+  },
+  {
+    "label": "uzsl_1803_takrorlamoq",
+    "textUz": "Takrorlamoq"
+  },
+  {
+    "label": "uzsl_1811_tinglamoq",
+    "textUz": "Tinglamoq"
+  },
+  {
+    "label": "uzsl_1815_toxtamoq",
+    "textUz": "To‘xtamoq"
+  },
+  {
+    "label": "uzsl_1818_tushunmoq",
+    "textUz": "Tushunmoq"
+  },
+  {
+    "label": "uzsl_1837_yemoq",
+    "textUz": "Yemoq"
+  },
+  {
+    "label": "uzsl_1841_yordam_bermoq",
+    "textUz": "Yordam bermoq"
+  },
+  {
+    "label": "uzsl_1842_yozmoq",
+    "textUz": "Yozmoq"
+  },
+  {
+    "label": "uzsl_229_salomlashish_229",
+    "textUz": "Salomlashish"
+  },
+  {
+    "label": "uzsl_233_tanishmoq_233",
+    "textUz": "Tanishmoq"
+  },
+  {
+    "label": "uzsl_395_dori",
+    "textUz": "Dori"
+  },
+  {
+    "label": "uzsl_434_hamshira",
+    "textUz": "Hamshira"
+  },
+  {
+    "label": "uzsl_513_shifoxona",
+    "textUz": "Shifoxona"
+  },
+  {
+    "label": "uzsl_531_tez_yordam",
+    "textUz": "Tez yordam"
+  },
+  {
+    "label": "uzsl_895_damlama_choy",
+    "textUz": "Damlama choy"
+  },
+  {
+    "label": "uzsl_939_non_939",
+    "textUz": "Non"
+  }
+]

@@ -1,5 +1,7 @@
 import { loadHandLandmarker, beginTrackingSequence, trackVideoFrame, handTracking } from './handTracking';
 import type { SequenceFrame } from './sequence';
+// Diagnostics and controls must refer to the exact instance used by this extractor.
+export { setTrackingMode,trackingDiagnostics,loadHandLandmarker,TRACKING_PROFILE,delegate,poseDelegate } from './handTracking';
 
 async function seek(video: HTMLVideoElement, time: number, signal?: AbortSignal): Promise<void> {
   if (signal?.aborted) throw new DOMException('Cancelled', 'AbortError');

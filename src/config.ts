@@ -87,7 +87,7 @@ export function configFromEnv(env: Env = readEnv()): AppConfig {
     confidenceThreshold: Number.isFinite(threshold) && threshold > 0 && threshold < 1 ? threshold : 0.8,
     apiBase: (env.VITE_API_BASE ?? '').replace(/\/$/, ''),
     speechTokenUrl: env.VITE_SPEECH_TOKEN_URL ?? '',
-    motionModelUrl: env.VITE_MOTION_MODEL_URL ?? 'model/motion-model.json',
+    motionModelUrl: env.VITE_MOTION_MODEL_URL ?? 'model/trained-sign-model.json',
     localSttUrl: env.VITE_LOCAL_STT_URL ?? 'http://127.0.0.1:8790',
     signedSpeechModelUrl: env.VITE_SIGNED_SPEECH_MODEL_URL ?? 'model/signed-speech-model.json',
   };

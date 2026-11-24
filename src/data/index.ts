@@ -29,7 +29,14 @@ let signs: SignRow[] = activeSorted(seedSigns.items as SignRow[]);
 let phrases: PhraseRow[] = seedPhrases.items as PhraseRow[];
 let source: 'seed' | 'api' = 'seed';
 let version = 0;
+let modelWords: { label: string; textUz: string }[] = [];
 const listeners = new Set<() => void>();
+
+export function registerModelWords(words: readonly { label: string; textUz: string }[]) {
+  modelWords = words.map(w => ({ ...w }));
+  version++;
+  listeners.forEach(l => l());
+}
 
 export const catalog = {
   signs: () => signs,
@@ -62,11 +69,17 @@ export interface VocabularyEntry {
   gloss: Record<Lang, string>;
 }
 
-export const vocabulary = (): VocabularyEntry[] => signs.map((s) => ({ label: s.slug, gloss: s.labels }));
-export const vocabLabels = (): string[] => signs.map((s) => s.slug);
+export const vocabulary = (): VocabularyEntry[] => [
+  ...signs.map((s) => ({ label: s.slug, gloss: s.labels })),
+  ...modelWords.filter(w => !signs.some(s => s.slug === w.label)).map(w => ({
+    label: w.label, gloss: { uz: w.textUz, en: w.textUz, ru: w.textUz },
+  })),
+];
+export const vocabLabels = (): string[] => vocabulary().map(w => w.label);
 
 export function glossFor(label: string, lang: Lang): string {
-  return signs.find((s) => s.slug === label)?.labels[lang] ?? label.replace(/_/g, ' ');
+  return signs.find((s) => s.slug === label)?.labels[lang]
+    ?? modelWords.find(w => w.label === label)?.textUz ?? label.replace(/_/g, ' ');
 }
 
 /** Fallback when the sentence service fails: the confirmed signs as plain words. */

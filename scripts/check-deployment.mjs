@@ -4,9 +4,10 @@ import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { lstat, readdir, readFile } from 'node:fs/promises';
 import { basename, relative, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { pathToFileURL, fileURLToPath } from 'node:url';
 import { loadEnv } from 'vite';
 import { loadMatcher } from './evaluate-motion.mjs';
+import { build } from 'esbuild';
 
 export const REQUIRED_ASSETS = [
   'model/motion-model.json', 'model/signed-speech-model.json',
@@ -14,11 +15,24 @@ export const REQUIRED_ASSETS = [
 ];
 const REQUIRED_NOTICES = ['THIRD_PARTY_NOTICES.md', 'licenses/Apache-2.0.txt'];
 const EXPECTED_LABELS = {
-  'model/motion-model.json': ['goodbye', 'hello', 'please', 'thank_you'],
+  'model/motion-model.json': ['goodbye', 'hello', 'no', 'please', 'thank_you'],
   'model/signed-speech-model.json': ['speech_01', 'speech_02', 'speech_03', 'speech_04', 'speech_05', 'speech_06'],
 };
 const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
 let matcherPromise;
+let trainedParserPromise;
+export async function inspectTrainedModel(text) {
+  trainedParserPromise ??= build({ entryPoints: [fileURLToPath(new URL('../src/ml/trainedSignModel.ts', import.meta.url))],
+    bundle: true, write: false, platform: 'node', format: 'esm' }).then(result =>
+      import('data:text/javascript;base64,' + Buffer.from(result.outputFiles[0].text).toString('base64')));
+  const { parseTrainedSignModel } = await trainedParserPromise;
+  const model = parseTrainedSignModel(text);
+  const vocabulary = JSON.parse(await readFile(new URL('../src/data/trainedVocabulary.json', import.meta.url), 'utf8'));
+  if (JSON.stringify(model.vocabulary) !== JSON.stringify(vocabulary) || vocabulary.length !== 40)
+    throw new Error('trained_model_vocabulary_contract_mismatch');
+  return { templates: model.gallery.templates.length, positiveLabels: model.classifier.classes,
+    trackingProfile: model.tracking_profile };
+}
 
 export function inspectStaticConfig(env) {
   const issues = [];
@@ -27,7 +41,7 @@ export function inspectStaticConfig(env) {
   if (!['browser-speech', 'azure-speech'].includes(stt)) issues.push('static_site_requires_browser_or_azure_stt');
   if (!['browser-synthesis', 'azure-speech'].includes(tts)) issues.push('invalid_tts_provider');
   if (env.VITE_RECOGNIZER !== 'motion') issues.push('selected_recognizer_is_not_motion');
-  if (!['model/motion-model.json', './model/motion-model.json'].includes(env.VITE_MOTION_MODEL_URL)) issues.push('greeting_model_must_use_checked_bundled_asset');
+  if (!['model/motion-model.json', './model/motion-model.json', 'model/trained-sign-model.json', './model/trained-sign-model.json'].includes(env.VITE_MOTION_MODEL_URL)) issues.push('greeting_model_must_use_checked_bundled_asset');
   if (!['model/signed-speech-model.json', './model/signed-speech-model.json'].includes(env.VITE_SIGNED_SPEECH_MODEL_URL)) issues.push('speech_model_must_use_checked_bundled_asset');
   if (Object.entries(env).some(([key, value]) => /^VITE_.*(?:KEY|SECRET|PASSWORD|TOKEN)$/.test(key) && value)) issues.push('frontend_credential_variable_present');
   if (stt === 'azure-speech' || tts === 'azure-speech' || env.VITE_SPEECH_TOKEN_URL) {
@@ -99,7 +113,9 @@ export async function checkDeployment({ root = process.cwd(), env, built = false
   }
   if (tracked) issues.push(...auditPublishedPaths(tracked));
   const assetBytes = new Map();
-  for (const asset of REQUIRED_ASSETS) {
+  const requiredAssets = [...REQUIRED_ASSETS,
+    ...(env.VITE_MOTION_MODEL_URL?.replace(/^\.\//, '') === 'model/trained-sign-model.json' ? ['model/trained-sign-model.json'] : [])];
+  for (const asset of requiredAssets) {
     const file = `public/${asset}`;
     if (requireTracked && !tracked?.includes(file)) issues.push({ code: 'required_asset_not_tracked', file });
     try {
@@ -107,7 +123,8 @@ export async function checkDeployment({ root = process.cwd(), env, built = false
       if ((await lstat(path)).isSymbolicLink()) throw new Error('symlink');
       const bytes = await readFile(path);
       if (bytes.length < (asset.endsWith('.task') ? 100_000 : 100)) throw new Error('truncated');
-      const summary = asset.endsWith('.json') ? await inspectCompiledModel(bytes.toString('utf8'), asset) : {};
+      const summary = asset === 'model/trained-sign-model.json' ? await inspectTrainedModel(bytes.toString('utf8'))
+        : asset.endsWith('.json') ? await inspectCompiledModel(bytes.toString('utf8'), asset) : {};
       assetBytes.set(asset, bytes);
       checks.push({ file, bytes: bytes.length, sha256: digest(bytes), ...summary });
     } catch { issues.push({ code: 'missing_or_invalid_public_asset', file }); }

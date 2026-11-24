@@ -4,8 +4,23 @@ import { startFramePump } from '../pipeline/framePump';
 import { metrics } from '../pipeline/metrics';
 import { landmarksToFeatures, type Landmark } from './features';
 import { createTrackingClock } from './trackingClock';
+import { createHandAssociator } from './handIdentity';
+import { acceptRecoveredHand, restoreCropLandmarks, wristRecoveryRegion } from './handRecovery';
 
-export const TRACKING_PROFILE = 'hands-pose-video-v1';
+export type TrackingMode = 'legacy' | 'stable' | 'recovery';
+let trackingMode: TrackingMode = 'recovery';
+export let TRACKING_PROFILE = 'hands-pose-recovery-video-v2';
+const associator = createHandAssociator();
+let lastRecovery = -Infinity;
+let nextRecoverySlot: 0 | 1 = 0;
+const diagnostics = { frames: 0, processingMs: 0, recoveryAttempts: 0, recoveryErrors: 0, recoveredHands: 0, singleHandFrames: 0, twoHandFrames: 0 };
+export function trackingDiagnostics() { return { ...diagnostics, mode: trackingMode, recoveryAvailable: Boolean(recoveryLandmarker) }; }
+/** Explicit benchmark modes use the same detector and frozen source frames. */
+export function setTrackingMode(mode: TrackingMode) {
+  trackingMode = mode;
+  TRACKING_PROFILE = mode === 'legacy' ? 'hands-pose-video-v1' : `hands-pose-${mode}-video-v2`;
+  associator.reset(); lastRecovery = -Infinity;
+}
 export const HAND_TRACKING_OPTIONS = {
   runningMode: 'VIDEO' as const, numHands: 2,
   minHandDetectionConfidence: 0.4, minHandPresenceConfidence: 0.4, minTrackingConfidence: 0.5,
@@ -28,8 +43,12 @@ export interface HandFrame {
 
 let landmarker: HandLandmarker | null = null;
 let poseLandmarker: PoseLandmarker | null = null;
+let recoveryLandmarker: HandLandmarker | null = null;
+let recoveryFactory: (()=>Promise<HandLandmarker>) | null = null;
+let recoveryLoading: Promise<void> | null = null;
 let loading: Promise<HandLandmarker> | null = null;
 export let delegate: 'GPU' | 'CPU' | null = null;
+export let poseDelegate: 'GPU' | 'CPU' | null = null;
 
 function preferredDelegate(): 'GPU' | 'CPU' {
   if (import.meta.env.VITE_TRACKING_DELEGATE === 'CPU') return 'CPU';
@@ -43,8 +62,15 @@ function preferredDelegate(): 'GPU' | 'CPU' {
   return /swiftshader|llvmpipe|software|basic render/i.test(renderer) ? 'CPU' : 'GPU';
 }
 
+async function loadRecoveryLandmarker() {
+  if(!recoveryLandmarker&&recoveryFactory){
+    recoveryLoading ??= recoveryFactory().then(model=>{recoveryLandmarker=model;}).catch(()=>{recoveryLandmarker=null;});
+    await recoveryLoading;
+  }
+}
 export function loadHandLandmarker(): Promise<HandLandmarker> {
-  if (landmarker && poseLandmarker) return Promise.resolve(landmarker);
+  if (landmarker && poseLandmarker) return trackingMode==='recovery'
+    ? loadRecoveryLandmarker().then(()=>landmarker!) : Promise.resolve(landmarker);
   loading ??= (async () => {
     const t0 = performance.now();
     const { FilesetResolver, HandLandmarker, PoseLandmarker } = await import('@mediapipe/tasks-vision');
@@ -62,11 +88,17 @@ export function loadHandLandmarker(): Promise<HandLandmarker> {
       runningMode: 'VIDEO', numPoses: 1, outputSegmentationMasks: false,
       minPoseDetectionConfidence: 0.5, minPosePresenceConfidence: 0.5, minTrackingConfidence: 0.5,
     });
-    try { poseLandmarker = await makePose(delegate!); }
+    try { poseLandmarker = await makePose(delegate!); poseDelegate = delegate; }
     catch {
-      try { poseLandmarker = await makePose('CPU'); }
+      try { poseLandmarker = await makePose('CPU'); poseDelegate = 'CPU'; }
       catch (err) { landmarker.close(); landmarker = null; throw err; }
     }
+    // Separate IMAGE inference never contaminates the main VIDEO tracker state.
+    recoveryFactory = () => HandLandmarker.createFromOptions(fileset, {
+        baseOptions: { modelAssetPath: new URL('model/hand_landmarker.task', base).href, delegate: delegate! },
+        runningMode: 'IMAGE', numHands: 1, minHandDetectionConfidence: .5, minHandPresenceConfidence: .5,
+      });
+    if(trackingMode==='recovery')await loadRecoveryLandmarker();
     metrics.set({ modelLoadMs: performance.now() - t0 });
     return landmarker;
   })();
@@ -98,10 +130,13 @@ export function assignHands(hands: Landmark[][], labels: string[], pose: Landmar
 
 const videoClock = createTrackingClock();
 let snapshot: HTMLCanvasElement | null = null;
+let recoveryCanvas: HTMLCanvasElement | null = null;
 
 /** Independent videos must not inherit the previous stream's tracked regions. */
 export function beginTrackingSequence(): void {
   if (!landmarker || !poseLandmarker) throw new Error('Tracking models not loaded');
+  associator.reset(); lastRecovery = -Infinity; nextRecoverySlot = 0;
+  for (const key of Object.keys(diagnostics) as (keyof typeof diagnostics)[]) diagnostics[key] = 0;
   const empty = document.createElement('canvas');
   empty.width = empty.height = 32;
   videoClock.restart();
@@ -115,6 +150,7 @@ export function beginTrackingSequence(): void {
 /** Shared sequential live/offline processing. Call only after loadHandLandmarker(). */
 export function trackVideoFrame(video: HTMLVideoElement, at = performance.now()): HandFrame | null {
   if (!landmarker || !poseLandmarker) throw new Error('Tracking models not loaded');
+  const started = performance.now();
   snapshot ??= document.createElement('canvas');
   const width = video.videoWidth || 640;
   const height = video.videoHeight || 480;
@@ -127,13 +163,46 @@ export function trackVideoFrame(video: HTMLVideoElement, at = performance.now())
   const body = poseLandmarker.detectForVideo(snapshot, timestamp).landmarks[0];
   const indices = [0, 11, 12, 13, 14, 15, 16];
   const pose = body ? indices.map((i) => ({ x: body[i].x, y: body[i].y, z: body[i].z })) : null;
-  if (!result.landmarks.length) return null;
   const hands = result.landmarks.map((h) => h.map(({ x, y, z }) => ({ x, y, z })));
   const labels = result.handedness.map((h) => h[0]?.categoryName ?? 'Right');
+  const categories = result.handedness.map(h => ({ label:h[0]?.categoryName ?? 'Right', score:h[0]?.score }));
+  const visibility: [number,number] = body ? [body[15].visibility ?? 1,body[16].visibility ?? 1] : [0,0];
+  const aspect = width/height;
+  const meanMs = diagnostics.frames ? diagnostics.processingMs/diagnostics.frames : 0;
+  const recoveryInterval = delegate === 'GPU' && poseDelegate === 'GPU' && meanMs < 50 ? 80 : 200;
+  if (trackingMode === 'recovery' && recoveryLandmarker && pose && hands.length < 2 && timestamp-lastRecovery >= recoveryInterval-.01) {
+    const slots: (0 | 1)[] = [nextRecoverySlot, nextRecoverySlot === 0 ? 1 : 0];
+    for (const slot of slots) {
+      if (visibility[slot] < .5) continue;
+      const region = wristRecoveryRegion(pose,slot,width,height);
+      if (!region || hands.some(h=>Math.hypot((h[0].x-region.target.x)*width,(h[0].y-region.target.y)*height)<region.scale*.25)) continue;
+      lastRecovery = timestamp; nextRecoverySlot = slot === 0 ? 1 : 0;
+      recoveryCanvas ??= document.createElement('canvas');
+      recoveryCanvas.width = recoveryCanvas.height = 256;
+      recoveryCanvas.getContext('2d')!.drawImage(snapshot,region.x,region.y,region.size,region.size,0,0,256,256);
+      diagnostics.recoveryAttempts++;
+      try {
+        const recovered = recoveryLandmarker.detect(recoveryCanvas);
+        const points = recovered.landmarks[0] && restoreCropLandmarks(recovered.landmarks[0],region,width,height);
+        if (points && acceptRecoveredHand(points,region,hands,width,height)) {
+          hands.push(points); labels.push(slot === 0 ? 'Left' : 'Right');
+          categories.push({ label:slot === 0 ? 'Left' : 'Right', score:recovered.handedness[0]?.[0]?.score });
+          diagnostics.recoveredHands++;
+        }
+      } catch { diagnostics.recoveryErrors++; recoveryLandmarker.close(); recoveryLandmarker = null; }
+      break; // bounded to one crop; GPU at most12.5Hz, CPU at most5Hz
+    }
+  }
+  diagnostics.frames++;
+  if (hands.length === 1) diagnostics.singleHandFrames++;
+  if (hands.length >= 2) diagnostics.twoHandFrames++;
   // Keep the body for normalization, but trust wrist assignment only when both
   // anatomical wrists are visible. References use this same VIDEO pipeline.
   const slotPose = body && (body[15].visibility ?? 1) >= 0.3 && (body[16].visibility ?? 1) >= 0.3 ? pose : null;
-  const { left, right } = assignHands(hands, labels, slotPose);
+  const { left, right } = trackingMode === 'legacy' ? assignHands(hands, labels, slotPose)
+    : associator.update(hands,categories,pose,visibility,timestamp,aspect);
+  diagnostics.processingMs += performance.now()-started;
+  if (!left && !right) return null;
   const landmarks = right ?? left!;
   const handedness = right ? 'Right' : 'Left';
   return { landmarks, handedness, features: landmarksToFeatures(landmarks, handedness),

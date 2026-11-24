@@ -15,6 +15,10 @@ export function RecognitionStatus() {
     <strong>{t('motion.title')}</strong>
     {!labels.length && <p>{t('motion.empty')}</p>}
     {labels.length > 0 && <p className="supported-signs">{labels.map((l) => glossFor(l, lang)).join(' · ')}</p>}
+    {sequenceStore.isTrained() && <p className="small muted">{lang === 'uz'
+      ? 'Tajriba modeli: 38 ta real vaqt sinovining 33 tasida to‘g‘ri, bittasida noto‘g‘ri so‘z chiqdi. Yangi foydalanuvchilardagi aniqlik hali tekshirilmagan.'
+      : lang === 'ru' ? 'Экспериментальная модель: 33 верных ответа из 38 повторов в реальном времени, одно неверное слово. Точность для новых пользователей ещё не установлена.'
+      : 'Experimental model: 33 of 38 live replays were correct, with one wrong word. Accuracy on new signers has not been established.'}</p>}
     <details><summary>{t('motion.details')}</summary>
       <p>{labels.length ? t('motion.ready', { n: labels.length }) : t('motion.empty')}</p>
       <p className="small muted">{t('motion.instructions')}</p>

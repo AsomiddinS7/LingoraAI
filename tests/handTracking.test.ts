@@ -28,6 +28,22 @@ afterEach(() => vi.unstubAllGlobals());
 const video = { videoWidth: 640, videoHeight: 480 } as HTMLVideoElement;
 
 describe('continuous hand and pose tracking', () => {
+  it('recovers only a current observed crop and respects its retry budget', async () => {
+    const tracking = await import('../src/ml/handTracking');
+    tracking.setTrackingMode('recovery');
+    const body = Array.from({length:33},()=>({x:.5,y:.4,z:0,visibility:1}));
+    body[11].x=.3;body[12].x=.7;body[13].x=.25;body[14].x=.75;
+    body[15]={x:.2,y:.5,z:0,visibility:1};body[16]={x:.8,y:.5,z:0,visibility:1};
+    mocks.pose.mockImplementation(input=>({landmarks:input.width===32?[]:[body]}));
+    mocks.image.mockReturnValue({landmarks:[Array.from({length:21},(_,i)=>({x:.5+i*.002,y:.471875-i*.006,z:0}))],handedness:[[{categoryName:'Left',score:.9}]]});
+    await tracking.loadHandLandmarker();tracking.beginTrackingSequence();
+    const first=tracking.trackVideoFrame(video,0);
+    expect(first?.left).toHaveLength(21);expect(first?.right).toHaveLength(21);
+    expect(tracking.trackingDiagnostics().recoveredHands).toBe(1);
+    const second=tracking.trackVideoFrame(video,40);
+    expect(mocks.image).toHaveBeenCalledTimes(1);
+    expect(second?.left).toBeNull(); // no cached/fabricated observations between recovery frames
+  });
   it('uses video tracking and the same captured frame/timestamp for hands and body', async () => {
     const tracking = await import('../src/ml/handTracking');
     await tracking.loadHandLandmarker();

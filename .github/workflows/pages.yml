@@ -24,7 +24,7 @@ jobs:
       VITE_FACE_HINTS: 'off'
       # These committed assets are checked before and after the build. Public
       # Pages builds must never depend on an ignored local training artifact.
-      VITE_MOTION_MODEL_URL: model/motion-model.json
+      VITE_MOTION_MODEL_URL: model/trained-sign-model.json
       VITE_SIGNED_SPEECH_MODEL_URL: model/signed-speech-model.json
       VITE_STT_PROVIDER: ${{ vars.LINGORA_SPEECH_TOKEN_URL && 'azure-speech' || 'browser-speech' }}
       VITE_TTS_PROVIDER: ${{ vars.LINGORA_SPEECH_TOKEN_URL && 'azure-speech' || 'browser-synthesis' }}
@@ -49,6 +49,8 @@ jobs:
           tests/temporal-inference.test.mjs
           tests/quantize-motion.test.mjs
           tests/masked-dtw.test.mjs
+          tests/sign-dataset.test.mjs
+          tests/skeletal-inference.test.mjs
           tests/speech-server.test.mjs
           tests/speech-readiness.test.mjs
           tests/deployment.test.mjs

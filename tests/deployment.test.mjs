@@ -1,9 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, cp, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, cp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, resolve, sep } from 'node:path';
-import { inspectStaticConfig, auditPublishedPaths, inspectCompiledModel, checkDeployment, REQUIRED_ASSETS } from '../scripts/check-deployment.mjs';
+import { inspectStaticConfig, auditPublishedPaths, inspectCompiledModel, inspectTrainedModel, checkDeployment, REQUIRED_ASSETS } from '../scripts/check-deployment.mjs';
+
+test('expanded release selects the actual production parser and requires its tracked asset', async () => {
+  const env = { ...publicEnv(), VITE_MOTION_MODEL_URL: 'model/trained-sign-model.json' };
+  assert.deepEqual(inspectStaticConfig(env).issues, []);
+  const text = await readFile(new URL('../public/model/trained-sign-model.json', import.meta.url), 'utf8');
+  const result = await inspectTrainedModel(text);
+  assert.equal(result.templates, 85); assert.equal(result.positiveLabels.length, 40);
+  const raw = JSON.parse(text); raw.classifier.data_audit = { private: 'source.mp4' };
+  await assert.rejects(inspectTrainedModel(JSON.stringify(raw)), /metadata/);
+  const report = await checkDeployment({ env, trackedPaths: REQUIRED_ASSETS.map(p => `public/${p}`) });
+  assert(report.issues.some(i => i.code === 'required_asset_not_tracked' && i.file === 'public/model/trained-sign-model.json'));
+});
 
 const publicEnv = () => ({ VITE_RECOGNIZER: 'motion', VITE_STT_PROVIDER: 'browser-speech', VITE_TTS_PROVIDER: 'browser-synthesis',
   VITE_MOTION_MODEL_URL: 'model/motion-model.json', VITE_SIGNED_SPEECH_MODEL_URL: 'model/signed-speech-model.json' });
@@ -36,8 +48,8 @@ test('distribution audit permits examples and compiled assets while rejecting re
 });
 
 test('models use actual production parser and exclude raw source metadata even if that parser would strip it', async () => {
-  const current = model(['goodbye', 'hello', 'please', 'thank_you']);
-  assert.equal((await inspectCompiledModel(JSON.stringify(current), 'model/motion-model.json')).templates, 4);
+  const current = model(['goodbye', 'hello', 'no', 'please', 'thank_you']);
+  assert.equal((await inspectCompiledModel(JSON.stringify(current), 'model/motion-model.json')).templates, 5);
   current.templates[0].source = { name: 'private-source.mp4' };
   await assert.rejects(inspectCompiledModel(JSON.stringify(current), 'model/motion-model.json'), /unexpected_model_metadata/);
   delete current.templates[0].source;
@@ -45,16 +57,15 @@ test('models use actual production parser and exclude raw source metadata even i
   await assert.rejects(inspectCompiledModel(JSON.stringify(current), 'model/motion-model.json'));
 });
 
-test('greeting contract permits no only as a rejection reference and requires four supported words', async () => {
-  const negativeModel = model(['goodbye', 'hello', 'please', 'thank_you', 'no']);
-  negativeModel.version = 2;
-  negativeModel.matching = { profile: 'visibility-aware-dtw-v1', labels: ['goodbye', 'hello', 'please', 'thank_you', 'no'],
-    templateIds: negativeModel.templates.map(template => template.id), rejectionLabels: ['no'] };
-  const summary = await inspectCompiledModel(JSON.stringify(negativeModel), 'model/motion-model.json');
+test('greeting contract requires five supported words including no', async () => {
+  const fiveWordModel = model(['goodbye', 'hello', 'no', 'please', 'thank_you']);
+  fiveWordModel.version = 2;
+  fiveWordModel.matching = { profile: 'visibility-aware-dtw-v1', labels: ['goodbye', 'hello', 'no', 'please', 'thank_you'],
+    templateIds: fiveWordModel.templates.map(template => template.id), rejectionLabels: [] };
+  const summary = await inspectCompiledModel(JSON.stringify(fiveWordModel), 'model/motion-model.json');
   assert.equal(summary.templates, 5);
-  assert.deepEqual(summary.positiveLabels, ['goodbye', 'hello', 'please', 'thank_you']);
-  assert.deepEqual(summary.rejectionLabels, ['no']);
-  await assert.rejects(inspectCompiledModel(JSON.stringify(model(['goodbye', 'hello', 'please', 'thank_you', 'no'])), 'model/motion-model.json'), /model_label_contract_mismatch/);
+  assert.deepEqual(summary.positiveLabels, ['goodbye', 'hello', 'no', 'please', 'thank_you']);
+  assert.deepEqual(summary.rejectionLabels, []);
   await assert.rejects(inspectCompiledModel(JSON.stringify(model(['hello', 'please', 'thank_you', 'no'])), 'model/motion-model.json'), /model_label_contract_mismatch/);
   await assert.rejects(inspectCompiledModel(JSON.stringify(model(['goodbye', 'hello', 'please', 'thank_you', 'unverified_class'])), 'model/motion-model.json'), /model_label_contract_mismatch/);
 });
@@ -66,7 +77,7 @@ test('fresh-checkout and built-artifact checks catch untracked models, stale bui
     await mkdir(resolve(root, 'public/licenses'), { recursive: true });
     await writeFile(resolve(root, 'public/THIRD_PARTY_NOTICES.md'), 'Attribution fixture '.repeat(10));
     await writeFile(resolve(root, 'public/licenses/Apache-2.0.txt'), 'License fixture '.repeat(10));
-    await writeFile(resolve(root, 'public/model/motion-model.json'), JSON.stringify(model(['goodbye', 'hello', 'please', 'thank_you'])));
+    await writeFile(resolve(root, 'public/model/motion-model.json'), JSON.stringify(model(['goodbye', 'hello', 'no', 'please', 'thank_you'])));
     await writeFile(resolve(root, 'public/model/signed-speech-model.json'), JSON.stringify(model(['speech_01', 'speech_02', 'speech_03', 'speech_04', 'speech_05', 'speech_06'])));
     for (const name of ['hand_landmarker.task', 'pose_landmarker.task']) await writeFile(resolve(root, 'public/model', name), Buffer.alloc(100_001));
     const trackedPaths = [...REQUIRED_ASSETS, 'THIRD_PARTY_NOTICES.md', 'licenses/Apache-2.0.txt'].map((asset) => `public/${asset}`);

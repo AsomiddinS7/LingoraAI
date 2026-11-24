@@ -126,11 +126,23 @@ class Adam:
             self.v[key] = .999 * self.v[key] + .001 * g ** 2
             params[key] -= self.lr * (self.m[key] / (1 - .9 ** self.step)) / (np.sqrt(self.v[key] / (1 - .999 ** self.step)) + 1e-8)
 
-def augment(base, rng, noisy=True):
-    """Bounded coordinate changes; hand presence and missingness remain exact."""
+def augment(base, rng, noisy=True, robust=False):
+    """Train-only variations; absent hands never acquire synthetic joint positions."""
     clean = base.copy()
+    if robust:
+        # Time changes carry real presence masks; never interpolate across a missing hand.
+        for i in range(len(clean)):
+            times = np.linspace(0, 31, 32)
+            times += rng.uniform(-3., 3.) * np.sin(np.linspace(0, np.pi, 32))
+            low = np.floor(times).astype(int); high = np.minimum(low + 1, 31)
+            alpha = (times - low)[:, None]
+            for hand in (0, 64):
+                a, b = base[i, low, hand:hand + 64], base[i, high, hand:hand + 64]
+                shared = ((a[:, 0] > 0) & (b[:, 0] > 0))[:, None]
+                nearest = np.where(alpha < .5, a, b)
+                clean[i, :, hand:hand + 64] = np.where(shared, a * (1 - alpha) + b * alpha, nearest)
     for hand in (0, 64):
-        present = base[:, :, hand:hand + 1]
+        present = clean[:, :, hand:hand + 1]
         points = clean[:, :, hand + 1:hand + 64].reshape(len(base), 32, 21, 3)
         scale = rng.uniform(.97, 1.03, (len(base), 1, 1, 1))
         translation = rng.uniform(-.005, .005, (len(base), 1, 1, 3))
@@ -142,7 +154,14 @@ def augment(base, rng, noisy=True):
         noise = (np.roll(noise, 1, axis=1) + noise + np.roll(noise, -1, axis=1)) / 3
         for hand in (0, 64):
             corrupted[:, :, hand + 1:hand + 64] += noise[:, :, hand + 1:hand + 64] * clean[:, :, hand:hand + 1]
-    assert np.array_equal(corrupted[:, :, [0, 64]], base[:, :, [0, 64]])
+    if robust and noisy:
+        # Short censored bursts teach the encoder about tracking loss, without fabricated joints.
+        for i in range(len(corrupted)):
+            if rng.random() < .35:
+                hand = int(rng.choice([0, 64])); start = int(rng.integers(1, 28))
+                corrupted[i, start:start + int(rng.integers(1, 4)), hand:hand + 64] = 0
+    if not robust:
+        assert np.array_equal(corrupted[:, :, [0, 64]], base[:, :, [0, 64]])
     return clean.astype(base.dtype), corrupted.astype(base.dtype)
 
 def prototypes(model, x, labels, classes):
@@ -157,8 +176,8 @@ def scores(model, x, centers):
     top = similarity[np.arange(len(x)), predicted]
     return predicted, 1 - top, top - similarity[np.arange(len(x)), order[:, 1]]
 
-def calibration(model, x, labels, centers, seed, correct_loto=None):
-    _, corrupted = augment(np.repeat(x, 128, axis=0), np.random.default_rng(seed))
+def calibration(model, x, labels, centers, seed, correct_loto=None, robust=False):
+    _, corrupted = augment(np.repeat(x, 128, axis=0), np.random.default_rng(seed), robust=robust)
     actual = np.repeat(labels, 128)
     predicted, distance, margin = scores(model, corrupted, centers)
     correct = predicted == actual
@@ -175,6 +194,8 @@ def calibration(model, x, labels, centers, seed, correct_loto=None):
         'correct_loto_examples': len(loto_distances), 'regression_examples_used': 0, 'unknown_examples_used': 0}
 
 def predictions(model, examples, centers, rejection, classes):
+    if not examples:
+        return []
     x = np.asarray([item['vectors'] for item in examples], dtype=np.float32)
     predicted, distance, margin = scores(model, x, centers)
     out = []
@@ -185,7 +206,7 @@ def predictions(model, examples, centers, rejection, classes):
             'distance': float(distance[i]), 'margin': float(margin[i]), 'accepted': accepted, 'baseline': item.get('baseline')})
     return out
 
-def train_model(x, labels, classes, seed, pre_epochs, fine_epochs, augmentations, keep_pretrained=False):
+def train_model(x, labels, classes, seed, pre_epochs, fine_epochs, augmentations, keep_pretrained=False, robust=False):
     model, rng = TemporalNet(classes, seed), np.random.default_rng(seed + 1)
     histories, stage_times, pretrained = {}, {}, None
     for stage, epochs in (('pretrain', pre_epochs), ('finetune', fine_epochs)):
@@ -194,7 +215,7 @@ def train_model(x, labels, classes, seed, pre_epochs, fine_epochs, augmentations
         for epoch in range(epochs):
             indices = np.repeat(np.arange(len(x)), augmentations)
             rng.shuffle(indices)
-            clean, corrupted = augment(x[indices], rng)
+            clean, corrupted = augment(x[indices], rng, robust=robust)
             losses = []
             for start in range(0, len(indices), 24):
                 end = min(len(indices), start + 24)
@@ -257,11 +278,14 @@ def audit_dataset(data, path):
         assert value.shape == (32, 128) and np.isfinite(value).all()
         assert item['split'] in ('train', 'regression', 'unknown_regression')
         assert item['source_start_ms'] < item['source_end_ms']
-    overlaps, duplicates = [], []
+    overlaps, duplicates, training_views = [], [], []
     for i, first in enumerate(items):
         for second in items[i + 1:]:
             if first['source_key'] == second['source_key'] and max(first['source_start_ms'], second['source_start_ms']) < min(first['source_end_ms'], second['source_end_ms']):
-                overlaps.append([first['id'], second['id']])
+                if first['split']==second['split']=='train' and first.get('base_reference_id') and first.get('base_reference_id')==second.get('base_reference_id'):
+                    training_views.append([first['id'],second['id']])
+                else:
+                    overlaps.append([first['id'], second['id']])
             same_geometry = first.get('geometry_sha256') and first.get('geometry_sha256') == second.get('geometry_sha256')
             if first['split'] != second['split'] and (same_geometry or digest(first['vectors']) == digest(second['vectors'])):
                 duplicates.append([first['id'], second['id']])
@@ -273,9 +297,9 @@ def audit_dataset(data, path):
         'split_counts': dict(Counter(item['split'] for item in items)), 'training_ids': [item['id'] for item in train],
         'training_geometry_sha256': digest([item['vectors'] for item in train]),
         'source_keys': sorted({item['source_key'] for item in items}), 'retained_window_overlaps': overlaps,
-        'cross_split_duplicates': duplicates, 'split_before_augmentation': True, 'regression_previously_inspected': True,
+        'cross_split_duplicates': duplicates, 'training_augmentation_pairs':training_views,'split_before_augmentation': True, 'regression_previously_inspected': True,
         'source_provenance': data.get('provenance'),
-        'limitation': 'One signer/session; previously inspected regression, not untouched testing. Tracker pre-roll may share a boundary frame.'}
+        'limitation': 'Sparse same-recording/session references; previously inspected regression, not untouched testing. Signer/session independence is unverified. Tracker pre-roll may share a boundary frame.'}
 
 def export_model(model, centers, rejection, classes, audit, stage):
     return {'format': 'lingora-temporal-candidate-v1', 'stage': stage, 'classes': classes,
@@ -314,11 +338,11 @@ def main(args):
     write_json(args.out / 'training-tests.json', tests)
     print(json.dumps({'audit': audit['split_counts'], 'gradient_checks': 'passed', 'tiny_overfit': tests['tiny_overfit']}), flush=True)
     folds, counts = [], Counter(y.tolist())
-    for excluded, example in enumerate(train):
+    for excluded, example in enumerate(train) if args.loto == 'all' else []:
         if counts[y[excluded]] < 2: continue
         retained = np.asarray([i for i in range(len(train)) if i != excluded])
         model, _, history, timing = train_model(x[retained], y[retained], len(classes), args.seed + 100 + excluded,
-            args.pretrain_epochs, args.finetune_epochs, args.augmentations)
+            args.pretrain_epochs, args.finetune_epochs, args.augmentations, robust=args.robust_augment)
         centers = prototypes(model, x[retained], y[retained], len(classes))
         label, distance, margin = scores(model, x[[excluded]], centers)
         fold = {'excluded_id': example['id'], 'expected': example['label'], 'predicted': classes[int(label[0])],
@@ -327,13 +351,13 @@ def main(args):
         folds.append(fold); write_json(args.out / 'train-only-loto.json', folds)
         print(json.dumps({'fold': example['id'], 'predicted': fold['predicted'], 'distance': fold['distance'], 'timing': timing}), flush=True)
     model, pretrained, histories, timing = train_model(x, y, len(classes), args.seed,
-        args.pretrain_epochs, args.finetune_epochs, args.augmentations, keep_pretrained=True)
+        args.pretrain_epochs, args.finetune_epochs, args.augmentations, keep_pretrained=True, robust=args.robust_augment)
     np.savez(args.out / 'pretrained-checkpoint.npz', **pretrained.params)
     np.savez(args.out / 'finetuned-checkpoint.npz', **model.params)
     pre_centers, final_centers = prototypes(pretrained, x, y, len(classes)), prototypes(model, x, y, len(classes))
     correct_folds = [fold for fold in folds if fold['expected'] == fold['predicted']]
-    pre_rejection = calibration(pretrained, x, y, pre_centers, args.seed + 500)
-    final_rejection = calibration(model, x, y, final_centers, args.seed + 500, correct_folds)
+    pre_rejection = calibration(pretrained, x, y, pre_centers, args.seed + 500, robust=args.robust_augment)
+    final_rejection = calibration(model, x, y, final_centers, args.seed + 500, correct_folds, robust=args.robust_augment)
     write_json(args.out / 'pretrained-probe.json', export_model(pretrained, pre_centers, pre_rejection, classes, audit, 'denoising_pretrained_encoder_centroid_probe'))
     write_json(args.out / 'candidate-model.json', export_model(model, final_centers, final_rejection, classes, audit, 'supervised_finetuned_candidate'))
     # Weights/prototypes/rejection are now frozen before regression evaluation.
@@ -345,7 +369,8 @@ def main(args):
         'seed': args.seed, 'stages': {'pretrain': {'objective': 'denoise train-only normalized coordinates; no labels in loss', 'epochs': args.pretrain_epochs},
             'finetune': {'objective': 'cross-entropy +0.4 within-class embedding center loss +0.03 reconstruction', 'epochs': args.finetune_epochs}},
         'augmentation': {'train_only': True, 'per_template_per_epoch': args.augmentations, 'coordinate_scale': [.97, 1.03],
-            'xy_translation_max': .005, 'smooth_coordinate_noise_std_before_smoothing': .008, 'hand_presence_changed': False, 'temporal_warp': False, 'new_semantic_labels': False},
+            'xy_translation_max': .005, 'smooth_coordinate_noise_std_before_smoothing': .008, 'hand_presence_changed': args.robust_augment,
+            'temporal_warp': args.robust_augment, 'short_single_hand_censoring': args.robust_augment, 'new_semantic_labels': False},
         'data_audit': audit, 'histories': histories, 'stage_seconds': timing, 'train_only_loto': folds,
         'pretrained_probe_rejection': pre_rejection, 'final_rejection': final_rejection,
         'baseline': {'summary': summarize(baseline_rows), 'predictions': baseline_rows},
@@ -354,7 +379,8 @@ def main(args):
         'checkpoint_sha256': {name: hashlib.sha256((args.out / name).read_bytes()).hexdigest() for name in ('pretrained-checkpoint.npz', 'finetuned-checkpoint.npz', 'candidate-model.json')},
         'tests': tests, 'total_seconds': time.perf_counter() - started,
         'promotion': 'Research candidate only; no public model changes. Retain DTW if comparison gate fails.',
-        'limitation': 'Six real training examples, four labels, one signer/session. Augmentations are not independent performances. Previously inspected regression is not untouched testing; train-calibrated rejection is not validated on fresh unknowns.'}
+        'training_counts': {'real_references': len(train), 'classes': len(classes), 'loto': args.loto},
+        'limitation': 'Sparse real references; same-recording/session repetitions. Augmentations are not independent performances. Previously inspected regression is not untouched testing; train-calibrated rejection is not validated on fresh unknowns.'}
     write_json(args.out / 'training-report.json', report)
     print(json.dumps({'baseline': report['baseline']['summary'], 'pretrained_probe': report['pretrained_probe']['summary'],
         'candidate': report['candidate']['summary'], 'stage_seconds': timing, 'total_seconds': report['total_seconds']}), flush=True)
@@ -367,4 +393,6 @@ if __name__ == '__main__':
     parser.add_argument('--pretrain-epochs', type=int, default=40)
     parser.add_argument('--finetune-epochs', type=int, default=60)
     parser.add_argument('--augmentations', type=int, default=12)
+    parser.add_argument('--loto', choices=('all', 'none'), default='all', help='Training-only leave-one-template-out fits; none skips these fits, never moves evaluation clips into training.')
+    parser.add_argument('--robust-augment', action='store_true', help='Train-only bounded time warp and short hand-censoring bursts.')
     main(parser.parse_args())

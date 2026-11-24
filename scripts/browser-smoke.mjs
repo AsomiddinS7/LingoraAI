@@ -8,6 +8,11 @@ import { resolve } from 'node:path';
 
 const base = process.env.LINGORA_TEST_URL ?? 'http://localhost:5173';
 const out = resolve('tmp/browser');
+const modelPath=process.env.LINGORA_TEST_MODEL ?? 'public/model/trained-sign-model.json';
+const currentBundle=JSON.parse(await readFile(modelPath,'utf8'));
+const currentMotionModel=currentBundle.gallery??currentBundle;
+const rejectedLabels=new Set(currentMotionModel.matching?.rejectionLabels??[]);
+const expectedMotionLabels=new Set(currentMotionModel.templates.map(t=>t.label).filter(label=>!rejectedLabels.has(label))).size;
 await mkdir(out, { recursive: true });
 const browser = await chromium.launch({ channel: 'msedge', headless: true, args: [
   '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', '--use-angle=swiftshader', '--enable-unsafe-swiftshader',
@@ -44,14 +49,14 @@ try {
   console.log('browser: conversation loaded');
   await page.locator('#lang-select').selectOption('en');
   await page.getByText('Experimental sign recognition', { exact: true }).waitFor();
-  await page.getByText('4 signs have video examples. Confirm the text before speaking.').waitFor({ state: 'attached', timeout: 60000 });
+  await page.getByText(`${expectedMotionLabels} signs have video examples. Confirm the text before speaking.`).waitFor({ state: 'attached', timeout: 60000 });
   // This diagnostic explicitly stubs browser speech for UI lifecycle checks;
   // select that provider instead of inheriting the operator's local STT setting.
   await page.evaluate(() => { location.hash = '/console'; });
   await page.locator('#sw-sttProvider').selectOption('browser-speech');
   await page.evaluate(() => { location.hash = '/conversation'; });
   console.log('browser: model ready');
-  checks.push('real local motion model loaded: four labels');
+  checks.push(`real local motion model loaded: ${expectedMotionLabels} labels`);
 
   await page.getByText('Write a message instead', { exact: true }).click();
   await page.locator('#signer-message').fill('Salom, men yozish orqali gaplashaman.');
@@ -107,7 +112,7 @@ try {
   await page.goto(base + '/#/console', { waitUntil: 'networkidle' });
   await page.getByText('Examples from existing videos', { exact: true }).waitFor();
   const lesson = resolve('../lingora-video-tools-v0.1/video_2026-11-17_18-25-35.mp4');
-  if (existsSync(lesson)) {
+  if (existsSync(lesson) && process.env.LINGORA_TEST_DEVELOPMENT_MODULES === 'true') {
     await page.locator('input[type=file][accept="video/*"]').setInputFiles(lesson);
     await page.locator('.video-fields').waitFor({ timeout: 15000 });
     // Exercise the browser extractor against a disjoint repetition before adding
@@ -133,9 +138,9 @@ try {
   await page.locator('input[type=file][accept="application/json,.json"]').setInputFiles({ name: 'bad.json', mimeType: 'application/json', buffer: invalid });
   await page.getByText('Could not load this file.', { exact: false }).waitFor();
   checks.push('invalid example imports are rejected without erasing the active model');
-  const model = resolve('public/model/motion-model.json');
+  const model = resolve(modelPath);
   if (existsSync(model)) {
-    const referenceCount = JSON.parse(await readFile(model, 'utf8')).templates.length;
+    const referenceCount = currentMotionModel.templates.length;
     await page.locator('input[type=file][accept="application/json,.json"]').setInputFiles(model);
     await page.getByText(`Loaded ${referenceCount} examples.`, { exact: true }).waitFor();
     checks.push('compiled model can be reimported after an invalid file');

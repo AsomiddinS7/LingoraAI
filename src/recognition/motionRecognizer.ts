@@ -5,6 +5,7 @@ import { metrics } from '../pipeline/metrics';
 import { runtime } from '../runtime';
 import { Emitter, type SequenceRecognizer } from './types';
 import { createWindowRunner } from './windowRunner';
+import { registerModelWords } from '../data';
 
 /** A bounded signing turn matched against labeled examples from existing videos. */
 export class MotionRecognizer extends Emitter implements SequenceRecognizer {
@@ -35,6 +36,7 @@ export class MotionRecognizer extends Emitter implements SequenceRecognizer {
       if (!response.ok) throw new Error('Motion examples could not be loaded');
       const text = await response.text();
       this.store.importJson(text);
+      if (!this.options.store) registerModelWords(this.store.vocabulary());
     }
   }
 
