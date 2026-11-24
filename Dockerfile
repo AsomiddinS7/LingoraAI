@@ -20,7 +20,8 @@ RUN pip install -r requirements.txt
 COPY backend/ ./
 COPY src/api/seed /src/api/seed
 COPY --from=web /web/dist /app/static
-ENV LINGORA_STATIC_DIR=/app/static LINGORA_ENV=production LINGORA_COOKIE_SECURE=true
+ENV LINGORA_STATIC_DIR=/app/static LINGORA_ENV=production LINGORA_COOKIE_SECURE=true \
+    LINGORA_EXTRA_ORIGINS=https://asomiddins7.github.io
 RUN useradd --create-home lingora && chown -R lingora /app
 USER lingora
 EXPOSE 8000

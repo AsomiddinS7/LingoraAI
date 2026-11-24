@@ -22,6 +22,9 @@ jobs:
       VITE_LLM_PROVIDER: local
       VITE_MOCK_AZURE: 'false'
       VITE_FACE_HINTS: 'off'
+      # Sign-in and registration use the Lingora API on Render (bearer sessions, no cookies).
+      VITE_ACCOUNTS_ENABLED: 'true'
+      VITE_API_BASE: ${{ vars.LINGORA_API_BASE || 'https://lingora-a3dk.onrender.com' }}
       # These committed assets are checked before and after the build. Public
       # Pages builds must never depend on an ignored local training artifact.
       VITE_MOTION_MODEL_URL: model/trained-sign-model.json

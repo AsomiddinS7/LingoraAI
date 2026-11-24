@@ -53,6 +53,8 @@ export const DEFAULT_SIGN_WINDOW: SignWindowConfig = {
 
 type Env = Record<string, string | undefined>;
 export const platformApiEnabled = import.meta.env.VITE_PLATFORM_API_ENABLED === 'true';
+/** Sign-in and registration only (the sign catalog stays bundled); implied by the full platform API. */
+export const accountsEnabled = platformApiEnabled || import.meta.env.VITE_ACCOUNTS_ENABLED === 'true';
 
 function pick<T extends string>(value: string | undefined, allowed: readonly T[], fallback: T): T {
   return value && (allowed as readonly string[]).includes(value) ? (value as T) : fallback;

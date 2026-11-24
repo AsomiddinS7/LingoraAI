@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     # Origins allowed to call the API with cookies (comma separated). The site and API must be same-site
     # for SameSite=Lax session cookies to be sent (see README: deployment).
     allowed_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    # Static front ends on other hosts that use bearer sessions (set in the Dockerfile for GitHub Pages).
+    extra_origins: str = ""
     secret_key: str = "dev-only-change-me"  # HMAC key for CSRF tokens and ip hashes
     cookie_secure: bool = False  # True in staging/production (HTTPS)
     session_ttl_hours: int = 24 * 14
@@ -79,7 +81,8 @@ class Settings(BaseSettings):
 
     @property
     def origins(self) -> list[str]:
-        out = [o.strip().rstrip("/") for o in self.allowed_origins.split(",") if o.strip()]
+        raw = ",".join((self.allowed_origins, self.extra_origins))
+        out = [o.strip().rstrip("/") for o in raw.split(",") if o.strip()]
         # Render sets RENDER_EXTERNAL_URL (https://<service>.onrender.com) on the running service.
         ext = os.environ.get("RENDER_EXTERNAL_URL", "").strip().rstrip("/")
         if ext and ext not in out:

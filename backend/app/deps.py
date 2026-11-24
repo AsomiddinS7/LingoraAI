@@ -22,8 +22,25 @@ def client_ip(request: Request) -> str | None:
     return request.client.host if request.client else None
 
 
+def bearer_token(request: Request) -> str | None:
+    """Session token from `Authorization: Bearer ...` (cross-site static front end, e.g. GitHub Pages)."""
+    auth = request.headers.get("authorization", "")
+    if auth[:7].lower() == "bearer ":
+        return auth[7:].strip() or None
+    return None
+
+
+def session_token(request: Request) -> str | None:
+    return request.cookies.get(SESSION_COOKIE) or bearer_token(request)
+
+
+def wants_bearer(request: Request) -> bool:
+    """A cross-site client asks for the session token in the response body instead of a cookie."""
+    return request.headers.get("x-lingora-auth", "").lower() == "bearer"
+
+
 def load_session(request: Request, db: Db) -> tuple[User | None, Session | None]:
-    token = request.cookies.get(SESSION_COOKIE)
+    token = session_token(request)
     if not token:
         return None, None
     sess = db.get(Session, sha256(token))
@@ -67,6 +84,8 @@ def csrf_guard(request: Request) -> None:
     origin = request.headers.get("origin")
     if origin and origin.rstrip("/") not in get_settings().origins:
         raise ApiError("FORBIDDEN", "Origin not allowed")
+    # Only a cookie is sent automatically by the browser, so only cookie sessions need a CSRF token;
+    # a bearer header has to be added by script and cannot be forged cross-site.
     token = request.cookies.get(SESSION_COOKIE)
     if token and request.url.path not in ("/api/auth/login", "/api/auth/register", "/api/auth/telegram"):
         if request.headers.get("x-csrf-token") != csrf_token_for(sha256(token)):
@@ -91,4 +110,4 @@ def first(db: Db, stmt):
     return db.execute(stmt).scalars().first()
 
 
-__all__ = ["audit", "client_ip", "csrf_guard", "current_user", "first", "load_session", "require", "select", "SESSION_COOKIE"]
+__all__ = ["audit", "bearer_token", "client_ip", "csrf_guard", "current_user", "first", "load_session", "require", "select", "session_token", "SESSION_COOKIE", "wants_bearer"]

@@ -14,6 +14,29 @@ const CONSENT_KEY = 'lingora.pendingConsent';
 
 type Providers = { google: boolean; telegram: { bot_id: number } | null };
 
+// One request per page load, shared by every place that shows the social buttons.
+let providersOnce: Promise<Providers | null> | null = null;
+function loadProviders(): Promise<Providers | null> {
+  providersOnce ??= backend.providers().then((p) => p, () => {
+    providersOnce = null; // retry next time (e.g. the API host was still waking up)
+    return null;
+  });
+  return providersOnce;
+}
+
+/** True once the server reports that Google or Telegram sign-in is configured. */
+export function useSocialAvailable(): boolean {
+  const [ok, setOk] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    void loadProviders().then((p) => alive && setOk(!!p && (p.google || !!p.telegram)));
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return ok;
+}
+
 function GoogleMark() {
   return (
     <svg viewBox="0 0 24 24" className="ico" aria-hidden="true" focusable="false">
@@ -52,7 +75,7 @@ export function SocialSignIn() {
 
   useEffect(() => {
     let alive = true;
-    backend.providers().then((p) => alive && setProviders(p), () => alive && setProviders(null));
+    void loadProviders().then((p) => alive && setProviders(p));
     backend.consents(lang).then(
       (r) => alive && setTerms(r.items.find((i) => i.type === 'account') ?? null),
       () => alive && setTerms(null),

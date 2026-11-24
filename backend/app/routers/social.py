@@ -32,7 +32,7 @@ from ..errors import ApiError
 from ..models import AuthIdentity, Consent, ConsentText, User
 from ..schemas import Strict
 from ..security import hmac_hex, limiter
-from .auth import me_body, start_session
+from .auth import me_body, session_body, start_session
 
 router = APIRouter(prefix="/api/auth", tags=["social"])
 
@@ -235,4 +235,4 @@ def telegram_login(body: TelegramIn, request: Request, response: Response, db: D
     except ConsentRequired:
         raise ApiError("BAD_REQUEST", "consent_required")
     sid = start_session(db, request, response, user)
-    return me_body(user, sid)
+    return session_body(request, user, sid)

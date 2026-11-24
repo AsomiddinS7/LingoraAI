@@ -28,6 +28,41 @@ export const csrf = {
   get: () => csrfToken,
 };
 
+/**
+ * Bearer session for a cross-site API (static site on GitHub Pages, API on another host):
+ * browsers do not send SameSite cookies there, so the session token travels in a header.
+ * Same-origin deployments keep the httpOnly cookie and never see the token.
+ */
+const TOKEN_KEY = 'lingora.session';
+let bearerToken: string | null = null;
+try {
+  bearerToken = localStorage.getItem(TOKEN_KEY);
+} catch {
+  /* storage blocked: the session lasts until reload */
+}
+export const bearer = {
+  set: (t: string | null) => {
+    bearerToken = t;
+    try {
+      if (t) localStorage.setItem(TOKEN_KEY, t);
+      else localStorage.removeItem(TOKEN_KEY);
+    } catch {
+      /* ignore */
+    }
+  },
+  get: () => bearerToken,
+};
+
+/** True when the API lives on another origin than the page. */
+export function isCrossOrigin(base: string): boolean {
+  if (!/^https?:\/\//i.test(base)) return false;
+  try {
+    return new URL(base).origin !== window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
 export interface ApiClientOptions {
   transport: () => Transport;
   baseUrl: () => string;
@@ -38,22 +73,27 @@ export interface ApiClientOptions {
 const RETRYABLE: ClientErrorCode[] = ['UPSTREAM_TIMEOUT', 'UPSTREAM_ERROR', 'NETWORK'];
 
 export function createApiClient(opts: ApiClientOptions) {
-  const timeoutMs = opts.timeoutMs ?? 8000;
-
   async function once<T>(method: Method, path: string, body: unknown, validate: (v: unknown) => v is T): Promise<T> {
+    const base = opts.baseUrl();
+    const cross = isCrossOrigin(base);
+    // A free-tier API host may need ~50 s to wake up; give cross-site calls room for that.
+    const timeoutMs = opts.timeoutMs ?? (cross ? 70000 : 8000);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     let res: Response;
     try {
-      res = await opts.transport()(opts.baseUrl() + path, {
+      res = await opts.transport()(base + path, {
         method,
         headers: {
           ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
-          ...(method !== 'GET' && csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
+          ...(cross
+            ? { 'X-Lingora-Auth': 'bearer', ...(bearerToken ? { Authorization: `Bearer ${bearerToken}` } : {}) }
+            : method !== 'GET' && csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
         },
         body: body === undefined ? undefined : JSON.stringify(body),
         signal: controller.signal,
-        credentials: 'same-origin', // session cookie; the site and API are served same-site
+        // Same site: the httpOnly session cookie. Cross site: no cookies, the bearer header instead.
+        credentials: cross ? 'omit' : 'same-origin',
       });
     } catch (e) {
       if (controller.signal.aborted) throw new ApiError('UPSTREAM_TIMEOUT', 'No answer within the timeout');

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session as Db
 
 from ..config import get_settings
 from ..db import get_db
-from ..deps import SESSION_COOKIE, audit, client_ip, require
+from ..deps import SESSION_COOKIE, audit, client_ip, require, session_token, wants_bearer
 from ..errors import ApiError
 from ..models import Consent, ConsentText, Session, User
 from ..schemas import LoginIn, RegisterIn
@@ -42,6 +42,10 @@ def start_session(db: Db, request: Request, response: Response, user: User) -> s
     token, sid = new_session_token()
     ua = request.headers.get("user-agent")
     db.add(Session(id=sid, user_id=user.id, expires_at=datetime.now(timezone.utc) + timedelta(hours=s.session_ttl_hours), user_agent_hash=sha256(ua) if ua else None))
+    if wants_bearer(request):
+        # Cross-site client (static site on another host): the token goes in the body, no cookie.
+        request.state.bearer_token = token
+        return sid
     response.set_cookie(
         SESSION_COOKIE,
         token,
@@ -52,6 +56,15 @@ def start_session(db: Db, request: Request, response: Response, user: User) -> s
         path="/",
     )
     return sid
+
+
+def session_body(request: Request, user: User, sid: str) -> dict:
+    """Profile after sign-in, plus the session token for a bearer client."""
+    body = me_body(user, sid)
+    token = getattr(request.state, "bearer_token", None)
+    if token:
+        body["token"] = token
+    return body
 
 
 @router.post("/register", status_code=201)
@@ -78,7 +91,7 @@ def register(body: RegisterIn, request: Request, response: Response, db: Db = De
         db.add(Consent(user_id=user.id, consent_text_id=t.id))
     sid = start_session(db, request, response, user)
     audit(db, request, user, "user.register", "user", user.id, {"consents": [f"{t.type}:v{t.version}" for t in accepted]})
-    return me_body(user, sid)
+    return session_body(request, user, sid)
 
 
 @router.post("/login")
@@ -107,12 +120,12 @@ def login(body: LoginIn, request: Request, response: Response, db: Db = Depends(
     user.last_login_at = now
     sid = start_session(db, request, response, user)
     audit(db, request, user, "auth.login", "user", user.id)
-    return me_body(user, sid)
+    return session_body(request, user, sid)
 
 
 @router.post("/logout")
 def logout(request: Request, response: Response, db: Db = Depends(get_db)):
-    token = request.cookies.get(SESSION_COOKIE)
+    token = session_token(request)
     if token:
         sess = db.get(Session, sha256(token))
         if sess:

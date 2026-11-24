@@ -7,7 +7,7 @@ import { Icon } from '../components/Icon';
 import { InterpreterButton } from '../components/InterpreterButton';
 import { Modal } from '../components/Modal';
 import { NamePrompt } from '../components/NamePrompt';
-import { SocialSignIn } from '../components/SocialSignIn';
+import { SocialSignIn, useSocialAvailable } from '../components/SocialSignIn';
 import { TtsNotice } from '../components/Notices';
 import { PhraseList } from '../components/PhrasePicker';
 import { catalog, useCatalog, type PhraseRow } from '../data';
@@ -20,7 +20,7 @@ import { sequenceStore, useSequenceVersion } from '../ml/sequenceStore';
 import { useConversation } from '../state/ConversationContext';
 import { useTheme, type Theme } from '../theme';
 import { LANGS, type Lang } from '../types';
-import { platformApiEnabled } from '../config';
+import { accountsEnabled, platformApiEnabled } from '../config';
 
 function ServerNotice() {
   const { t } = useI18n();
@@ -62,7 +62,7 @@ export function WelcomeScreen() {
             {t('welcome.guest')}
           </button>
           <p className="small muted" style={{ textAlign: 'center' }}>{t('welcome.guestNote')}</p>
-          {platformApiEnabled && <div className="btn-row" style={{ justifyContent: 'center' }}>
+          {accountsEnabled && <div className="btn-row" style={{ justifyContent: 'center' }}>
             <button type="button" className="btn" onClick={() => go(href('signin'))}>{t('welcome.signin')}</button>
             <button type="button" className="btn" onClick={() => go(href('register'))}>{t('welcome.register')}</button>
           </div>}
@@ -88,6 +88,7 @@ export function AuthScreen({ mode }: { mode: 'signin' | 'register' }) {
   const [busy, setBusy] = useState(false);
   const [consentText, setConsentText] = useState<ConsentTextRow | null>(null);
   const register = mode === 'register';
+  const social = useSocialAvailable();
 
   // The current account consent text, in the user's language (versioned on the server).
   useEffect(() => {
@@ -122,10 +123,14 @@ export function AuthScreen({ mode }: { mode: 'signin' | 'register' }) {
   return (
     <div className="narrow">
       <h1>{register ? t('auth.register.title') : t('auth.signin.title')}</h1>
-      <section className="card">
-        <SocialSignIn />
-      </section>
-      <p className="divider"><span>{t('social.orEmail')}</span></p>
+      {social && (
+        <>
+          <section className="card">
+            <SocialSignIn />
+          </section>
+          <p className="divider"><span>{t('social.orEmail')}</span></p>
+        </>
+      )}
       <form className="card stack" onSubmit={submit} noValidate>
         <div className="field">
           <label htmlFor="auth-email">{t('auth.email')}</label>
@@ -165,6 +170,7 @@ export function AuthScreen({ mode }: { mode: 'signin' | 'register' }) {
           {busy && <div className="spinner" aria-hidden="true" />}
           {register ? t('auth.submitRegister') : t('auth.submitSignin')}
         </button>
+        {busy && <p className="small muted" role="status">{t('auth.waking')}</p>}
       </form>
       <div className="btn-row" style={{ marginTop: 16 }}>
         <a className="btn" href={href(register ? 'signin' : 'register')}>{register ? t('auth.switchToSignin') : t('auth.switchToRegister')}</a>
@@ -180,6 +186,7 @@ export function ProfileScreen() {
   const { theme, setTheme } = useTheme();
   const conv = useConversation();
   const me = useAccount();
+  const social = useSocialAvailable();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [msg, setMsg] = useState<MessageKey | null>(null);
 
@@ -217,13 +224,13 @@ export function ProfileScreen() {
             </button>
           </div>
           {msg && <p role="alert" className="small">{t(msg)}</p>}
-        <a className="row-link" href={href('contribute')}>
+        {platformApiEnabled && <a className="row-link" href={href('contribute')}>
           <Icon name="hand" />
           <span>
             <strong>{t('contribute.title')}</strong>
             <span className="muted small">{t('profile.contributeHint')}</span>
           </span>
-        </a>
+        </a>}
         </section>
         <section className="card stack" style={{ marginTop: 16, borderColor: 'var(--danger)' }}>
           <h2 style={{ color: 'var(--danger)' }}>{t('profile.delete')}</h2>
@@ -245,11 +252,20 @@ export function ProfileScreen() {
   return (
     <div className="narrow">
       <h1>{t('profile.title')}</h1>
-      {platformApiEnabled && <section className="card stack" aria-labelledby="signin-h">
+      {accountsEnabled && <section className="card stack" aria-labelledby="signin-h">
         <h2 id="signin-h">{t('profile.signInTitle')}</h2>
         <p className="muted">{t('profile.signInLead')}</p>
-        <SocialSignIn />
-        <a className="link-btn" href={href('signin')}>{t('social.email')}</a>
+        {social ? (
+          <>
+            <SocialSignIn />
+            <a className="link-btn" href={href('signin')}>{t('social.email')}</a>
+          </>
+        ) : (
+          <div className="btn-row">
+            <a className="btn btn-primary" href={href('signin')}>{t('welcome.signin')}</a>
+            <a className="btn" href={href('register')}>{t('welcome.register')}</a>
+          </div>
+        )}
       </section>}
 
       <section className="card stack" style={{ marginTop: 16 }} aria-labelledby="session-h">

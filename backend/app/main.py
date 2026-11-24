@@ -31,7 +31,7 @@ def create_app() -> FastAPI:
         allow_origins=s.origins,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PATCH", "DELETE"],
-        allow_headers=["Content-Type", "X-CSRF-Token"],
+        allow_headers=["Content-Type", "X-CSRF-Token", "Authorization", "X-Lingora-Auth"],
         max_age=600,
     )
 

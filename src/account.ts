@@ -1,11 +1,12 @@
 // Signed-in account state. The session itself is an httpOnly cookie the app cannot read;
 // only the profile and the CSRF token are kept in memory (never in browser storage).
 import { useSyncExternalStore } from 'react';
-import { csrf } from './api/client';
+import { ApiError, bearer, csrf } from './api/client';
 import { backend } from './providers';
 import type { MeResponse } from './types';
 
-type Me = MeResponse & { csrf_token?: string };
+// `token` is returned only to a cross-site client that asked for bearer sessions.
+type Me = MeResponse & { csrf_token?: string; token?: string };
 
 let me: Me | null = null;
 let version = 0;
@@ -16,6 +17,9 @@ const emit = () => {
 };
 
 function set(next: Me | null) {
+  if (next?.token) bearer.set(next.token);
+  else if (!next) bearer.set(null);
+  if (next) delete next.token; // keep the secret out of the shared profile object
   me = next;
   csrf.set(next?.csrf_token ?? null);
   emit();
@@ -33,7 +37,13 @@ export const account = {
   async refresh() {
     try {
       set((await backend.me()) as Me);
-    } catch {
+    } catch (e) {
+      // Only a definite "signed out" drops a stored session; a sleeping or offline server must not.
+      if (e instanceof ApiError && e.code !== 'UNAUTHENTICATED') {
+        me = null;
+        emit();
+        return;
+      }
       set(null);
     }
   },

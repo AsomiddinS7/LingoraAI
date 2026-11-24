@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { platformApiEnabled } from './config';
+import { accountsEnabled, platformApiEnabled } from './config';
 import { AppShell } from './components/AppShell';
 import { I18nProvider } from './i18n';
 import { account } from './account';
@@ -29,9 +29,9 @@ function Screen() {
     case 'help':
       return <HelpScreen />;
     case 'signin':
-      return platformApiEnabled ? <AuthScreen mode="signin" /> : <HelpScreen />;
+      return accountsEnabled ? <AuthScreen mode="signin" /> : <HelpScreen />;
     case 'register':
-      return platformApiEnabled ? <AuthScreen mode="register" /> : <HelpScreen />;
+      return accountsEnabled ? <AuthScreen mode="register" /> : <HelpScreen />;
     case 'console':
       return <ConsoleScreen />;
     default:
@@ -42,10 +42,9 @@ function Screen() {
 export function App() {
   // Signs and phrases come from the API (v1 spec 2.2); the bundled seed covers offline use.
   useEffect(() => {
-    if (platformApiEnabled) {
-      void refreshCatalog();
-      void finishTelegramRedirect().then(() => account.refresh());
-    }
+    if (platformApiEnabled) void refreshCatalog();
+    // Restores a stored session; on a free host this also wakes the API before the user needs it.
+    if (accountsEnabled) void finishTelegramRedirect().then(() => account.refresh());
   }, []);
   return (
     <I18nProvider>
