@@ -43,9 +43,9 @@ export class MotionRecognizer extends Emitter implements SequenceRecognizer {
   attach(video: HTMLVideoElement): void {
     this.detach();
     this.release = handTracking.acquire(video);
-    this.unsubscribe = handTracking.subscribe((frame) => {
+    this.unsubscribe = handTracking.subscribe((frame, capturedAt) => {
       if (!this.collecting) return;
-      const t = performance.now();
+      const t = capturedAt;
       if (this.frames.length && t - this.frames[this.frames.length - 1].t < 50) return;
       this.frames.push(frame
         ? { t, left: frame.left, right: frame.right, pose: frame.pose, aspect: frame.aspect }

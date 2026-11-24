@@ -98,6 +98,7 @@ describe('two-hand sequence matching', () => {
     expect(result.label).toBe('none');
     expect(result.reason).toBe('ambiguous');
     expect(result.confidence).toBe(0);
+    expect(result.alternatives.map((a) => a.label)).toEqual(['a', 'b']);
   });
 
   it('does not treat a missing hand as a hand at the coordinate origin', () => {

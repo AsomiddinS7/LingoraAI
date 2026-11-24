@@ -325,7 +325,11 @@ export function matchSequence(frames: SequenceFrame[], templates: readonly Infer
   if (rejectionLabels.has(first.label)) return reject('background_reference', first.distance, alternatives);
   if (first.distance > maxDistance) return reject('too_distant', first.distance, alternatives);
   if (second && (second.distance - first.distance < (options.minMargin ?? 0.025)
-    || first.distance / Math.max(second.distance, 1e-9) > (options.maxRatio ?? 0.85))) return reject('ambiguous', first.distance, alternatives);
+    || first.distance / Math.max(second.distance, 1e-9) > (options.maxRatio ?? 0.85))) {
+    const candidates = ranked.filter((r) => !rejectionLabels.has(r.label)).slice(0, 3)
+      .map((r) => ({ label: r.label, confidence: score(r.distance) }));
+    return reject('ambiguous', first.distance, candidates);
+  }
   return { label: first.label, confidence: score(first.distance), distance: first.distance, alternatives, reason: 'matched', templateId: first.id };
 }
 

@@ -88,7 +88,9 @@ export function windowReducer(s: WindowState, e: WindowEvent): WindowState {
       return s.phase === 'result' ? { ...s, picking: true } : s;
     case 'SELECT':
       if (s.phase !== 'result') return s;
-      return { ...s, selected: e.label, picking: false };
+      if (s.outcome === 'not_recognized' && (s.result?.reason !== 'ambiguous'
+        || !s.result.alternatives.some((a) => a.label === e.label))) return s;
+      return { ...s, selected: e.label, picking: false, outcome: 'recognized' };
     case 'RESET':
       return s.phase === 'loading' || s.phase === 'unavailable' ? s : { ...initialWindow, phase: 'idle' };
   }

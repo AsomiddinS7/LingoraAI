@@ -14,6 +14,17 @@ const res = (label: string, confidence: number, alternatives: { label: string; c
 });
 
 describe('sign window state machine', () => {
+  it('requires the signer to choose a proposed ambiguous match before confirming', () => {
+    const result: RecognitionResult = { label: 'none', confidence: 0, reason: 'ambiguous',
+      alternatives: [{ label: 'hello', confidence: .7 }, { label: 'goodbye', confidence: .68 }] };
+    const pending = run([{ type: 'START' }, { type: 'PROGRESS', phase: 'recording', ms: 500 },
+      { type: 'RESULT', result, threshold: 0 }], ready);
+    expect(pending).toMatchObject({ outcome: 'not_recognized', selected: null });
+    expect(run([{ type: 'SELECT', label: 'unoffered' }], pending)).toEqual(pending);
+    expect(run([{ type: 'SELECT', label: 'hello' }], pending)).toMatchObject({ outcome: 'recognized', selected: 'hello' });
+    const absent = { ...pending, result: { ...result, reason: 'insufficient_tracking' } };
+    expect(run([{ type: 'SELECT', label: 'hello' }], absent)).toEqual(absent);
+  });
   it('loading -> idle on READY, unavailable on LOAD_FAILED (with retry back to idle)', () => {
     expect(ready.phase).toBe('idle');
     const failed = run([{ type: 'LOAD_FAILED', message: 'No active model' }]);

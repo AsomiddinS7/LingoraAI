@@ -86,4 +86,22 @@ describe('continuous hand and pose tracking', () => {
     expect(handTracking.latest()).toBeNull();
     release();
   });
+  it('reports capture time for both observed and missing hands even when inference is slow', async () => {
+    const tracking = await import('../src/ml/handTracking');
+    await tracking.loadHandLandmarker();
+    const release = tracking.handTracking.acquire(video);
+    const times: number[] = [];
+    const unsubscribe = tracking.handTracking.subscribe((_frame, at) => times.push(at));
+    const now = vi.spyOn(performance, 'now').mockReturnValueOnce(1000).mockReturnValue(1500);
+    const process = mocks.pump.mock.calls[0][1];
+    process(video, 0);
+    expect(times).toEqual([1000]);
+    expect(tracking.handTracking.latest()?.at).toBe(1000);
+    now.mockReturnValueOnce(2000).mockReturnValue(2500);
+    mocks.hand.mockReturnValueOnce({ landmarks: [], handedness: [] });
+    process(video, 0);
+    expect(times).toEqual([1000, 2000]);
+    expect(tracking.handTracking.latest()).toBeNull();
+    unsubscribe(); release(); now.mockRestore();
+  });
 });

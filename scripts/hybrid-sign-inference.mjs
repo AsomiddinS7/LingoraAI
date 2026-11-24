@@ -5,7 +5,7 @@ export function hybridDecision(baseline, neural, nearestDtwLabel) {
   if (neural.reason === 'insufficient_motion') return { label: 'none', confidence: 0, alternatives: [], reason: 'insufficient_motion', method: 'rejected', distance: baseline.distance };
   if (baseline.label !== 'none') return { ...baseline, method: 'dtw' };
   if (baseline.reason === 'ambiguous' && neural.accepted && neural.label === nearestDtwLabel)
-    return { label: neural.label, confidence: Math.min(1, Math.max(0, 1 - neural.distance)), alternatives: baseline.alternatives,
+    return { label: neural.label, confidence: Math.min(1, Math.max(0, 1 - neural.distance)), alternatives: baseline.alternatives.filter(a => a.label !== neural.label),
       reason: 'trained_dtw_agreement', method: 'hybrid', distance: baseline.distance };
   return { ...baseline, method: 'rejected' };
 }

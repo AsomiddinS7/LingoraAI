@@ -13,6 +13,14 @@ import { Icon } from './Icon';
 import { NamePrompt } from './NamePrompt';
 import { PhrasePickerModal } from './ConversationCards';
 
+export function recognitionHint(reason?: string): MessageKey {
+  if (reason === 'no_hands' || reason === 'insufficient_tracking') return 'motion.hintTracking';
+  if (reason === 'no_compatible_templates') return 'motion.hintBody';
+  if (reason === 'insufficient_motion') return 'motion.hintMotion';
+  if (reason === 'ambiguous') return 'motion.hintAmbiguous';
+  return 'motion.notRecognized';
+}
+
 /** Progress ring (visual only). With reduced motion it is a static ring plus the text label. */
 export function Ring({ value, label }: { value: number; label: string }) {
   const r = 52;
@@ -128,8 +136,12 @@ export function SignWindowPanel() {
       return (
         <div className="card result-card" role="alert">
           <p className="result-text">{t('win.notRecognized')}</p>
-          {(r.reason === 'no_hands' || r.reason === 'insufficient_tracking') && <p className="muted">{t('win.noHands')}</p>}
-          {recognizer === 'motion' && <p className="muted">{t('motion.notRecognized')}</p>}
+          {recognizer === 'motion' ? <p className="muted">{t(recognitionHint(r.reason))}</p>
+            : (r.reason === 'no_hands' || r.reason === 'insufficient_tracking') && <p className="muted">{t('win.noHands')}</p>}
+          {r.reason === 'ambiguous' && r.alternatives.length > 0 && <div className="stack">
+            <p>{t('motion.suggestions')}</p>
+            <div className="btn-row">{r.alternatives.map((a) => <button key={a.label} type="button" className="btn" onClick={() => sw.select(a.label)}>{glossFor(a.label, lang)}</button>)}</div>
+          </div>}
           {r.label !== 'none' && (
             <p className="muted">
               {glossFor(r.label, lang)} · <ConfidenceText c={r.confidence} />
@@ -149,12 +161,13 @@ export function SignWindowPanel() {
         </div>
       );
 
-    const options = [{ label: r.label, confidence: r.confidence }, ...r.alternatives].slice(0, 3);
+    const options = [...(r.label === 'none' ? [] : [{ label: r.label, confidence: r.confidence }]), ...r.alternatives].slice(0, 3);
     const selectedConf = options.find((o) => o.label === win.selected)?.confidence ?? r.confidence;
     const needsName = win.selected === 'my_name' && !conv.name.trim();
     return (
       <div className="card result-card" role="region" aria-labelledby="win-result" aria-live="polite">
         <p className="eyebrow" id="win-result">{t('win.result')}</p>
+        {r.label === 'none' && <p>{t('motion.userSelected')}</p>}
         <p className="result-text xl" lang={lang}>{glossFor(win.selected ?? r.label, lang)}</p>
         <p>
           <ConfidenceText c={selectedConf} />
