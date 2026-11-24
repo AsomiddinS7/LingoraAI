@@ -1,0 +1,14 @@
+[Unit]
+Description=Lingora Uzbek speech recognition
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/LingoraAI
+ExecStart=%h/LingoraAI/.venv-stt/bin/python tools/speech/server.py --engine nvidia-ctc --port 8791 --warmup --allow-origin https://asomiddins7.github.io
+Restart=on-failure
+RestartSec=10
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target

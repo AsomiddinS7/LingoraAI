@@ -1,0 +1,14 @@
+[Unit]
+Description=Lingora Uzbek neural voice
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/LingoraAI
+ExecStart=%h/LingoraAI/.venv-tts/bin/python tools/speech/server.py --engine tiny-voca --port 8792 --warmup --allow-origin https://asomiddins7.github.io
+Restart=on-failure
+RestartSec=10
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target

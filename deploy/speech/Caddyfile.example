@@ -1,0 +1,23 @@
+# Replace this documentation IP with the VM's real public IPv4 address.
+lingora.203.0.113.10.sslip.io {
+    @stt path /api/health /api/transcribe
+    handle @stt {
+        reverse_proxy 127.0.0.1:8791 {
+            header_up Host 127.0.0.1:8791
+        }
+    }
+    handle /api/synthesize {
+        reverse_proxy 127.0.0.1:8792 {
+            header_up Host 127.0.0.1:8792
+        }
+    }
+    handle /api/tts-health {
+        rewrite * /api/health
+        reverse_proxy 127.0.0.1:8792 {
+            header_up Host 127.0.0.1:8792
+        }
+    }
+    handle {
+        respond "Not found" 404
+    }
+}
