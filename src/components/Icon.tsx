@@ -38,7 +38,13 @@ export function Icon({ name, className = 'ico' }: { name: IconName; className?: 
 export function BrandMark() {
   return (
     <svg className="brand-mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-      <rect width="32" height="32" rx="9" fill="#0b5c55" />
+      <defs>
+        <linearGradient id="brand-grad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#14b8a6" />
+          <stop offset="1" stopColor="#0b5c55" />
+        </linearGradient>
+      </defs>
+      <rect width="32" height="32" rx="10" fill="url(#brand-grad)" />
       <path d="M9 18V11.5a1.4 1.4 0 0 1 2.8 0V16m0-5.5v-1a1.4 1.4 0 0 1 2.8 0V16m0-5a1.4 1.4 0 0 1 2.8 0v5" stroke="#fff" strokeWidth="1.8" fill="none" strokeLinecap="round" />
       <path d="M17.4 14.5a1.4 1.4 0 0 1 2.8 0V18a5.5 5.5 0 0 1-5.5 5.5h-.9a5 5 0 0 1-3.8-1.8L8 19.2" stroke="#fff" strokeWidth="1.8" fill="none" strokeLinecap="round" />
       <circle cx="24" cy="9" r="3" fill="#f2b84b" />

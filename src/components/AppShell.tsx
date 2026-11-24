@@ -16,6 +16,7 @@ const TOP: { route: Route; key: MessageKey }[] = [
 
 const BOTTOM: { route: Route; key: MessageKey; icon: IconName }[] = [
   { route: 'conversation', key: 'nav.conversation', icon: 'chat' },
+  { route: 'presentation', key: 'presentation.nav', icon: 'hand' },
   { route: 'phrasebook', key: 'nav.phrasebook', icon: 'book' },
   { route: 'help', key: 'nav.help', icon: 'info' },
   { route: 'profile', key: 'nav.profile', icon: 'person' },

@@ -57,6 +57,8 @@ export function Chat() {
   // Block body on purpose: newer browsers return a Promise from scrollIntoView, and an effect
   // must return nothing or a cleanup function.
   useEffect(() => {
+    // Nothing to reveal yet: scrolling on first render would push the page down on open.
+    if (state.turns.length === 0 && !state.partial) return;
     endRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }, [state.turns.length, state.partial]);
 
