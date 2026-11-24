@@ -3,6 +3,12 @@ import type { SequenceFrame } from './sequence';
 // Diagnostics and controls must refer to the exact instance used by this extractor.
 export { setTrackingMode,trackingDiagnostics,loadHandLandmarker,TRACKING_PROFILE,delegate,poseDelegate } from './handTracking';
 
+export function videoSampleTimes(start: number, end: number): number[] {
+  // A rounding error near an integer must not create a duplicate final frame.
+  const count = Math.max(1, Math.ceil((end - start) * 12.5 - 1e-9));
+  return Array.from({ length: count + 1 }, (_, i) => i === count ? end : start + i / 12.5);
+}
+
 async function seek(video: HTMLVideoElement, time: number, signal?: AbortSignal): Promise<void> {
   if (signal?.aborted) throw new DOMException('Cancelled', 'AbortError');
   if (Math.abs(video.currentTime - time) < 0.005 && video.readyState >= 2) return;
@@ -36,15 +42,15 @@ export async function extractVideoSequence(video: HTMLVideoElement, start: numbe
     trackVideoFrame(video, (time - start) * 1000);
   }
   const frames: SequenceFrame[] = [];
-  const count = Math.ceil((end - start) * 12.5);
-  for (let i = 0; i <= count; i++) {
+  const times = videoSampleTimes(start, end);
+  for (let i = 0; i < times.length; i++) {
     if (options.signal?.aborted) throw new DOMException('Cancelled', 'AbortError');
-    const time = Math.min(end, start + i / 12.5);
+    const time = times[i];
     await seek(video, time, options.signal);
     const frame = trackVideoFrame(video, (time - start) * 1000);
     frames.push(frame ? { t: (time - start) * 1000, left: frame.left, right: frame.right, pose: frame.pose, aspect: frame.aspect }
       : { t: (time - start) * 1000, left: null, right: null, aspect: video.videoWidth / video.videoHeight });
-    options.onProgress?.((i + 1) / (count + 1));
+    options.onProgress?.((i + 1) / times.length);
     // Yield so Cancel and progress updates remain responsive during extraction.
     await new Promise<void>((r) => setTimeout(r, 0));
   }

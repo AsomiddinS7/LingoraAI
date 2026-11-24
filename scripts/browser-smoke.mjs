@@ -12,7 +12,8 @@ const modelPath=process.env.LINGORA_TEST_MODEL ?? 'public/model/trained-sign-mod
 const currentBundle=JSON.parse(await readFile(modelPath,'utf8'));
 const currentMotionModel=currentBundle.gallery??currentBundle;
 const rejectedLabels=new Set(currentMotionModel.matching?.rejectionLabels??[]);
-const expectedMotionLabels=new Set(currentMotionModel.templates.map(t=>t.label).filter(label=>!rejectedLabels.has(label))).size;
+const expectedMotionLabels=new Set([...currentMotionModel.templates,...(currentBundle.number_extension?.templates ?? [])]
+  .map(t=>t.label).filter(label=>!rejectedLabels.has(label))).size;
 await mkdir(out, { recursive: true });
 const browser = await chromium.launch({ channel: 'msedge', headless: true, args: [
   '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', '--use-angle=swiftshader', '--enable-unsafe-swiftshader',
@@ -141,7 +142,7 @@ try {
   checks.push('invalid example imports are rejected without erasing the active model');
   const model = resolve(modelPath);
   if (existsSync(model)) {
-    const referenceCount = currentMotionModel.templates.length;
+    const referenceCount = currentMotionModel.templates.length + (currentBundle.number_extension?.templates.length ?? 0);
     await page.locator('input[type=file][accept="application/json,.json"]').setInputFiles(model);
     await page.getByText(`Loaded ${referenceCount} examples.`, { exact: true }).waitFor();
     checks.push('compiled model can be reimported after an invalid file');

@@ -28,9 +28,9 @@ export async function inspectTrainedModel(text) {
   const { parseTrainedSignModel } = await trainedParserPromise;
   const model = parseTrainedSignModel(text);
   const vocabulary = JSON.parse(await readFile(new URL('../src/data/trainedVocabulary.json', import.meta.url), 'utf8'));
-  if (JSON.stringify(model.vocabulary) !== JSON.stringify(vocabulary) || vocabulary.length !== 48)
+  if (JSON.stringify(model.vocabulary) !== JSON.stringify(vocabulary) || vocabulary.length !== 49)
     throw new Error('trained_model_vocabulary_contract_mismatch');
-  return { templates: model.gallery.templates.length, positiveLabels: model.classifier.classes,
+  return { templates: model.gallery.templates.length + (model.number_extension?.templates.length ?? 0), positiveLabels: model.vocabulary.map(v => v.label),
     trackingProfile: model.tracking_profile };
 }
 

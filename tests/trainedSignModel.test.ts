@@ -19,10 +19,10 @@ function frames(input: NormalizedSequence): SequenceFrame[] {
 }
 afterEach(() => registerModelWords([]));
 describe('published trained model integration', () => {
-  it('loads all 48 words and preserves the trained decision when imported/exported', () => {
+  it('loads all 49 words and preserves the trained decision when imported/exported', () => {
     const store = createSequenceStore();
-    expect(store.importJson(text)).toBe(101);
-    expect(Object.keys(store.counts())).toHaveLength(48);
+    expect(store.importJson(text)).toBe(106);
+    expect(Object.keys(store.counts())).toHaveLength(49);
     expect(store.isTrained()).toBe(true);
     const input = frames(model.gallery.templates[0].normalized);
     expect(store.match(input)).toEqual(createTrainedMatcher(model)(input));
@@ -35,7 +35,7 @@ describe('published trained model integration', () => {
     expect(store.match(Array.from({ length: 32 }, (_, i) => ({ t: i * 50, left: null, right: null }))).label).toBe('none');
     expect(() => store.importJson(text, ['speech_01'])).toThrow();
     expect(() => store.importJson('{"format":"wrong"}')).toThrow();
-    expect(store.isTrained()).toBe(true); expect(store.all()).toHaveLength(101);
+    expect(store.isTrained()).toBe(true); expect(store.all()).toHaveLength(106);
     store.replace([store.all()[0]]); expect(store.isTrained()).toBe(false);
     store.importJson(text); store.clear(); expect(store.isTrained()).toBe(false);
     expect(store.match([]).reason).toBe('no_templates');
@@ -44,6 +44,15 @@ describe('published trained model integration', () => {
     const raw = JSON.parse(text); raw.training = { source: 'private.mp4' };
     expect(() => parseTrainedSignModel(JSON.stringify(raw))).toThrow(); delete raw.training;
     raw.classifier.classes[0] = 'unreviewed';
+    expect(() => parseTrainedSignModel(JSON.stringify(raw))).toThrow();
+  });
+  it('exposes number three through the real matcher and rejects unsafe extension metadata', () => {
+    expect(model.number_extension?.templates.some((t) => t.label === 'number_three')).toBe(true);
+    expect(model.vocabulary.find((v) => v.label === 'number_three')?.textUz).toBe('Uch / 3');
+    const sample = model.number_extension!.templates.find((t) => t.label === 'number_three')!;
+    expect(createTrainedMatcher(model)(frames(sample.normalized)).label).toBe('number_three');
+    const raw = JSON.parse(text);
+    raw.number_extension.templates[0].source = 'private.mp4';
     expect(() => parseTrainedSignModel(JSON.stringify(raw))).toThrow();
   });
   it('uses Uzbek words in confirmed text instead of internal dictionary IDs', () => {

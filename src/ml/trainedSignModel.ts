@@ -8,6 +8,7 @@ export interface TrainedSignModel {
   feature_version: 'two-hand-body-v2'; tracking_profile: 'hands-pose-recovery-video-v2';
   gallery: matcher.MotionModel; classifier: SkeletalModel;
   vocabulary: { label: string; textUz: string }[];
+  number_extension?: { templates: matcher.CompiledTemplate[]; classifier: SkeletalModel };
 }
 const only = (value: unknown, keys: string[]): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).every(k => keys.includes(k));
@@ -15,7 +16,7 @@ const only = (value: unknown, keys: string[]): value is Record<string, unknown> 
 export function parseTrainedSignModel(text: string): TrainedSignModel {
   if (typeof text !== 'string' || text.length > 20_000_000) throw new Error('Trained model too large');
   const raw = JSON.parse(text);
-  if (!only(raw, ['format','version','feature_version','tracking_profile','gallery','classifier','vocabulary'])
+  if (!only(raw, ['format','version','feature_version','tracking_profile','gallery','classifier','vocabulary','number_extension'])
     || raw.format !== 'lingora-trained-sign-bundle-v1' || raw.version !== 1
     || raw.feature_version !== 'two-hand-body-v2' || raw.tracking_profile !== 'hands-pose-recovery-video-v2')
     throw new Error('Invalid trained model format');
@@ -36,16 +37,51 @@ export function parseTrainedSignModel(text: string): TrainedSignModel {
     || gallery.templates.some(t => t.normalized.reference !== 'body')
     || !same(labels, classifier.classes) || !classifier.motion_gate || classifier.motion_gate.minimum_span <= 0)
     throw new Error('Trained model label/tracking contract mismatch');
-  if (!Array.isArray(raw.vocabulary) || raw.vocabulary.length !== labels.length
+  let number_extension: TrainedSignModel['number_extension'];
+  let vocabularyLabels = labels;
+  if (raw.number_extension !== undefined) {
+    const ext = raw.number_extension;
+    if (!only(ext, ['templates', 'classifier']) || !Array.isArray(ext.templates)
+      || ext.templates.some(t => !only(t, ['id','label','normalized']) || typeof t.id !== 'string'
+        || /[\\/]|\.(?:mp4|wav|webm|mov)/i.test(t.id)
+        || typeof t.label !== 'string' || !['number_one','number_two','number_three'].includes(t.label)
+        || !only(t.normalized, ['vectors','reference','durationMs','handCoverage'])))
+      throw new Error('Invalid number extension');
+    const combined = { ...g, templates: [...g.templates, ...ext.templates],
+      matching: { ...g.matching, labels: [...labels, 'number_three'],
+        templateIds: [...gallery.matching!.templateIds, ...ext.templates.map(t => t.id)] } };
+    const checked = matcher.parseMotionModel(JSON.stringify(combined));
+    const c2 = ext.classifier;
+    if (!only(c2, ['format','feature_version','descriptor','classes','mean','scale','weight','bias','minimum_score','minimum_margin','motion_gate'])
+      || !only(c2.motion_gate, ['profile','minimum_span'])) throw new Error('Invalid number classifier metadata');
+    const numberClassifier = parseSkeletalCandidate(JSON.stringify(c2));
+    vocabularyLabels = [...labels, 'number_three'];
+    if (!same(vocabularyLabels, numberClassifier.classes) || !numberClassifier.motion_gate
+      || numberClassifier.motion_gate.minimum_span <= 0 || checked.templates.some(t => t.normalized.reference !== 'body'))
+      throw new Error('Invalid number extension contract');
+    number_extension = { templates: checked.templates.slice(gallery.templates.length), classifier: numberClassifier };
+  }
+  if (!Array.isArray(raw.vocabulary) || raw.vocabulary.length !== vocabularyLabels.length
     || raw.vocabulary.some(v => !only(v, ['label','textUz']) || typeof v.label !== 'string'
       || typeof v.textUz !== 'string' || !v.textUz.trim() || v.textUz.length > 100 || /[<>\u0000-\u001f]/.test(v.textUz))
-    || !same(labels, raw.vocabulary.map(v => v.label))) throw new Error('Invalid trained vocabulary');
+    || !same(vocabularyLabels, raw.vocabulary.map(v => v.label))) throw new Error('Invalid trained vocabulary');
   return { format: 'lingora-trained-sign-bundle-v1', version: 1, feature_version: 'two-hand-body-v2',
     tracking_profile: 'hands-pose-recovery-video-v2', gallery, classifier,
-    vocabulary: raw.vocabulary as TrainedSignModel['vocabulary'] };
+    vocabulary: raw.vocabulary as TrainedSignModel['vocabulary'], ...(number_extension ? { number_extension } : {}) };
 }
 
 export function createTrainedMatcher(model: TrainedSignModel) {
   const classify = createHybridClassifier(matcher, model.gallery, model.classifier, inferSkeletalCandidate);
-  return (frames: matcher.SequenceFrame[]): matcher.SequenceMatch => classify(frames).result;
+  const ext = model.number_extension;
+  if (!ext) return (frames: matcher.SequenceFrame[]): matcher.SequenceMatch => classify(frames).result;
+  const templates = [...model.gallery.templates, ...ext.templates];
+  const gallery = { ...model.gallery, templates, matching: { ...model.gallery.matching!,
+    labels: [...model.gallery.matching!.labels, 'number_three'], templateIds: templates.map(t => t.id) } };
+  const classifyNumbers = createHybridClassifier(matcher, gallery, ext.classifier, inferSkeletalCandidate);
+  return (frames: matcher.SequenceFrame[]): matcher.SequenceMatch => {
+    const original = classify(frames).result;
+    if (original.label !== 'none') return original;
+    const candidate = classifyNumbers(frames).result;
+    return ['number_one','number_two','number_three'].includes(candidate.label) ? candidate : original;
+  };
 }

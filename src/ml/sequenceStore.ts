@@ -33,7 +33,7 @@ const store = {
     const importedMatching = 'matching' in parsed ? parsed.matching : undefined;
     if (allowedLabels && parsed.templates.some((t) => !allowedLabels.includes(t.label)
       && !importedMatching?.rejectionLabels?.includes(t.label))) throw new Error('Template label is not in the supported vocabulary');
-    templates = parsed.templates;
+    templates = bundle?.number_extension ? [...parsed.templates, ...bundle.number_extension.templates] : parsed.templates;
     matching = importedMatching;
     trained = bundle;
     trainedMatch = bundle ? createTrainedMatcher(bundle) : null;
