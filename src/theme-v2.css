@@ -256,3 +256,63 @@ dialog.modal::backdrop { background: rgb(9 17 16 / .5); -webkit-backdrop-filter:
   .msg { animation: none; }
   .btn, .btn:hover:not([disabled]), .phrase-btn:hover, .icon-btn:hover:not(:disabled) { transform: none; }
 }
+
+/* ---------- Responsive ---------- */
+/* Tablets (768-1023 px): camera and chat side by side; phone navigation stays at the bottom. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  main { padding: 24px 24px calc(var(--nav-h) + 28px); }
+  .talk { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 20px; }
+  .talk-signer { position: sticky; top: calc(var(--header-h) + 16px); }
+  .talk .camera { max-height: none; }
+  .talk-chat { min-height: calc(100dvh - var(--header-h) - var(--nav-h) - 64px); grid-template-rows: 1fr auto; }
+  .talk-chat .chat-new { align-content: center; }
+  .composer { position: sticky; bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 12px); }
+  .action-row .sign-now { font-size: 19px; }
+  .presentation-stage { padding: 24px; }
+}
+/* Small laptops: tighter header so five tabs, language and interpreter fit. */
+@media (min-width: 1024px) and (max-width: 1199px) {
+  .header { gap: 10px; padding-inline: 16px; }
+  .top-nav a { padding-inline: 10px; font-size: 14.5px; }
+  .talk { grid-template-columns: minmax(320px, 400px) minmax(0, 1fr); gap: 24px; }
+}
+/* Large screens: keep line lengths readable and give the chat more room. */
+@media (min-width: 1440px) {
+  main { max-width: 1400px; }
+  .talk { grid-template-columns: minmax(400px, 500px) minmax(0, 1fr); gap: 40px; }
+}
+/* Phones */
+@media (max-width: 767px) {
+  .header { min-height: 58px; padding: 8px 14px; }
+  main { padding: 16px 14px calc(var(--nav-h) + 24px); }
+  h1 { font-size: 26px; }
+  .card { padding: 16px; border-radius: 18px; }
+  .welcome-hero { padding: 22px 18px; border-radius: 22px; gap: 18px; }
+  .lang-buttons { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .lang-buttons .btn { min-width: 0; padding-inline: 8px; }
+  .phrase-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .phrase-grid .phrase-btn { min-height: 76px; font-size: 15.5px; padding: 12px; gap: 8px; }
+  .phrase-btn { overflow-wrap: anywhere; hyphens: auto; }
+  .msg { max-width: 92%; }
+  .chat-empty { padding: 28px 18px; }
+  .btn-row .btn { flex: 1 1 auto; }
+}
+/* Very small phones (320-374 px) */
+@media (max-width: 374px) {
+  .header { gap: 8px; padding-inline: 10px; }
+  .brand-mark { width: 30px; height: 30px; }
+  .lang-select { padding: 6px 8px; font-size: 14px; min-height: 40px; }
+  .interp-btn { padding-inline: 12px; min-height: 40px; }
+  main { padding-inline: 10px; }
+  .action-row { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
+  .action-row .sign-now { font-size: 18px; min-height: 58px; }
+  .phrases-btn { min-height: 58px; font-size: 15px; }
+  .bottom-nav a { font-size: 10.5px; }
+  .ico-wrap { width: 44px; }
+  .phrase-grid { grid-template-columns: 1fr; }
+}
+/* Landscape phones: short screens get a shorter camera. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .talk .camera { max-height: 62vh; }
+  .bottom-nav a { min-height: 56px; }
+}
