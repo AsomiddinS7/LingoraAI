@@ -24,6 +24,8 @@ describe('sign window state machine', () => {
     expect(run([{ type: 'SELECT', label: 'hello' }], pending)).toMatchObject({ outcome: 'recognized', selected: 'hello' });
     const absent = { ...pending, result: { ...result, reason: 'insufficient_tracking' } };
     expect(run([{ type: 'SELECT', label: 'hello' }], absent)).toEqual(absent);
+    const still = { ...pending, result: { ...result, reason: 'insufficient_motion' } };
+    expect(run([{ type: 'SELECT', label: 'hello' }], still)).toMatchObject({ selected: 'hello', outcome: 'recognized' });
   });
   it('loading -> idle on READY, unavailable on LOAD_FAILED (with retry back to idle)', () => {
     expect(ready.phase).toBe('idle');

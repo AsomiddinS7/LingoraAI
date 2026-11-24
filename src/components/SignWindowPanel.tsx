@@ -138,7 +138,7 @@ export function SignWindowPanel() {
           <p className="result-text">{t('win.notRecognized')}</p>
           {recognizer === 'motion' ? <p className="muted">{t(recognitionHint(r.reason))}</p>
             : (r.reason === 'no_hands' || r.reason === 'insufficient_tracking') && <p className="muted">{t('win.noHands')}</p>}
-          {r.reason === 'ambiguous' && r.alternatives.length > 0 && <div className="stack">
+          {(r.reason === 'ambiguous' || r.reason === 'insufficient_motion') && r.alternatives.length > 0 && <div className="stack">
             <p>{t('motion.suggestions')}</p>
             <div className="btn-row">{r.alternatives.map((a) => <button key={a.label} type="button" className="btn" onClick={() => sw.select(a.label)}>{glossFor(a.label, lang)}</button>)}</div>
           </div>}

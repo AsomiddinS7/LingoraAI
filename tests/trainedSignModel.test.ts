@@ -5,6 +5,7 @@ import { createSequenceStore } from '../src/ml/sequenceStore';
 import { registerModelWords, glossFor, vocabLabels } from '../src/data';
 import { composeLocally } from '../src/providers/localSentence';
 import type { NormalizedSequence, SequenceFrame } from '../src/ml/sequence';
+import { createStaticNumberSuggestion } from '../src/ml/staticNumberSuggestion';
 
 const model = parseTrainedSignModel(text);
 // Invert body normalization for a packaging regression, not an accuracy claim.
@@ -54,6 +55,20 @@ describe('published trained model integration', () => {
     const raw = JSON.parse(text);
     raw.number_extension.templates[0].source = 'private.mp4';
     expect(() => parseTrainedSignModel(JSON.stringify(raw))).toThrow();
+  });
+  it('offers a held number only as a suggestion and rejects missing or unstable input', () => {
+    const templates = [...model.gallery.templates, ...model.number_extension!.templates];
+    const suggest = createStaticNumberSuggestion(templates);
+    const example = model.number_extension!.templates.find((t) => t.label === 'number_three')!.normalized;
+    const held = { ...example, durationMs: 1200, vectors: Array.from({ length: 32 }, () => example.vectors[16].slice()) };
+    expect(suggest(held).map((candidate) => candidate.label)).toEqual(['number_three']);
+    expect(suggest({ ...held, handCoverage: .2 })).toEqual([]);
+    expect(suggest({ ...held, reference: 'hands' })).toEqual([]);
+    expect(suggest({ ...held, durationMs: 100 })).toEqual([]);
+    const match = createTrainedMatcher(model)(frames(held));
+    expect(match.label).toBe('none');
+    expect(match.reason).toBe('insufficient_motion');
+    expect(match.alternatives.map((candidate) => candidate.label)).toEqual(['number_three']);
   });
   it('uses Uzbek words in confirmed text instead of internal dictionary IDs', () => {
     registerModelWords(model.vocabulary);

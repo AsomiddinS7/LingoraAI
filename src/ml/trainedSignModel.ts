@@ -2,6 +2,7 @@
 import * as matcher from './sequence';
 import { parseSkeletalCandidate, inferSkeletalCandidate, type SkeletalModel } from '../../scripts/skeletal-inference.mjs';
 import { createHybridClassifier } from '../../scripts/hybrid-sign-inference.mjs';
+import { createStaticNumberSuggestion } from './staticNumberSuggestion';
 
 export interface TrainedSignModel {
   format: 'lingora-trained-sign-bundle-v1'; version: 1;
@@ -78,10 +79,16 @@ export function createTrainedMatcher(model: TrainedSignModel) {
   const gallery = { ...model.gallery, templates, matching: { ...model.gallery.matching!,
     labels: [...model.gallery.matching!.labels, 'number_three'], templateIds: templates.map(t => t.id) } };
   const classifyNumbers = createHybridClassifier(matcher, gallery, ext.classifier, inferSkeletalCandidate);
+  const suggestStaticNumber = createStaticNumberSuggestion(templates);
   return (frames: matcher.SequenceFrame[]): matcher.SequenceMatch => {
     const original = classify(frames).result;
     if (original.label !== 'none') return original;
     const candidate = classifyNumbers(frames).result;
-    return ['number_one','number_two','number_three'].includes(candidate.label) ? candidate : original;
+    if (['number_one','number_two','number_three'].includes(candidate.label)) return candidate;
+    if (original.reason === 'insufficient_motion' && candidate.reason === 'insufficient_motion') {
+      const normalized = matcher.normalizeSequence(frames);
+      if (normalized) return { ...original, alternatives: suggestStaticNumber(normalized) };
+    }
+    return original;
   };
 }

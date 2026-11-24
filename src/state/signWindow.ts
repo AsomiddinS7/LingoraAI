@@ -88,7 +88,7 @@ export function windowReducer(s: WindowState, e: WindowEvent): WindowState {
       return s.phase === 'result' ? { ...s, picking: true } : s;
     case 'SELECT':
       if (s.phase !== 'result') return s;
-      if (s.outcome === 'not_recognized' && (s.result?.reason !== 'ambiguous'
+      if (s.outcome === 'not_recognized' && (!s.result || !['ambiguous', 'insufficient_motion'].includes(s.result.reason ?? '')
         || !s.result.alternatives.some((a) => a.label === e.label))) return s;
       return { ...s, selected: e.label, picking: false, outcome: 'recognized' };
     case 'RESET':
