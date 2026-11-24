@@ -18,6 +18,7 @@ export function recognitionHint(reason?: string): MessageKey {
   if (reason === 'no_compatible_templates') return 'motion.hintBody';
   if (reason === 'insufficient_motion') return 'motion.hintMotion';
   if (reason === 'ambiguous') return 'motion.hintAmbiguous';
+  if (reason === 'trimmed_suggestion') return 'motion.hintPauses';
   return 'motion.notRecognized';
 }
 
@@ -138,7 +139,7 @@ export function SignWindowPanel() {
           <p className="result-text">{t('win.notRecognized')}</p>
           {recognizer === 'motion' ? <p className="muted">{t(recognitionHint(r.reason))}</p>
             : (r.reason === 'no_hands' || r.reason === 'insufficient_tracking') && <p className="muted">{t('win.noHands')}</p>}
-          {(r.reason === 'ambiguous' || r.reason === 'insufficient_motion') && r.alternatives.length > 0 && <div className="stack">
+          {['ambiguous', 'insufficient_motion', 'trimmed_suggestion'].includes(r.reason ?? '') && r.alternatives.length > 0 && <div className="stack">
             <p>{t('motion.suggestions')}</p>
             <div className="btn-row">{r.alternatives.map((a) => <button key={a.label} type="button" className="btn" onClick={() => sw.select(a.label)}>{glossFor(a.label, lang)}</button>)}</div>
           </div>}

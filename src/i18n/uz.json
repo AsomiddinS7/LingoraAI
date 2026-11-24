@@ -45,6 +45,7 @@
   "motion.hintBody": "Yelkalar barqaror kuzatilmadi. Biroz orqaga turib, yelka va qoʻllaringizni kadrda tuting va qayta urinib ko‘ring.",
   "motion.hintMotion": "Harakat juda kichik yoki chala bo‘ldi. Yozish boshlangach, ishorani to‘liq bajaring.",
   "motion.hintAmbiguous": "Harakat bir nechta ishoraga o‘xshadi. Bitta mavjud ishorani aniq takrorlang.",
+  "motion.hintPauses": "Yozuvning qisqaroq qismi ishoraga mos bo‘lishi mumkin. Taklifni diqqat bilan tekshiring.",
   "motion.suggestions": "Taxminiy variantlar, tasdiqlangan natija emas. Faqat siz ko‘rsatgan ishora bo‘lsa tanlang yoki qayta urinib ko‘ring.",
   "motion.userSelected": "Bu variantni siz tanladingiz. Tasdiqlashdan oldin tekshiring.",
   "motion.instructions": "Gavdangizning yuqori qismi va ikkala qoʻlingiz kadrda boʻlsin. Sanoqdan keyin ishorani bir marta bajaring.",

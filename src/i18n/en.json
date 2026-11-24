@@ -45,6 +45,7 @@
   "motion.hintBody": "Your shoulders were not tracked consistently. Step back so your shoulders and hands stay in view, then try again.",
   "motion.hintMotion": "The movement was too small or incomplete to match. Wait for recording to start and show the whole sign.",
   "motion.hintAmbiguous": "The movement was similar to more than one sign. Repeat a single supported sign clearly.",
+  "motion.hintPauses": "A shorter part of the recording may match a sign. Check the suggestion carefully.",
   "motion.suggestions": "Possible matches, not a confirmed recognition. Choose one only if it is what you signed, or try again.",
   "motion.userSelected": "You selected this suggestion. Review it before confirming.",
   "motion.instructions": "Keep your upper body and both hands in view. Sign once after the countdown.",

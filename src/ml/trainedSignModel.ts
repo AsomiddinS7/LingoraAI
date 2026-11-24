@@ -3,6 +3,7 @@ import * as matcher from './sequence';
 import { parseSkeletalCandidate, inferSkeletalCandidate, type SkeletalModel } from '../../scripts/skeletal-inference.mjs';
 import { createHybridClassifier } from '../../scripts/hybrid-sign-inference.mjs';
 import { createStaticNumberSuggestion } from './staticNumberSuggestion';
+import { trimRestingEdges, windowSuggestion } from './signMotionWindow';
 
 export interface TrainedSignModel {
   format: 'lingora-trained-sign-bundle-v1'; version: 1;
@@ -80,7 +81,7 @@ export function createTrainedMatcher(model: TrainedSignModel) {
     labels: [...model.gallery.matching!.labels, 'number_three'], templateIds: templates.map(t => t.id) } };
   const classifyNumbers = createHybridClassifier(matcher, gallery, ext.classifier, inferSkeletalCandidate);
   const suggestStaticNumber = createStaticNumberSuggestion(templates);
-  return (frames: matcher.SequenceFrame[]): matcher.SequenceMatch => {
+  const evaluate = (frames: matcher.SequenceFrame[]): matcher.SequenceMatch => {
     const original = classify(frames).result;
     if (original.label !== 'none') return original;
     const candidate = classifyNumbers(frames).result;
@@ -90,5 +91,13 @@ export function createTrainedMatcher(model: TrainedSignModel) {
       if (normalized) return { ...original, alternatives: suggestStaticNumber(normalized) };
     }
     return original;
+  };
+  return (frames: matcher.SequenceFrame[]): matcher.SequenceMatch => {
+    const original = evaluate(frames);
+    if (original.label !== 'none' || !['too_distant', 'ambiguous'].includes(original.reason)) return original;
+    const short = trimRestingEdges(frames, 200), long = trimRestingEdges(frames, 400);
+    if (short.length === frames.length || long.length === frames.length) return original;
+    const a = evaluate(short), b = evaluate(long);
+    return windowSuggestion(original, a, b);
   };
 }
