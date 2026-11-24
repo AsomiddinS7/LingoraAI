@@ -143,7 +143,7 @@ function azure(c: AppConfig) {
 export function getTts(c: AppConfig): { provider: TtsProvider; notice: MessageKey | null } {
   if(c.ttsProvider==='huggingface'){
     const hosted=huggingFace(c);
-    return hosted?{provider:hosted.tts,notice:'speech.huggingFaceNotice'}:{provider:browserTts,notice:'speech.huggingFaceMissing'};
+    return hosted?{provider:hosted.tts,notice:null}:{provider:browserTts,notice:'speech.huggingFaceMissing'};
   }
   if (c.ttsProvider === 'local-tts') {
     if (!localTts || localTts.url !== c.localTtsUrl) {
@@ -177,7 +177,7 @@ export function useLocalSttStatus() {
 export function getStt(c: AppConfig): SttChoice {
   if(c.sttProvider==='huggingface'){
     const hosted=huggingFace(c);
-    return hosted?{kind:'ptt',provider:hosted.stt,notice:'speech.huggingFaceNotice'}:{kind:'typed',notice:'speech.huggingFaceMissing'};
+    return hosted?{kind:'ptt',provider:hosted.stt,notice:null}:{kind:'typed',notice:'speech.huggingFaceMissing'};
   }
   if (c.sttProvider === 'local-stt' || c.sttProvider === 'local-whisper') {
     if (!localStt || localStt.url !== c.localSttUrl) {

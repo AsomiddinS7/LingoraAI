@@ -180,7 +180,6 @@
   "tts.failed": "Ovozli oʻqish ishlamadi. Matn ekranda koʻrsatiladi.",
   "tts.azureMissing": "Azure ovozi hali ulanmagan. Brauzer ovozi ishlatilmoqda.",
   "tts.localNotice": "Tajribaviy sun’iy o‘zbek ovozi. Ishlatish uchun shu kompyuterda bepul mahalliy ovoz xizmatini ishga tushiring.",
-  "speech.huggingFaceNotice": "Mikrofon yozuvlari va tasdiqlangan matn Lingora’ning Hugging Face xizmatida qayta ishlanadi. Bepul navbat va kunlik cheklovlar natijani kechiktirishi mumkin.",
   "speech.huggingFaceMissing": "Hugging Face nutq xizmati hali ulanmagan. Xabaringizni yozishingiz mumkin.",
   "speak.title": "Matndan nutqqa",
   "speak.tabType": "Men yozaman",
