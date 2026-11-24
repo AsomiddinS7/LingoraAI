@@ -1,6 +1,7 @@
 gradio==6.32.0
-spaces==0.53.0
+spaces==0.52.1
 torch==2.13.0
 huggingface_hub>=1.16,<2
--r runtime/requirements-candidates.txt
--r runtime/requirements-tts.txt
+faster-whisper>=1.2.1,<2
+sherpa-onnx==2.0.3
+numpy>=1.24,<3
