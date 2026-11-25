@@ -40,8 +40,8 @@ export function BrandMark() {
     <svg className="brand-mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
       <defs>
         <linearGradient id="brand-grad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#14b8a6" />
-          <stop offset="1" stopColor="#0b5c55" />
+          <stop stopColor="#13a39e" />
+          <stop offset="1" stopColor="#1e3a8a" />
         </linearGradient>
       </defs>
       <rect width="32" height="32" rx="10" fill="url(#brand-grad)" />

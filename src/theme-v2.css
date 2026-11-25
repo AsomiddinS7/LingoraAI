@@ -5,43 +5,47 @@
    ===================================================================== */
 :root {
   --font: 'Inter Variable', 'Segoe UI', Roboto, -apple-system, BlinkMacSystemFont, 'Noto Sans', Arial, sans-serif;
-  --primary: #0f766e;          /* 5.5:1 with white */
-  --primary-hover: #115e59;
-  --primary-soft: #e7f5f2;
-  --primary-soft-ink: #134e4a;
-  --accent: #14b8a6;
-  --ink: #0f1f1c;
-  --muted: #4b5b57;            /* 7:1 on white */
-  --bg: #f4f7f6;
+  /* Brand palette from the KOICA-TIU-CHU "Lingora" banner: white, teal and navy. */
+  --teal: #13a39e;             /* banner teal: decoration and large text only */
+  --navy: #1e3a8a;             /* banner navy: 10:1 with white */
+  --primary: #0e7c7b;          /* teal deep enough for text and white-on-teal (5:1) */
+  --primary-hover: #0b6766;
+  --primary-soft: #e6f6f5;
+  --primary-soft-ink: #0b5150;
+  --accent: var(--teal);
+  --ink: #111c38;              /* navy-black, like the banner text */
+  --muted: #475569;            /* 7.5:1 on white */
+  --bg: #f8fbfc;
   --surface: #ffffff;
-  --surface-2: #f3f6f5;
-  --line: #e2e8e6;
-  --line-strong: #c4cecb;
-  --signer: #0f766e;
-  --listener: #6d28d9;         /* 7:1 on white */
-  --listener-soft: #f4f0fe;
+  --surface-2: #f1f6f8;
+  --line: #e0e8ee;
+  --line-strong: #c3cfd8;
+  --signer: #0e7c7b;
+  --listener: #1e3a8a;         /* navy for the hearing person's words */
+  --listener-soft: #eef2fb;
   --focus: #2563eb;
   --radius: 16px;
   --radius-sm: 12px;
   --radius-lg: 24px;
-  --btn-grad: linear-gradient(135deg, #0f766e 0%, #0b5c55 100%);
-  --brand-grad: linear-gradient(120deg, #0f766e 0%, #0d9488 45%, #6d28d9 100%);
-  --shadow: 0 1px 2px rgb(16 24 22 / .04), 0 6px 20px -8px rgb(16 24 22 / .12);
-  --shadow-lg: 0 2px 4px rgb(16 24 22 / .04), 0 24px 48px -18px rgb(16 24 22 / .22);
-  --glow: 0 10px 28px -10px rgb(15 118 110 / .55);
-  --glass: rgb(255 255 255 / .78);
-  --bg-art: radial-gradient(1100px 520px at 105% -8%, rgb(20 184 166 / .10), transparent 62%),
-            radial-gradient(800px 460px at -12% 4%, rgb(109 40 217 / .06), transparent 60%);
+  --btn-grad: linear-gradient(135deg, #0e7c7b 0%, #1e3a8a 100%);
+  --brand-grad: linear-gradient(120deg, #0e8d89 0%, #13a39e 40%, #1e3a8a 100%);
+  --swoosh: linear-gradient(90deg, #13a39e 0%, #1e3a8a 100%);
+  --shadow: 0 1px 2px rgb(17 28 56 / .04), 0 8px 24px -10px rgb(17 28 56 / .12);
+  --shadow-lg: 0 2px 4px rgb(17 28 56 / .04), 0 24px 48px -18px rgb(17 28 56 / .20);
+  --glow: 0 10px 28px -10px rgb(30 58 138 / .45);
+  --glass: rgb(255 255 255 / .85);
+  --bg-art: radial-gradient(900px 520px at 102% -8%, rgb(30 58 138 / .10), transparent 62%),
+            radial-gradient(820px 480px at -8% -4%, rgb(19 163 158 / .14), transparent 60%);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     --primary: #2dd4bf; --primary-hover: #5eead4; --primary-soft: #0f2e2a; --primary-soft-ink: #99f6e4; --on-primary: #042f2a;
-    --accent: #2dd4bf;
+    --accent: #2dd4bf; --navy: #93a8f8; --teal: #2dd4bf; --swoosh: linear-gradient(90deg, #2dd4bf 0%, #93a8f8 100%);
     --ink: #e8f1ef; --muted: #a3b6b1; --bg: #091110; --surface: #101a18; --surface-2: #15211f;
-    --line: #22312e; --line-strong: #3a514b; --signer: #2dd4bf; --listener: #c4b5fd; --listener-soft: #1d1933;
+    --line: #22312e; --line-strong: #3a514b; --signer: #2dd4bf; --listener: #a5b4fc; --listener-soft: #1a2140;
     --focus: #93b4ff;
     --btn-grad: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 100%);
-    --brand-grad: linear-gradient(120deg, #5eead4 0%, #2dd4bf 45%, #c4b5fd 100%);
+    --brand-grad: linear-gradient(120deg, #5eead4 0%, #2dd4bf 45%, #93a8f8 100%);
     --shadow: 0 1px 2px rgb(0 0 0 / .35), 0 8px 24px -10px rgb(0 0 0 / .5);
     --shadow-lg: 0 24px 48px -18px rgb(0 0 0 / .7);
     --glow: 0 10px 30px -10px rgb(45 212 191 / .45);
@@ -52,12 +56,12 @@
 }
 :root[data-theme='dark'] {
   --primary: #2dd4bf; --primary-hover: #5eead4; --primary-soft: #0f2e2a; --primary-soft-ink: #99f6e4; --on-primary: #042f2a;
-  --accent: #2dd4bf;
+  --accent: #2dd4bf; --navy: #93a8f8; --teal: #2dd4bf; --swoosh: linear-gradient(90deg, #2dd4bf 0%, #93a8f8 100%);
   --ink: #e8f1ef; --muted: #a3b6b1; --bg: #091110; --surface: #101a18; --surface-2: #15211f;
-  --line: #22312e; --line-strong: #3a514b; --signer: #2dd4bf; --listener: #c4b5fd; --listener-soft: #1d1933;
+  --line: #22312e; --line-strong: #3a514b; --signer: #2dd4bf; --listener: #a5b4fc; --listener-soft: #1a2140;
   --focus: #93b4ff;
   --btn-grad: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 100%);
-  --brand-grad: linear-gradient(120deg, #5eead4 0%, #2dd4bf 45%, #c4b5fd 100%);
+  --brand-grad: linear-gradient(120deg, #5eead4 0%, #2dd4bf 45%, #93a8f8 100%);
   --shadow: 0 1px 2px rgb(0 0 0 / .35), 0 8px 24px -10px rgb(0 0 0 / .5);
   --shadow-lg: 0 24px 48px -18px rgb(0 0 0 / .7);
   --glow: 0 10px 30px -10px rgb(45 212 191 / .45);
@@ -330,4 +334,33 @@ dialog.modal::backdrop { background: rgb(9 17 16 / .5); -webkit-backdrop-filter:
 }
 @media (max-width: 767px) {
   .talk .camera { max-height: 62vh; }
+}
+
+/* ---------- Banner accents (KOICA-TIU-CHU "Lingora" banner) ---------- */
+/* A thin teal-to-navy line under the header, like the banner's edge swoosh. */
+.header { position: sticky; }
+.header::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
+  background: var(--swoosh, linear-gradient(90deg, #2dd4bf, #93a8f8)); opacity: .85; pointer-events: none;
+}
+/* Welcome card: navy corner wave top-left, teal wave bottom-right. */
+.welcome-hero { position: relative; overflow: hidden; }
+.welcome-hero::before, .welcome-hero::after { content: ''; position: absolute; pointer-events: none; border-radius: 50%; }
+.welcome-hero::before {
+  width: 220px; height: 120px; top: -70px; left: -60px; transform: rotate(-18deg);
+  background: linear-gradient(120deg, #1e3a8a 0%, #13a39e 100%); opacity: .9;
+}
+.welcome-hero::after {
+  width: 260px; height: 120px; bottom: -78px; right: -70px; transform: rotate(-18deg);
+  background: linear-gradient(120deg, #13a39e 0%, #1e3a8a 100%); opacity: .9;
+}
+.welcome-hero > * { position: relative; z-index: 1; }
+.welcome-hero h1 { margin-top: 18px; }
+/* Teal headline for the conversation empty state, as on the banner. */
+.chat-empty-title { color: var(--primary); }
+.eyebrow { color: var(--navy, var(--primary)); }
+@media (max-width: 767px) {
+  .welcome-hero::before { width: 150px; height: 80px; top: -52px; left: -46px; }
+  .welcome-hero::after { width: 170px; height: 80px; bottom: -54px; right: -50px; }
+  .welcome-hero h1 { margin-top: 26px; }
 }
