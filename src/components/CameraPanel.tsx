@@ -78,7 +78,7 @@ export function CameraPanel({ controller, recognizedText }: { controller?: Camer
 
   return (
     <section aria-label={t('camera.region')}>
-      <div className={`camera phase-${phase}${recognized ? ' detected' : ''}`}>
+      <div className={`camera phase-${phase}${live ? ' live' : ''}${recognized ? ' detected' : ''}`}>
         <video ref={videoRef} muted playsInline autoPlay aria-hidden="true" style={{ display: live ? 'block' : 'none' }} />
         {!live && <CameraMessage />}
         {live && (

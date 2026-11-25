@@ -178,7 +178,7 @@ main { padding: 24px 20px calc(var(--nav-h) + 28px); }
 
 /* ---------- Conversation ---------- */
 .talk { gap: 20px; }
-@media (min-width: 1024px) { .talk { gap: 32px; grid-template-columns: minmax(360px, 460px) minmax(0, 1fr); } }
+@media (min-width: 1024px) { .talk { gap: 32px; grid-template-columns: minmax(0, 1.25fr) minmax(360px, 1fr); } }
 .camera {
   border-radius: 22px;
   background: radial-gradient(120% 90% at 50% 0%, #1a2b28 0%, #0b1312 70%);
@@ -274,12 +274,12 @@ dialog.modal::backdrop { background: rgb(9 17 16 / .5); -webkit-backdrop-filter:
 @media (min-width: 1024px) and (max-width: 1199px) {
   .header { gap: 10px; padding-inline: 16px; }
   .top-nav a { padding-inline: 10px; font-size: 14.5px; }
-  .talk { grid-template-columns: minmax(320px, 400px) minmax(0, 1fr); gap: 24px; }
+  .talk { grid-template-columns: minmax(0, 1.15fr) minmax(340px, 1fr); gap: 24px; }
 }
 /* Large screens: keep line lengths readable and give the chat more room. */
 @media (min-width: 1440px) {
   main { max-width: 1400px; }
-  .talk { grid-template-columns: minmax(400px, 500px) minmax(0, 1fr); gap: 40px; }
+  .talk { grid-template-columns: minmax(0, 1.3fr) minmax(420px, 1fr); gap: 40px; }
 }
 /* Phones */
 @media (max-width: 767px) {
@@ -315,4 +315,19 @@ dialog.modal::backdrop { background: rgb(9 17 16 / .5); -webkit-backdrop-filter:
 @media (max-height: 500px) and (orientation: landscape) {
   .talk .camera { max-height: 62vh; }
   .bottom-nav a { min-height: 56px; }
+}
+
+/* ---------- Bigger live camera ---------- */
+/* Laptops and desktops: the camera fills its (now wider) column but never pushes the
+   sign button below the fold. The video keeps its whole frame (contain), so hands at the
+   edges are never cropped away. */
+@media (min-width: 1024px) {
+  .talk .camera.live { max-height: calc(100dvh - var(--header-h) - 200px); min-height: 320px; }
+}
+/* Phones held upright deliver a portrait stream: show it tall instead of letterboxed. */
+@media (max-width: 767px) and (orientation: portrait) {
+  .talk .camera.live { aspect-ratio: 3 / 4; max-height: 62vh; }
+}
+@media (max-width: 767px) {
+  .talk .camera { max-height: 62vh; }
 }
