@@ -1,0 +1,205 @@
+{
+  "_note": "Phrasebook learning sets shown in the app (category per phrase). The 10 daily phrases come from the API catalog / api/seed/phrases.json.",
+  "items": [
+    {
+      "id": "c02b3f2f-6dff-4ee9-a675-dfec82a7e0a1",
+      "slug": "edu_teacher",
+      "category": "education",
+      "texts": {
+        "en": "Where is the teacher?",
+        "ru": "Где учитель?",
+        "uz": "Oʻqituvchi qayerda?"
+      }
+    },
+    {
+      "id": "9c0ed0f6-686b-48eb-b3f3-7b07f916d550",
+      "slug": "edu_dont_understand",
+      "category": "education",
+      "texts": {
+        "en": "I don't understand. Please explain again.",
+        "ru": "Я не понимаю. Объясните ещё раз, пожалуйста.",
+        "uz": "Tushunmadim. Iltimos, yana bir bor tushuntiring."
+      }
+    },
+    {
+      "id": "02a28266-c8c7-42eb-99a7-c0937191f274",
+      "slug": "edu_homework",
+      "category": "education",
+      "texts": {
+        "en": "What is the homework?",
+        "ru": "Какое домашнее задание?",
+        "uz": "Uyga vazifa nima?"
+      }
+    },
+    {
+      "id": "36b9ebcb-f92f-48f3-9b7f-5300442c49f0",
+      "slug": "edu_write_board",
+      "category": "education",
+      "texts": {
+        "en": "Please write it on the board.",
+        "ru": "Напишите это, пожалуйста, на доске.",
+        "uz": "Iltimos, buni doskaga yozing."
+      }
+    },
+    {
+      "id": "a1fac24c-19c1-458e-b160-e816de29d104",
+      "slug": "med_need_doctor",
+      "category": "healthcare",
+      "texts": {
+        "en": "I need a doctor.",
+        "ru": "Мне нужен врач.",
+        "uz": "Menga shifokor kerak."
+      }
+    },
+    {
+      "id": "e1cf557d-9391-4d1b-83e4-aa4370bf7081",
+      "slug": "med_pain",
+      "category": "healthcare",
+      "texts": {
+        "en": "It hurts here.",
+        "ru": "У меня здесь болит.",
+        "uz": "Shu yerim ogʻriyapti."
+      }
+    },
+    {
+      "id": "15680070-b630-462e-bbb5-f4a77e03f9fb",
+      "slug": "med_allergy",
+      "category": "healthcare",
+      "texts": {
+        "en": "I have an allergy.",
+        "ru": "У меня аллергия.",
+        "uz": "Menda allergiya bor."
+      }
+    },
+    {
+      "id": "ee60363d-dbaf-4e77-8da7-d384bef7d88f",
+      "slug": "med_pharmacy",
+      "category": "healthcare",
+      "texts": {
+        "en": "Where is the pharmacy?",
+        "ru": "Где аптека?",
+        "uz": "Dorixona qayerda?"
+      }
+    },
+    {
+      "id": "c6db10f3-f532-4ea5-bebc-80c66a522126",
+      "slug": "biz_meeting",
+      "category": "business",
+      "texts": {
+        "en": "When does the meeting start?",
+        "ru": "Когда начинается встреча?",
+        "uz": "Uchrashuv qachon boshlanadi?"
+      }
+    },
+    {
+      "id": "c3461317-7e29-4d97-a6d2-bceaf7a0609a",
+      "slug": "biz_email",
+      "category": "business",
+      "texts": {
+        "en": "Please send it to me by email.",
+        "ru": "Пожалуйста, отправьте мне это по электронной почте.",
+        "uz": "Iltimos, buni menga elektron pochta orqali yuboring."
+      }
+    },
+    {
+      "id": "3ea5e99e-de52-4f1f-8a7e-f15e505ce197",
+      "slug": "biz_price",
+      "category": "business",
+      "texts": {
+        "en": "How much does it cost?",
+        "ru": "Сколько это стоит?",
+        "uz": "Bu qancha turadi?"
+      }
+    },
+    {
+      "id": "eefffcbc-3d13-4db3-8723-4b95419077ae",
+      "slug": "biz_agree",
+      "category": "business",
+      "texts": {
+        "en": "I agree.",
+        "ru": "Я согласен(на).",
+        "uz": "Men roziman."
+      }
+    },
+    {
+      "id": "a32e16f6-c867-40bb-86ff-eb8840408077",
+      "slug": "trv_station",
+      "category": "travel",
+      "texts": {
+        "en": "Where is the station?",
+        "ru": "Где вокзал?",
+        "uz": "Vokzal qayerda?"
+      }
+    },
+    {
+      "id": "5e8ca3b6-8e69-43b0-bb42-3321a5cbe192",
+      "slug": "trv_ticket",
+      "category": "travel",
+      "texts": {
+        "en": "One ticket, please.",
+        "ru": "Один билет, пожалуйста.",
+        "uz": "Bitta chipta, iltimos."
+      }
+    },
+    {
+      "id": "86ad8aa2-0129-4498-8b55-f2d1a78f265b",
+      "slug": "trv_lost",
+      "category": "travel",
+      "texts": {
+        "en": "I am lost.",
+        "ru": "Я заблудился(лась).",
+        "uz": "Men adashib qoldim."
+      }
+    },
+    {
+      "id": "9a077983-3cd4-4670-b774-ab573a1425a9",
+      "slug": "trv_toilet",
+      "category": "travel",
+      "texts": {
+        "en": "Where is the toilet?",
+        "ru": "Где туалет?",
+        "uz": "Hojatxona qayerda?"
+      }
+    },
+    {
+      "id": "8e21ecee-6b13-420a-820e-0c6d8647f07b",
+      "slug": "emg_help",
+      "category": "emergency",
+      "texts": {
+        "en": "Help me, please!",
+        "ru": "Помогите мне, пожалуйста!",
+        "uz": "Iltimos, menga yordam bering!"
+      }
+    },
+    {
+      "id": "14f25ab1-b3d1-46e2-a450-8a9c030b47d9",
+      "slug": "emg_ambulance",
+      "category": "emergency",
+      "texts": {
+        "en": "Call an ambulance!",
+        "ru": "Вызовите скорую помощь!",
+        "uz": "Tez yordam chaqiring!"
+      }
+    },
+    {
+      "id": "d66a130b-8da5-4e2b-9cb0-4798da73f9c0",
+      "slug": "emg_police",
+      "category": "emergency",
+      "texts": {
+        "en": "Call the police!",
+        "ru": "Вызовите полицию!",
+        "uz": "Politsiyani chaqiring!"
+      }
+    },
+    {
+      "id": "abefef61-dc37-48b3-9d16-dcf29bd7b3d8",
+      "slug": "emg_deaf_write",
+      "category": "emergency",
+      "texts": {
+        "en": "I am deaf. Please write to me.",
+        "ru": "Я глухой(ая). Пожалуйста, напишите мне.",
+        "uz": "Men eshitmayman. Iltimos, menga yozing."
+      }
+    }
+  ]
+}
