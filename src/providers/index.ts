@@ -15,6 +15,7 @@ import { BrowserSynthesisTts } from './tts';
 import { AzureSpeechStt, AzureSpeechTts, createSpeechTokenSource } from './azureSpeech';
 import { composeLocally } from './localSentence';
 import { MotionRecognizer } from '../recognition/motionRecognizer';
+import { DEMO_SIGN_LABELS } from '../recognition/demoVocabulary';
 import { LocalWhisperStt, type LocalSttStatus } from './localStt';
 import { LocalNeuralTts } from './localTts';
 import { createHuggingFaceSpeech, speechSpaceUrl } from './huggingFaceSpeech';
@@ -98,7 +99,7 @@ export async function refreshCatalog(): Promise<'api' | 'seed'> {
 /** Creates and loads the configured recognizer. The caller owns attach/detach. */
 export async function createRecognizer(c: AppConfig): Promise<SequenceRecognizer> {
   if (c.recognizer === 'motion') {
-    const r = new MotionRecognizer();
+    const r = new MotionRecognizer({ allowedLabels: DEMO_SIGN_LABELS });
     await r.load();
     return r;
   }

@@ -12,6 +12,15 @@ export interface TrainedSignModel {
   vocabulary: { label: string; textUz: string }[];
   number_extension?: { templates: matcher.CompiledTemplate[]; classifier: SkeletalModel };
 }
+
+/** Closely ranked wave greetings need an explicit choice before being used. */
+export function guardConfusableGreeting(result: matcher.SequenceMatch): matcher.SequenceMatch {
+  const other = result.label === 'hello' ? 'goodbye' : result.label === 'goodbye' ? 'hello' : null;
+  const rival = other && result.alternatives.find(candidate => candidate.label === other);
+  if (!rival || result.confidence - rival.confidence > 0.15) return result;
+  return { label: 'none', confidence: 0, distance: result.distance, reason: 'ambiguous',
+    alternatives: [{ label: result.label, confidence: result.confidence }, ...result.alternatives].slice(0, 3) };
+}
 const only = (value: unknown, keys: string[]): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).every(k => keys.includes(k));
 
@@ -75,7 +84,7 @@ export function parseTrainedSignModel(text: string): TrainedSignModel {
 export function createTrainedMatcher(model: TrainedSignModel) {
   const classify = createHybridClassifier(matcher, model.gallery, model.classifier, inferSkeletalCandidate);
   const ext = model.number_extension;
-  if (!ext) return (frames: matcher.SequenceFrame[]): matcher.SequenceMatch => classify(frames).result;
+  if (!ext) return (frames: matcher.SequenceFrame[]): matcher.SequenceMatch => guardConfusableGreeting(classify(frames).result);
   const templates = [...model.gallery.templates, ...ext.templates];
   const gallery = { ...model.gallery, templates, matching: { ...model.gallery.matching!,
     labels: [...model.gallery.matching!.labels, 'number_three'], templateIds: templates.map(t => t.id) } };
@@ -94,7 +103,8 @@ export function createTrainedMatcher(model: TrainedSignModel) {
   };
   return (frames: matcher.SequenceFrame[]): matcher.SequenceMatch => {
     const original = evaluate(frames);
-    if (original.label !== 'none' || !['too_distant', 'ambiguous'].includes(original.reason)) return original;
+    if (original.label !== 'none') return guardConfusableGreeting(original);
+    if (!['too_distant', 'ambiguous'].includes(original.reason)) return original;
     const short = trimRestingEdges(frames, 200), long = trimRestingEdges(frames, 400);
     if (short.length === frames.length || long.length === frames.length) return original;
     const a = evaluate(short), b = evaluate(long);

@@ -1,11 +1,12 @@
 import text from '../public/model/trained-sign-model.json?raw';
 import { afterEach, describe, expect, it } from 'vitest';
-import { parseTrainedSignModel, createTrainedMatcher } from '../src/ml/trainedSignModel';
+import { parseTrainedSignModel, createTrainedMatcher, guardConfusableGreeting } from '../src/ml/trainedSignModel';
 import { createSequenceStore } from '../src/ml/sequenceStore';
 import { registerModelWords, glossFor, vocabLabels } from '../src/data';
 import { composeLocally } from '../src/providers/localSentence';
 import type { NormalizedSequence, SequenceFrame } from '../src/ml/sequence';
 import { createStaticNumberSuggestion } from '../src/ml/staticNumberSuggestion';
+import { initialWindow, windowReducer } from '../src/state/signWindow';
 
 const model = parseTrainedSignModel(text);
 // Invert body normalization for a packaging regression, not an accuracy claim.
@@ -20,6 +21,22 @@ function frames(input: NormalizedSequence): SequenceFrame[] {
 }
 afterEach(() => registerModelWords([]));
 describe('published trained model integration', () => {
+  it('asks for a choice when Salom and Xayr are closely ranked', () => {
+    const result = { label: 'hello', confidence: .67, distance: .073, reason: 'matched' as const,
+      alternatives: [{ label: 'goodbye', confidence: .55 }, { label: 'no', confidence: .51 }] };
+    const guarded = guardConfusableGreeting(result);
+    expect(guarded.label).toBe('none');
+    expect(guarded.reason).toBe('ambiguous');
+    expect(guarded.alternatives.map(a => a.label)).toEqual(['hello', 'goodbye', 'no']);
+    const presented = windowReducer({ ...initialWindow, phase: 'processing' }, { type: 'RESULT', result: guarded, threshold: 0 });
+    const chosen = windowReducer(presented, { type: 'SELECT', label: 'goodbye' });
+    expect(chosen.selected).toBe('goodbye');
+    expect(chosen.outcome).toBe('recognized');
+    expect(guardConfusableGreeting({ ...result, alternatives: [{ label: 'goodbye', confidence: .4 }] })).toEqual({
+      ...result, alternatives: [{ label: 'goodbye', confidence: .4 }],
+    });
+    expect(guardConfusableGreeting({ ...result, label: 'please' })).toEqual({ ...result, label: 'please' });
+  });
   it('loads all 49 words and preserves the trained decision when imported/exported', () => {
     const store = createSequenceStore();
     expect(store.importJson(text)).toBe(106);

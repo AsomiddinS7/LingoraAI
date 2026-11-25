@@ -4,7 +4,7 @@ import { compileTemplateDataset, matchSequence, normalizeSequence, parseInferenc
 import { motionSpan,referenceMotionFloor } from './motionGate.mjs';
 import { parseTrainedSignModel, createTrainedMatcher, type TrainedSignModel } from './trainedSignModel';
 
-export function createSequenceStore() {
+export function createSequenceStore(defaultOptions: MatchOptions = {}) {
 let templates: InferenceTemplate[] = [];
 let matching: MatchingManifest | undefined;
 let motionFloors = {body:0,hands:0};
@@ -60,12 +60,13 @@ const store = {
   // reset this scope. The matcher itself checks exact declared label coverage.
   match(frames: SequenceFrame[], options?: MatchOptions): SequenceMatch {
     if (trainedMatch) return trainedMatch(frames);
+    const effectiveOptions = { ...defaultOptions, ...options };
     if(templates.length){
-      const normalized=normalizeSequence(frames,options?.frames);
+      const normalized=normalizeSequence(frames,effectiveOptions.frames);
       if(normalized&&motionSpan(normalized)+1e-8<motionFloors[normalized.reference])
         return {label:'none',confidence:0,alternatives:[],distance:Infinity,reason:'insufficient_motion'};
     }
-    return matchSequence(frames, templates, { ...options, matching });
+    return matchSequence(frames, templates, { ...effectiveOptions, matching });
   },
 };
 return store;

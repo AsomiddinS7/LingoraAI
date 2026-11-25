@@ -13,7 +13,7 @@ const currentBundle=JSON.parse(await readFile(modelPath,'utf8'));
 const currentMotionModel=currentBundle.gallery??currentBundle;
 const rejectedLabels=new Set(currentMotionModel.matching?.rejectionLabels??[]);
 const expectedMotionLabels=new Set([...currentMotionModel.templates,...(currentBundle.number_extension?.templates ?? [])]
-  .map(t=>t.label).filter(label=>!rejectedLabels.has(label))).size;
+  .map(t=>t.label).filter(label=>!rejectedLabels.has(label) && ['hello','goodbye','please'].includes(label))).size;
 await mkdir(out, { recursive: true });
 const browser = await chromium.launch({ channel: 'msedge', headless: true, args: [
   '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', '--use-angle=swiftshader', '--enable-unsafe-swiftshader',

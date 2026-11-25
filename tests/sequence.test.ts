@@ -22,6 +22,23 @@ function template(label: string, frames: SequenceFrame[]): MotionTemplate { retu
 function dataset(templates: MotionTemplate[]) { return JSON.stringify({ format: 'lingora-motion-templates', version: 1, templates }); }
 
 describe('two-hand sequence matching', () => {
+  it('applies a store-specific distance limit without changing another store', () => {
+    const frames = clip(false, { body: true });
+    const normalized = normalizeSequence(frames)!;
+    const query = Array.from({ length: 100 }, (_, step) => frames.map(f => ({ ...f,
+      right: f.right!.map(p => ({ ...p, y: p.y - step * 0.005 })) })))
+      .find(candidate => {
+        const distance = sequenceDistance(normalized, normalizeSequence(candidate)!);
+        return distance > 0.22 && distance < 0.27;
+      });
+    expect(query).toBeDefined();
+    const standard = createSequenceStore(), phrase = createSequenceStore({ maxDistance: 0.27 });
+    standard.importJson(dataset([template('example', frames)]));
+    phrase.importJson(dataset([template('example', frames)]));
+    expect(standard.match(query!).label).toBe('none');
+    expect(phrase.match(query!).label).toBe('example');
+    expect(phrase.match(query!, { maxDistance: 0.22 }).label).toBe('none');
+  });
   it('rejects resting hands using only the loaded reference movement, and clears that floor on reset',()=>{
     const store=createSequenceStore(),frames=clip(false,{body:true});
     store.importJson(dataset([template('hello',frames)]));

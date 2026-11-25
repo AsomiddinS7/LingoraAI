@@ -14,7 +14,7 @@ await mkdir(out, { recursive: true });
 const en = JSON.parse(await readFile('src/i18n/en.json', 'utf8'));
 const hash = value => createHash('sha256').update(value).digest('hex');
 const assets = [];
-for (const file of ['model/motion-model.json', 'model/signed-speech-model.json', 'model/hand_landmarker.task',
+for (const file of ['model/trained-sign-model.json', 'model/signed-speech-model.json', 'model/hand_landmarker.task',
                     'model/pose_landmarker.task', 'THIRD_PARTY_NOTICES.md', 'licenses/Apache-2.0.txt']) {
   const response = await fetch(new URL(file, base), { cache: 'no-store', signal: AbortSignal.timeout(45_000) });
   assert.equal(response.status, 200, `Public asset missing: ${file}`);
@@ -28,6 +28,9 @@ const browser = await chromium.launch({ channel: 'msedge', headless: true, args:
   '--use-angle=swiftshader', '--enable-unsafe-swiftshader',
 ] });
 const checks = [], errors = [];
+const bundle = JSON.parse(await readFile('public/model/trained-sign-model.json', 'utf8'));
+const vocabularyCount = new Set(bundle.vocabulary.map(v => v.label)
+  .filter(label => ['hello', 'goodbye', 'please'].includes(label))).size;
 try {
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, permissions: ['camera'] });
   await context.addInitScript(() => localStorage.setItem('signconnect.lang', 'en'));
@@ -35,9 +38,9 @@ try {
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(new URL('#/conversation', base).href, { waitUntil: 'networkidle', timeout: 60_000 });
   await page.locator('#lang-select').selectOption('en');
-  await page.getByText('4 signs have video examples. Confirm the text before speaking.', { exact: true })
+  await page.getByText(`${vocabularyCount} signs have video examples. Confirm the text before speaking.`, { exact: true })
     .waitFor({ state: 'attached', timeout: 60_000 });
-  checks.push('Public vocabulary model loaded with four supported words');
+  checks.push(`Public vocabulary model loaded with ${vocabularyCount} labels`);
   const startCamera = page.getByRole('button', { name: en['camera.start'], exact: true });
   if (await startCamera.isVisible()) await startCamera.click();
   await page.waitForFunction(() => [...document.querySelectorAll('video')].some(video => video.videoWidth > 0),

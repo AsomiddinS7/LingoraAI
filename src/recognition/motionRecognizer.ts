@@ -6,10 +6,11 @@ import { runtime } from '../runtime';
 import { Emitter, type SequenceRecognizer } from './types';
 import { createWindowRunner } from './windowRunner';
 import { registerModelWords } from '../data';
+import { limitDemoSign } from './demoVocabulary';
 
 /** A bounded signing turn matched against labeled examples from existing videos. */
 export class MotionRecognizer extends Emitter implements SequenceRecognizer {
-  constructor(private options: { store?: SequenceStore; modelUrl?: string; maxRecordingMs?: number } = {}) { super(); }
+  constructor(private options: { store?: SequenceStore; modelUrl?: string; maxRecordingMs?: number; allowedLabels?: readonly string[] } = {}) { super(); }
   private get store() { return this.options.store ?? sequenceStore; }
   private timing = () => ({ ...runtime.get().config.signWindow,
     ...(this.options.maxRecordingMs ? { maxRecordingMs: this.options.maxRecordingMs } : {}) });
@@ -25,7 +26,10 @@ export class MotionRecognizer extends Emitter implements SequenceRecognizer {
     onRecordingStart: () => { this.frames = []; this.collecting = true; },
     onRecordingEnd: () => { this.collecting = false; },
     onProcessed: (ms) => metrics.set({ lastProcessingMs: ms }),
-    classify: () => this.store.match(this.trim(this.frames)),
+    classify: () => {
+      const result = this.store.match(this.trim(this.frames));
+      return this.options.allowedLabels ? limitDemoSign(result, this.options.allowedLabels) : result;
+    },
   });
 
   async load(): Promise<void> {
