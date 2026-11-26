@@ -6,6 +6,7 @@ import { metrics, useMetrics } from '../pipeline/metrics';
 import { useRuntime } from '../runtime';
 import { useCamera } from '../state/CameraContext';
 import { useSignWindow, type SignWindowValue } from '../state/SignWindowContext';
+import { handTracking, loadHandLandmarker } from '../ml/handTracking';
 import { HandOverlay } from './HandOverlay';
 import { Icon } from './Icon';
 
@@ -61,6 +62,23 @@ export function CameraPanel({ controller, recognizedText }: { controller?: Camer
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cam.stream]);
 
+  // Visible tracking must not depend on the classifier successfully loading.
+  // The frame pump is reference-counted, so the recognizer can safely share it.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !cam.stream || (recognizer !== 'motion' && recognizer !== 'static')) return;
+    let cancelled = false;
+    let release: (() => void) | null = null;
+    void loadHandLandmarker().then(() => {
+      if (cancelled) return;
+      release = handTracking.acquire(video);
+    }).catch((error) => console.warn('[Lingora] hand tracking unavailable', error));
+    return () => {
+      cancelled = true;
+      release?.();
+    };
+  }, [cam.stream, recognizer]);
+
   // Measure the frame rate the camera really delivers.
   useEffect(() => {
     const v = videoRef.current;
@@ -83,7 +101,7 @@ export function CameraPanel({ controller, recognizedText }: { controller?: Camer
         {!live && <CameraMessage />}
         {live && (
           <>
-            {(recognizer === 'static' || recognizer === 'motion') && phase !== 'loading' && phase !== 'unavailable' && <HandOverlay />}
+            {(recognizer === 'static' || recognizer === 'motion') && <HandOverlay />}
             <div className="camera-overlay top">
               <span className="pill" title={t('camera.privacy')}>
                 <Icon name="lock" />
