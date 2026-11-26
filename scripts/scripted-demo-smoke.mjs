@@ -25,7 +25,6 @@ try {
     HTMLMediaElement.prototype.pause = function () { if (this instanceof HTMLAudioElement && !this.paused) window.__pauses++; return pause.call(this); };
   });
   assert.equal(await page.getByText('Demo: prepared audio', { exact: true }).count(), 0);
-  await page.getByRole('button', { name: 'Prepared audio', exact: true }).click();
   if (process.env.LINGORA_SCREENSHOT) await page.screenshot({ path: process.env.LINGORA_SCREENSHOT, fullPage: true });
   await page.getByRole('button', { name: 'Turn on camera', exact: true }).click();
   await page.waitForFunction(() => [...document.querySelectorAll('video')].some(v => v.videoWidth > 0));
@@ -41,8 +40,10 @@ try {
   await page.evaluate(() => window.__hand(.4));
   await page.waitForFunction(() => window.__plays >= 2);
   assert.equal(await page.locator('#reply').count(), 0);
-  await page.getByRole('button', { name: 'Sign recognition', exact: true }).click();
+  await page.goto(base + '/#/sign', { waitUntil: 'domcontentloaded' });
   await page.getByRole('button', { name: 'Sign now', exact: true }).waitFor({ timeout: 60000 });
+  assert.equal(await page.getByText('No video examples loaded. Phrases and typing still work.', { exact: true }).count(), 0);
+  assert.equal(await page.getByRole('link', { name: 'Load video examples' }).count(), 0);
   const spoken = await page.evaluate(async () => {
     const { SignAudioTts } = await import('/src/providers/signAudio.ts');
     let fallbackCalled = false;

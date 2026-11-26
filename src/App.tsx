@@ -8,6 +8,7 @@ import { refreshCatalog } from './providers';
 import { useRoute } from './router';
 import { ConsoleScreen } from './screens/ConsoleScreen';
 import { ConversationScreen } from './screens/ConversationScreen';
+import { SignRecognitionScreen } from './screens/SignRecognitionScreen';
 import { AuthScreen, ContributeScreen, HelpScreen, PhrasebookScreen, ProfileScreen, WelcomeScreen } from './screens/UserScreens';
 import { CameraProvider } from './state/CameraContext';
 import { ConversationProvider } from './state/ConversationContext';
@@ -19,6 +20,8 @@ function Screen() {
       return <WelcomeScreen />;
     case 'phrasebook':
       return <PhrasebookScreen />;
+    case 'sign':
+      return <SignRecognitionScreen />;
     case 'contribute':
       return platformApiEnabled ? <ContributeScreen /> : <HelpScreen />;
     case 'profile':

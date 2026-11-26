@@ -309,9 +309,6 @@ dialog.modal::backdrop { background: rgb(16 27 45 / .45); }
 .tracking-indicator-dot { width: 8px; height: 8px; flex: 0 0 8px; border-radius: 50%; background: #a5b7bb; }
 .tracking-indicator.active .tracking-indicator-dot { background: #77e5b0; }
 .tracking-indicator.moving .tracking-indicator-dot { box-shadow: 0 0 0 4px rgb(119 229 176 / .22); }
-.conversation-modes { display: flex; gap: 6px; padding: 5px; border: 1px solid var(--line); border-radius: 15px; background: var(--surface-2); }
-.conversation-modes .btn { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--muted); box-shadow: none; padding-inline: 8px; }
-.conversation-modes .btn[aria-pressed='true'] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
 .talk-chat .chat-new { display: grid; place-items: center; min-height: 190px; }
 .conversation-welcome { max-width: 290px; margin: auto; padding: 20px 12px; text-align: center; color: var(--muted); }
 .conversation-welcome p { margin: 8px 0 0; line-height: 1.55; font-size: 14px; }
@@ -528,6 +525,14 @@ dialog.modal::backdrop { background: rgb(16 27 45 / .45); }
   .phrases-btn { min-height: 52px; font-size: 14px; }
   .bottom-nav a { font-size: 10.5px; }
   .stat-v { font-size: 20px; }
+}
+
+@media (max-width: 360px) {
+  .header { padding-inline: 8px; gap: 6px; }
+  .header-tools { gap: 4px; }
+  .lang-select { padding-left: 25px; padding-right: 24px; background-position: 6px 50%; }
+  .lang-select-wrap::after { right: 8px; }
+  .interp-btn { padding-inline: 7px; }
 }
 @media (max-height: 500px) and (orientation: landscape) {
   .talk .camera { max-height: 62vh; }

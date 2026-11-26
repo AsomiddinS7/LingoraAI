@@ -91,8 +91,7 @@ export function SignWindowPanel() {
         <Icon name="alert" />
         <div>
           <strong>{t('win.unavailable.title')}</strong>
-          <p>{win.error?.includes('No active model') || win.error?.includes('NOT_FOUND') ? t('win.noModel') : t('win.unavailable.body')}</p>
-          <p className="small">{t('win.unavailable.body')}</p>
+          <p>{t('win.unavailable.body')}</p>
           <div className="btn-row" style={{ marginTop: 8 }}>
             <button type="button" className="btn" onClick={sw.reload}>
               <Icon name="refresh" />
@@ -192,9 +191,14 @@ export function SignWindowPanel() {
         )}
         {needsName && <NamePrompt />}
         <div className="btn-row">
-          <button type="button" className="btn btn-primary btn-lg" disabled={busyConv || needsName} onClick={() => sw.confirm(true)} autoFocus>
-            <Icon name="check" />
-            {t('win.confirm')}
+          <button type="button" className="btn btn-primary btn-lg" disabled={busyConv || needsName} onClick={() => {
+            if (buffer.length || win.selected === 'my_name' || !win.selected) { sw.confirm(true); return; }
+            const text = glossFor(win.selected, lang);
+            sw.cancel();
+            conv.speakDirect(text, lang);
+          }} autoFocus>
+            <Icon name={buffer.length ? 'check' : 'speaker'} />
+            {buffer.length ? t('win.confirm') : t('sentence.speak')}
           </button>
           {buffer.length + 1 < MAX_SIGNS && (
             <button type="button" className="btn btn-lg" disabled={busyConv || needsName} onClick={() => sw.confirm(false)}>
@@ -242,6 +246,7 @@ export function SignWindowPanel() {
         <div className="notice bad" role="alert">
           <Icon name="alert" />
           <p>{t(errorKey)}</p>
+          {win.error === 'no_templates' && <button type="button" className="btn" onClick={sw.reload}>{t('common.retry')}</button>}
         </div>
       )}
       {signsSoFar}

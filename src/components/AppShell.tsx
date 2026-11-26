@@ -35,6 +35,7 @@ function AccountControl() {
 
 const TOP: { route: Route; key: MessageKey }[] = [
   { route: 'conversation', key: 'nav.conversation' },
+  { route: 'sign', key: 'nav.sign' },
   { route: 'phrasebook', key: 'nav.phrasebook' },
   { route: 'help', key: 'nav.help' },
   { route: 'profile', key: 'nav.profile' },
@@ -42,9 +43,9 @@ const TOP: { route: Route; key: MessageKey }[] = [
 
 const BOTTOM: { route: Route; key: MessageKey; icon: IconName }[] = [
   { route: 'conversation', key: 'nav.conversation', icon: 'chat' },
+  { route: 'sign', key: 'nav.sign', icon: 'hand' },
   { route: 'phrasebook', key: 'nav.phrasebook', icon: 'book' },
   { route: 'help', key: 'nav.help', icon: 'info' },
-  { route: 'profile', key: 'nav.profile', icon: 'person' },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
