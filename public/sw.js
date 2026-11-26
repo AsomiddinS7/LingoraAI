@@ -1,6 +1,6 @@
 // SignConnect service worker: caches the app shell so phrases, typed text and read aloud work offline.
 // Never caches /api/ responses and never touches camera or microphone data.
-const CACHE = 'lingora-dictionary-voice-v8';
+const CACHE = 'lingora-conversation-v9';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png'];
 
 self.addEventListener('install', (event) => {
@@ -21,7 +21,7 @@ self.addEventListener('fetch', (event) => {
 
   // Navigations: network first, cached shell when offline.
   if (req.mode === 'navigate') {
-    event.respondWith(fetch(req).catch(() => caches.match('./index.html')));
+    event.respondWith(fetch(req, { cache: 'no-store' }).catch(() => caches.match('./index.html')));
     return;
   }
   // Hashed build assets: cache first.
