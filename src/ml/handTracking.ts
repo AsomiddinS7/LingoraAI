@@ -1,5 +1,5 @@
 // Both hands and the upper body are processed locally. Raw video is never uploaded.
-import { FilesetResolver, HandLandmarker, PoseLandmarker } from '@mediapipe/tasks-vision';
+import { HandLandmarker, PoseLandmarker } from '@mediapipe/tasks-vision';
 import { startFramePump } from '../pipeline/framePump';
 import { metrics } from '../pipeline/metrics';
 import { landmarksToFeatures, type Landmark } from './features';
@@ -48,7 +48,7 @@ let recoveryFactory: (()=>Promise<HandLandmarker>) | null = null;
 let recoveryLoading: Promise<void> | null = null;
 let handLoading: Promise<HandLandmarker> | null = null;
 let loading: Promise<HandLandmarker> | null = null;
-type VisionFileset = Awaited<ReturnType<typeof FilesetResolver.forVisionTasks>>;
+type VisionFileset = { wasmLoaderPath: string; wasmBinaryPath: string };
 let filesetLoading: Promise<VisionFileset> | null = null;
 let handModelLoading: Promise<Uint8Array> | null = null;
 let poseModelLoading: Promise<Uint8Array> | null = null;
@@ -77,8 +77,14 @@ async function loadRecoveryLandmarker() {
 function loadFileset() {
   if (filesetLoading) return filesetLoading;
   const configured = String(import.meta.env.VITE_MEDIAPIPE_WASM_URL ?? '').trim();
-  const root = configured || new URL('mediapipe/wasm', document.baseURI).href;
-  filesetLoading = FilesetResolver.forVisionTasks(root);
+  const root = (configured || new URL('mediapipe/wasm', document.baseURI).href).replace(/\/$/, '');
+  // MediaPipe's SIMD probe can remain pending on static-host origins before it
+  // issues any asset request. Current supported browsers all provide WASM SIMD,
+  // so use the corresponding immutable runtime files directly.
+  filesetLoading = Promise.resolve({
+    wasmLoaderPath: `${root}/vision_wasm_internal.js`,
+    wasmBinaryPath: `${root}/vision_wasm_internal.wasm`,
+  });
   return filesetLoading;
 }
 
