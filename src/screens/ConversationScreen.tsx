@@ -3,25 +3,17 @@
 // Desktop: camera and the sign flow on the left; the chat and the reply bar on the right.
 import { CameraPanel } from '../components/CameraPanel';
 import { Chat, Composer } from '../components/Chat';
-import { SentenceCard } from '../components/ConversationCards';
-import { SignWindowPanel } from '../components/SignWindowPanel';
 import { useI18n } from '../i18n';
-import { RecognitionStatus } from '../components/RecognitionStatus';
-import { TypedMessage } from '../components/TypedMessage';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useConversation } from '../state/ConversationContext';
-import { ScriptedDemo } from '../components/ScriptedDemo';
+import { MovementAudio } from '../components/MovementAudio';
 import { Icon } from '../components/Icon';
 import { useCamera } from '../state/CameraContext';
-import { useSignWindow } from '../state/SignWindowContext';
 
 export function ConversationScreen() {
-  const { t, lang } = useI18n();
-  const say = (uz: string, en: string, ru: string) => lang === 'uz' ? uz : lang === 'ru' ? ru : en;
-  const [mode, setMode] = useState<'script' | 'recognition'>('script');
+  const { t } = useI18n();
   const conv = useConversation();
   const cam = useCamera();
-  const signWindow = useSignWindow();
   const current = useRef(conv);
   current.current = conv;
   useEffect(() => () => {
@@ -41,22 +33,15 @@ export function ConversationScreen() {
           <div className="panel-body"><CameraPanel /></div>
         </div>
         <div className="stage">
-          <div className="btn-row" aria-label={say('Namoyish turi', 'Demonstration mode', 'Режим демонстрации')}>
-            <button type="button" className="btn" aria-pressed={mode === 'script'} onClick={() => { signWindow.cancel(); setMode('script'); }}>{say('Tayyor matn', 'Scripted demo', 'Готовый текст')}</button>
-            <button type="button" className="btn" aria-pressed={mode === 'recognition'} onClick={() => setMode('recognition')}>{say('Ishorani aniqlash', 'Sign recognition', 'Распознавание жестов')}</button>
-          </div>
-          {mode === 'script' && <ScriptedDemo />}
-          <div hidden={mode !== 'recognition'}><SignWindowPanel /><RecognitionStatus /></div>
-          <SentenceCard />
-          <TypedMessage />
+          <MovementAudio />
         </div>
       </section>
       <section className="talk-chat panel chat-panel" aria-labelledby="chat-h">
         <div className="panel-head">
           <h2 className="panel-title" id="chat-h"><Icon name="chat" />{t('panel.conversation')}</h2>
         </div>
-        <Chat />
-        <Composer />
+        <Chat speechOnly />
+        <Composer speechOnly />
       </section>
     </div>
   );

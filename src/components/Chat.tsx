@@ -40,7 +40,7 @@ export function BigText({ text, onClose }: { text: string | null; onClose: () =>
 }
 
 // ---------------------------------------------------------------- transcript
-export function Chat() {
+export function Chat({ speechOnly = false }: { speechOnly?: boolean } = {}) {
   const { t, lang } = useI18n();
   const conv = useConversation();
   const { state } = conv;
@@ -149,7 +149,7 @@ export function Chat() {
 
   return (
     <section className={`chat${state.turns.length === 0 && state.phase !== 'TRANSCRIBING' ? ' chat-new' : ''}`} aria-label={t('transcript.title')}>
-      {state.turns.length === 0 && state.phase !== 'TRANSCRIBING' ? (
+      {state.turns.length === 0 && state.phase !== 'TRANSCRIBING' ? (speechOnly ? null : (
         <div className="chat-empty">
           <p className="chat-empty-title">{t('conv.emptyTitle')}</p>
           <p>
@@ -159,7 +159,7 @@ export function Chat() {
             <Icon name="chat" /> {t('conv.empty2')}
           </p>
         </div>
-      ) : (
+      )) : (
         <ol className="msgs" aria-live="polite">
           {state.turns.map(bubble)}
           {state.phase === 'TRANSCRIBING' && (
@@ -190,7 +190,7 @@ export function Chat() {
 // ---------------------------------------------------------------- reply bar (hearing person)
 let noticeAcceptedThisSession = false;
 
-export function Composer() {
+export function Composer({ speechOnly = false }: { speechOnly?: boolean } = {}) {
   const { t, lang } = useI18n();
   const conv = useConversation();
   const config = useRuntime((s) => s.config);
@@ -216,7 +216,7 @@ export function Composer() {
 
   return (
     <form className="composer" onSubmit={submit}>
-      <label className="sr-only" htmlFor="reply">{t('conv.replyLabel')}</label>
+      {!speechOnly && <><label className="sr-only" htmlFor="reply">{t('conv.replyLabel')}</label>
       <textarea
         id="reply"
         className="composer-input"
@@ -231,11 +231,11 @@ export function Composer() {
             (e.currentTarget.form as HTMLFormElement).requestSubmit();
           }
         }}
-      />
+      /></>}
       {stt.kind === 'ptt' && (
         <button
           type="button"
-          className={`icon-btn mic ${talking ? 'on' : ''}`}
+          className={`${speechOnly ? 'btn btn-primary' : 'icon-btn'} mic ${talking ? 'on' : ''}`}
           aria-pressed={talking}
           aria-label={talking ? t('speech.stop') : t('speech.start')}
           title={talking ? t('speech.stop') : t('speech.start')}
@@ -244,11 +244,12 @@ export function Composer() {
           onContextMenu={(e) => e.preventDefault()}
         >
           <Icon name="mic" />
+          {speechOnly && <span>{talking ? t('speech.stop') : t('speech.start')}</span>}
         </button>
       )}
-      <button type="submit" className="icon-btn send" disabled={!text.trim() || !can} aria-label={t('conv.send')} title={t('conv.send')}>
+      {!speechOnly && <button type="submit" className="icon-btn send" disabled={!text.trim() || !can} aria-label={t('conv.send')} title={t('conv.send')}>
         <Icon name="send" />
-      </button>
+      </button>}
       <Modal open={noticeOpen} onClose={() => setNoticeOpen(false)} title={t('listener.noticeTitle')}>
         <p style={{ fontSize: '1.25rem', fontWeight: 600 }}>{t('speech.cloud')}</p>
         <button
