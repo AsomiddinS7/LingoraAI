@@ -15,6 +15,8 @@ MediaPipe assets are pretrained estimators. Lingora's reference-matching code, n
 
 Speech weights are optional downloads and are not bundled into the website. See [speech model notices](https://github.com/AsomiddinS7/LingoraAI/blob/main/tools/speech/MODEL_NOTICES.md) for NVIDIA CC BY 4.0 attribution, the community ONNX conversion and Ovozify's declared Apache 2.0 license.
 
+The prepared introduction audio was generated using [Inomjonov/tiny-voca-uzbek-navoiy](https://huggingface.co/Inomjonov/tiny-voca-uzbek-navoiy), based on tiny-voca by Muhammed Nazeem and Uzbek normalization from Aisha AI Navoiy TTS. The model is distributed under Apache 2.0; [license text](licenses/Apache-2.0.txt).
+
 ## Sign-reference sources
 
 See [model provenance](model/README.md). Source footage, raw landmark datasets and personal source filenames are excluded from the public artifact. Public visibility of a lesson does not by itself establish a redistribution license; this notice does not grant rights to source videos or certify general sign-language translation accuracy.

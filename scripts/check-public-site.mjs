@@ -52,7 +52,7 @@ try {
   await page.screenshot({ path: resolve(out, 'conversation-desktop.png'), fullPage: true });
   await page.evaluate(() => { location.hash = '/presentation'; });
   await page.getByRole('button', { name: 'Scripted demo', exact: true }).click();
-  await page.getByTestId('scripted-demo-output').waitFor({ state: 'attached', timeout: 30_000 });
+  await page.getByRole('button', { name: 'Start audio', exact: true }).waitFor({ timeout: 30_000 });
   checks.push('Previous presentation link opens prepared text in conversation');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: resolve(out, 'presentation-mobile.png'), fullPage: true });
