@@ -81,10 +81,19 @@ function loadFileset() {
   // MediaPipe's SIMD probe can remain pending on static-host origins before it
   // issues any asset request. Current supported browsers all provide WASM SIMD,
   // so use the corresponding immutable runtime files directly.
-  filesetLoading = Promise.resolve({
-    wasmLoaderPath: `${root}/vision_wasm_internal.js`,
-    wasmBinaryPath: `${root}/vision_wasm_internal.wasm`,
-  });
+  const loaderPath = `${root}/vision_wasm_internal.js`;
+  filesetLoading = Promise.all([
+    loadModel(`${root}/vision_wasm_internal.wasm`),
+    fetch(loaderPath, { cache: 'force-cache' }).then(async response => {
+      if (!response.ok) throw new Error('MediaPipe runtime loader could not be loaded');
+      await response.arrayBuffer();
+    }),
+  ]).then(([wasm]) => ({
+    // Fetch the runtime alongside the hand model, then let MediaPipe consume a
+    // local Blob. This removes a second large serial network wait on cold load.
+    wasmLoaderPath: loaderPath,
+    wasmBinaryPath: URL.createObjectURL(new Blob([wasm], { type: 'application/wasm' })),
+  }));
   return filesetLoading;
 }
 
