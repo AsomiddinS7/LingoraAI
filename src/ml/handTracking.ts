@@ -75,11 +75,11 @@ async function loadRecoveryLandmarker() {
 }
 
 function loadFileset() {
-  return filesetLoading ??= Promise.resolve().then(() => {
-    const configured = String(import.meta.env.VITE_MEDIAPIPE_WASM_URL ?? '').trim();
-    const root = configured || new URL('mediapipe/wasm', document.baseURI).href;
-    return FilesetResolver.forVisionTasks(root);
-  });
+  if (filesetLoading) return filesetLoading;
+  const configured = String(import.meta.env.VITE_MEDIAPIPE_WASM_URL ?? '').trim();
+  const root = configured || new URL('mediapipe/wasm', document.baseURI).href;
+  filesetLoading = FilesetResolver.forVisionTasks(root);
+  return filesetLoading;
 }
 
 function loadModel(path: string): Promise<Uint8Array> {
@@ -92,10 +92,11 @@ function loadModel(path: string): Promise<Uint8Array> {
 /** Load just the hand graph so the live skeleton can appear before pose/recognition is ready. */
 export function loadHandOverlayLandmarker(): Promise<HandLandmarker> {
   if (landmarker) return Promise.resolve(landmarker);
+  const filesetPromise = loadFileset();
   handModelLoading ??= loadModel('model/hand_landmarker.task');
   if (handLoading) return handLoading;
   const pending = (async () => {
-    const [fileset, modelAssetBuffer] = await Promise.all([loadFileset(), handModelLoading!]);
+    const [fileset, modelAssetBuffer] = await Promise.all([filesetPromise, handModelLoading!]);
     const makeHand = (d: 'GPU' | 'CPU') => HandLandmarker.createFromOptions(fileset, {
       baseOptions: { modelAssetBuffer, delegate: d },
       ...HAND_TRACKING_OPTIONS,
@@ -116,10 +117,11 @@ export function loadHandLandmarker(): Promise<HandLandmarker> {
   if (loading) return loading;
   const pending = (async () => {
     const t0 = performance.now();
+    const filesetPromise = loadFileset();
+    const handPromise = loadHandOverlayLandmarker();
     handModelLoading ??= loadModel('model/hand_landmarker.task');
     poseModelLoading ??= loadModel('model/pose_landmarker.task');
-    const handPromise = loadHandOverlayLandmarker();
-    const [fileset, poseModelAssetBuffer] = await Promise.all([loadFileset(), poseModelLoading!]);
+    const [fileset, poseModelAssetBuffer] = await Promise.all([filesetPromise, poseModelLoading!]);
     await handPromise;
     const makePose = (d: 'GPU' | 'CPU') => PoseLandmarker.createFromOptions(fileset, {
       baseOptions: { modelAssetBuffer: poseModelAssetBuffer, delegate: d },
