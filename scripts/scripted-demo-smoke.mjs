@@ -24,7 +24,8 @@ try {
     HTMLMediaElement.prototype.play = function () { if (this instanceof HTMLAudioElement) window.__plays++; return play.call(this); };
     HTMLMediaElement.prototype.pause = function () { if (this instanceof HTMLAudioElement && !this.paused) window.__pauses++; return pause.call(this); };
   });
-  await page.getByText('Demo: prepared audio', { exact: true }).waitFor();
+  assert.equal(await page.getByText('Demo: prepared audio', { exact: true }).count(), 0);
+  if (process.env.LINGORA_SCREENSHOT) await page.screenshot({ path: process.env.LINGORA_SCREENSHOT, fullPage: true });
   await page.getByRole('button', { name: 'Turn on camera', exact: true }).click();
   await page.waitForFunction(() => [...document.querySelectorAll('video')].some(v => v.videoWidth > 0));
   await page.waitForTimeout(300);

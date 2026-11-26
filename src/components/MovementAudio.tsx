@@ -73,8 +73,5 @@ export function MovementAudio() {
     if (!audio) return;
     void audio.play().then(() => setBlocked(false), () => setBlocked(true));
   };
-  return <div className="small muted" role="status">
-    {lang === 'uz' ? 'Namoyish: oldindan tayyorlangan ovoz' : lang === 'ru' ? 'Демонстрация: заранее подготовленная запись' : 'Demo: prepared audio'}
-    {blocked && <button type="button" className="btn" onClick={unlock}>{lang === 'uz' ? 'Ovozni yoqish' : lang === 'ru' ? 'Включить звук' : 'Enable audio'}</button>}
-  </div>;
+  return blocked ? <button type="button" className="btn" onClick={unlock}>{lang === 'uz' ? 'Ovozni yoqish' : lang === 'ru' ? 'Включить звук' : 'Enable audio'}</button> : null;
 }

@@ -280,6 +280,51 @@ dialog.modal::backdrop { background: rgb(16 27 45 / .45); }
 @media (min-width: 1024px) { .talk .camera.live { max-height: calc(100dvh - var(--header-h) - 230px); min-height: 300px; } }
 @media (max-width: 767px) and (orientation: portrait) { .talk .camera.live { aspect-ratio: 3 / 4; max-height: 62vh; } }
 @media (max-width: 767px) { .talk .camera { max-height: 62vh; } }
+
+/* Conversation: camera first, with a calm, focused space for spoken replies. */
+.talk { gap: clamp(16px, 2vw, 28px); }
+.talk .cam-panel, .talk .chat-panel {
+  border-radius: 22px;
+  box-shadow: 0 12px 36px -24px rgb(16 50 60 / .32), 0 2px 8px rgb(16 50 60 / .04);
+  overflow: hidden;
+}
+.talk .cam-panel .panel-head, .talk .chat-panel .panel-head {
+  min-height: 66px;
+  padding: 16px 20px;
+}
+.talk .panel-title { gap: 10px; font-size: 16px; font-weight: 700; }
+.talk .panel-title .ico { color: var(--primary); }
+.talk .cam-panel .panel-body { padding: 0 10px 10px; }
+.talk .camera {
+  border-radius: 15px;
+  background: radial-gradient(ellipse at 50% 15%, #254a50 0, #142f35 42%, #0a1c24 100%);
+}
+.talk .camera-msg h3 { font-size: clamp(20px, 2.4vw, 26px); letter-spacing: -.035em; }
+.talk .camera .btn { min-height: 48px; font-weight: 700; }
+.talk-chat .chat-new { display: grid; place-items: center; min-height: 190px; }
+.conversation-welcome { max-width: 290px; margin: auto; padding: 20px 12px; text-align: center; color: var(--muted); }
+.conversation-welcome p { margin: 8px 0 0; line-height: 1.55; font-size: 14px; }
+.conversation-welcome .conversation-welcome-title { color: var(--ink); font-size: 20px; font-weight: 700; letter-spacing: -.035em; }
+.conversation-welcome-icon {
+  width: 68px; height: 68px; display: grid; place-items: center; margin: 0 auto 18px;
+  border-radius: 24px; background: var(--primary-soft); color: var(--primary);
+  box-shadow: 0 0 0 8px color-mix(in srgb, var(--primary-soft), transparent 55%);
+}
+.conversation-welcome-icon .ico { width: 28px; height: 28px; }
+.chat-panel .composer-speech-only { padding: 0; border: 0; background: transparent; }
+.composer-speech-only .mic {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; min-height: 58px; border-radius: 15px; font-size: 16px;
+  box-shadow: 0 7px 18px -10px rgb(15 118 110 / .6);
+}
+.composer-speech-only .mic.on { background: var(--danger); border-color: var(--danger); color: #fff; }
+@media (max-width: 767px) {
+  .talk .cam-panel, .talk .chat-panel { border-radius: 18px; }
+  .talk .cam-panel .panel-head, .talk .chat-panel .panel-head { min-height: 58px; padding: 12px 16px; }
+  .talk-chat .chat-new { min-height: 155px; }
+  .conversation-welcome { padding: 12px; }
+  .conversation-welcome-icon { width: 54px; height: 54px; margin-bottom: 12px; border-radius: 19px; }
+}
 .stage { gap: 12px; }
 .action-row { gap: 10px; }
 .sign-now, .action-row .sign-now {

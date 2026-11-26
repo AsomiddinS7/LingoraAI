@@ -149,7 +149,13 @@ export function Chat({ speechOnly = false }: { speechOnly?: boolean } = {}) {
 
   return (
     <section className={`chat${state.turns.length === 0 && state.phase !== 'TRANSCRIBING' ? ' chat-new' : ''}`} aria-label={t('transcript.title')}>
-      {state.turns.length === 0 && state.phase !== 'TRANSCRIBING' ? (speechOnly ? null : (
+      {state.turns.length === 0 && state.phase !== 'TRANSCRIBING' ? (speechOnly ? (
+        <div className="conversation-welcome">
+          <div className="conversation-welcome-icon" aria-hidden="true"><Icon name="mic" /></div>
+          <p className="conversation-welcome-title">{lang === 'uz' ? 'Suhbatga tayyormisiz?' : lang === 'ru' ? 'Готовы к разговору?' : 'Ready to talk?'}</p>
+          <p>{lang === 'uz' ? 'Mikrofonni yoqing va gapiring. Nutqingiz shu yerda matnga aylanadi.' : lang === 'ru' ? 'Включите микрофон и говорите. Ваша речь появится здесь в виде текста.' : 'Turn on the microphone and speak. Your words will appear here as text.'}</p>
+        </div>
+      ) : (
         <div className="chat-empty">
           <p className="chat-empty-title">{t('conv.emptyTitle')}</p>
           <p>
@@ -215,7 +221,7 @@ export function Composer({ speechOnly = false }: { speechOnly?: boolean } = {}) 
   const end = () => talking && void conv.pttStop();
 
   return (
-    <form className="composer" onSubmit={submit}>
+    <form className={`composer${speechOnly ? ' composer-speech-only' : ''}`} onSubmit={submit}>
       {!speechOnly && <><label className="sr-only" htmlFor="reply">{t('conv.replyLabel')}</label>
       <textarea
         id="reply"

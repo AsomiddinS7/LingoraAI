@@ -35,7 +35,7 @@ try {
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(new URL('#/conversation', base).href, { waitUntil: 'networkidle', timeout: 60_000 });
   await page.locator('#lang-select').selectOption('en');
-  await page.getByText('Demo: prepared audio', { exact: true }).waitFor();
+  assert.equal(await page.getByText('Demo: prepared audio', { exact: true }).count(), 0);
   const startCamera = page.getByRole('button', { name: en['camera.start'], exact: true });
   if (await startCamera.isVisible()) await startCamera.click();
   await page.waitForFunction(() => [...document.querySelectorAll('video')].some(video => video.videoWidth > 0),
@@ -43,7 +43,7 @@ try {
   checks.push('Camera opened with synthetic input');
   await page.screenshot({ path: resolve(out, 'conversation-desktop.png'), fullPage: true });
   await page.evaluate(() => { location.hash = '/presentation'; });
-  await page.getByText('Demo: prepared audio', { exact: true }).waitFor({ timeout: 30_000 });
+  await page.getByRole('heading', { name: en['panel.conversation'], exact: true }).waitFor({ timeout: 30_000 });
   checks.push('Previous presentation link opens the conversation');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: resolve(out, 'presentation-mobile.png'), fullPage: true });
