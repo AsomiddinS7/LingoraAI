@@ -29,8 +29,7 @@ export function ScriptedDemo() {
     setRunning(true);
   };
   const reset = () => { setRunning(false); setShown(0); };
-  return <section className="card stack" aria-labelledby="scripted-demo-title">
-    <h2 id="scripted-demo-title">{say('Tayyor matn namoyishi', 'Scripted text demonstration', 'Демонстрация готового текста')}</h2>
+  return <section className="card stack" aria-label={say('Tayyor matn', 'Prepared text', 'Готовый текст')}>
     <p className="notice info">{say('Bu oldindan kiritilgan matn. So‘zlar vaqt bo‘yicha chiqadi; kamera ishoralarni tarjima qilmaydi.',
       'This is prepared text. Words appear on a timer; the camera is not translating signs.',
       'Это заранее введённый текст. Слова появляются по таймеру; камера не переводит жесты.')}</p>

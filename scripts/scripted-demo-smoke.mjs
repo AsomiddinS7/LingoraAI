@@ -11,6 +11,7 @@ try {
   await page.goto(base + '/#/presentation', { waitUntil: 'domcontentloaded' });
   await page.locator('#lang-select').selectOption('en');
   await page.getByText('This is prepared text. Words appear on a timer; the camera is not translating signs.').waitFor();
+  assert.equal(await page.getByRole('heading', { name: 'Scripted text demonstration' }).count(), 0);
   await page.locator('#scripted-demo-text').fill('Salom dunyo! Yaxshimisiz?');
   assert.equal(await page.locator('#scripted-demo-speed').inputValue(), '3');
   await page.getByRole('button', { name: 'Start demonstration', exact: true }).click();

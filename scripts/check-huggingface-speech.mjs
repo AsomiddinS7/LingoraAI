@@ -36,7 +36,7 @@ try{
  await page.locator('#signer-message').fill('Assalomu alaykum. Menga yordam kerak.');
  await page.getByRole('button',{name:uz['message.review'],exact:true}).click();
  assert(!jobs.includes('synthesize'),'Text must be confirmed before synthesis');
- await page.getByRole('button',{name:uz['sentence.speak'],exact:true}).click();
+ await page.locator('.talk-signer').getByRole('button',{name:uz['sentence.speak'],exact:true}).click();
  await page.waitForFunction(()=>window.__hostedAudio.some(r=>r.ended&&r.duration>1),undefined,{timeout:90000});
  const mic=page.locator('.composer .mic');await mic.click();
  const consent=page.getByRole('button',{name:'Tushundim',exact:true});if(await consent.isVisible())await consent.click();
@@ -45,9 +45,19 @@ try{
  await page.waitForFunction(()=>document.querySelectorAll('.msg-listener:not(.msg-live) .msg-text').length>0,undefined,{timeout:90000});
  const messages=await page.locator('.msg-listener:not(.msg-live) .msg-text').allTextContents();
  assert(messages.some(t=>t.trim()));assert(jobs.includes('transcribe'));assert(jobs.includes('synthesize'));assert.deepEqual(errors,[]);
+ // Feed the actual STT output back into the signer text flow, then confirm it.
+ // This verifies a transcription -> text -> TTS round trip without inventing
+ // a transcript or implying that the application automatically echoes speech.
+ const transcript=messages.find(text=>text.trim());
+ await page.getByText(uz['message.writeInstead'],{exact:true}).click();
+ await page.locator('#signer-message').fill(transcript);
+ await page.getByRole('button',{name:uz['message.review'],exact:true}).click();
+ await page.locator('.talk-signer').getByRole('button',{name:uz['sentence.speak'],exact:true}).click();
+ await page.waitForFunction(()=>window.__hostedAudio.filter(r=>r.ended&&r.duration>0).length>=2,undefined,{timeout:90000});
+ assert(jobs.filter(name=>name==='synthesize').length>=2);
  await mkdir('tmp/huggingface-check',{recursive:true});
  const report={url:space,realModelRequests:true,realAudioPlayback:true,input:'Existing WAV through virtual microphone; physical microphone untested',
-  playback:await page.evaluate(()=>window.__hostedAudio),jobs,transcript:messages,errors};
+  sttToTtsRoundTrip:true,playback:await page.evaluate(()=>window.__hostedAudio),jobs,transcript:messages,errors};
  await writeFile('tmp/huggingface-check/results.json',JSON.stringify(report,null,2));
  await page.screenshot({path:'tmp/huggingface-check/conversation.png',fullPage:true});
  console.log(JSON.stringify(report,null,2));
