@@ -31,6 +31,10 @@ jobs:
       VITE_SIGNED_SPEECH_MODEL_URL: model/signed-speech-model.json
       # Pin the large MediaPipe runtime to a globally cached immutable CDN.
       VITE_MEDIAPIPE_WASM_URL: https://unpkg.com/@mediapipe/tasks-vision@0.10.14/wasm
+      # GitHub Pages throttles this multi-megabyte binary heavily in our
+      # deployment region. Use Lingora's pinned public Hugging Face mirror.
+      VITE_HAND_LANDMARKER_URL: https://huggingface.co/asomiddinsaidov07/lingora-model-assets/resolve/main/hand_landmarker.task
+      VITE_POSE_LANDMARKER_URL: https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task
       VITE_STT_PROVIDER: huggingface
       VITE_TTS_PROVIDER: huggingface
       VITE_SPEECH_SPACE_URL: ${{ vars.LINGORA_SPEECH_SPACE_URL || 'https://asomiddinsaidov07-lingora-speech.hf.space' }}

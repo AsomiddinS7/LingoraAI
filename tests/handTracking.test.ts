@@ -29,6 +29,24 @@ afterEach(() => vi.unstubAllGlobals());
 const video = { videoWidth: 640, videoHeight: 480 } as HTMLVideoElement;
 
 describe('continuous hand and pose tracking', () => {
+  it('reassembles the hand model from parallel byte ranges', async () => {
+    const total = 70_000;
+    const fetchMock = vi.fn(async (_url: URL, init?: RequestInit) => {
+      const range = new Headers(init?.headers).get('range')?.match(/^bytes=(\d+)-(\d+)$/);
+      if (!range) throw new Error('Expected a byte range');
+      const start = Number(range[1]); const end = Number(range[2]);
+      const bytes = Uint8Array.from({ length: end - start + 1 }, (_, index) => (start + index) % 251);
+      return new Response(bytes, { status: 206, headers: { 'content-range': `bytes ${start}-${end}/${total}` } });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const tracking = await import('../src/ml/handTracking');
+    await tracking.loadHandOverlayLandmarker();
+    const buffer = mocks.handCreate.mock.calls[0][1].baseOptions.modelAssetBuffer as Uint8Array;
+    expect(fetchMock).toHaveBeenCalledTimes(8);
+    expect(buffer).toHaveLength(total);
+    expect([buffer[0], buffer[65_535], buffer.at(-1)]).toEqual([0, 65_535 % 251, 69_999 % 251]);
+  });
+
   it('recovers only a current observed crop and respects its retry budget', async () => {
     const tracking = await import('../src/ml/handTracking');
     tracking.setTrackingMode('recovery');

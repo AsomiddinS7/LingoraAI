@@ -88,18 +88,63 @@ function loadFileset() {
   return filesetLoading;
 }
 
-function loadModel(path: string): Promise<Uint8Array> {
-  return fetch(new URL(path, document.baseURI), { cache: 'force-cache' }).then(async response => {
+function modelUrl(configured: unknown, fallback: string) {
+  return String(configured ?? '').trim() || fallback;
+}
+
+async function loadModel(path: string, parallelRanges = 1): Promise<Uint8Array> {
+  const url = new URL(path, document.baseURI);
+  if (parallelRanges <= 1) {
+    const response = await fetch(url, { cache: 'force-cache' });
     if (!response.ok) throw new Error(`Tracking model could not be loaded: ${path}`);
     return new Uint8Array(await response.arrayBuffer());
+  }
+
+  // Large model downloads from free static hosts can be throttled per stream.
+  // Probe byte-range support, then fill the immutable buffer concurrently.
+  const probeEnd = 65_535;
+  const firstResponse = await fetch(url, {
+    cache: 'force-cache', headers: { Range: `bytes=0-${probeEnd}` },
   });
+  if (firstResponse.status === 200) return new Uint8Array(await firstResponse.arrayBuffer());
+  const contentRange = firstResponse.headers.get('content-range')?.match(/^bytes 0-(\d+)\/(\d+)$/i);
+  if (firstResponse.status !== 206 || !contentRange) {
+    throw new Error(`Tracking model range request failed: ${path}`);
+  }
+  const first = new Uint8Array(await firstResponse.arrayBuffer());
+  const total = Number(contentRange[2]);
+  if (!Number.isSafeInteger(total) || first.length !== Number(contentRange[1]) + 1 || total < first.length) {
+    throw new Error(`Tracking model range was invalid: ${path}`);
+  }
+  const remainder = total - first.length;
+  const rangeSize = Math.ceil(remainder / Math.max(1, parallelRanges - 1));
+  const ranges: Array<{ start: number; end: number }> = [];
+  for (let start = first.length; start < total; start += rangeSize) {
+    ranges.push({ start, end: Math.min(total - 1, start + rangeSize - 1) });
+  }
+  const parts = await Promise.all(ranges.map(async ({ start, end }) => {
+    const response = await fetch(url, {
+      cache: 'force-cache', headers: { Range: `bytes=${start}-${end}` },
+    });
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (response.status !== 206 || bytes.length !== end - start + 1) {
+      throw new Error(`Tracking model range was incomplete: ${path}`);
+    }
+    return { start, bytes };
+  }));
+  const combined = new Uint8Array(total);
+  combined.set(first);
+  for (const part of parts) combined.set(part.bytes, part.start);
+  return combined;
 }
 
 /** Load just the hand graph so the live skeleton can appear before pose/recognition is ready. */
 export function loadHandOverlayLandmarker(): Promise<HandLandmarker> {
   if (landmarker) return Promise.resolve(landmarker);
   const filesetPromise = loadFileset();
-  handModelLoading ??= loadModel('model/hand_landmarker.task');
+  handModelLoading ??= loadModel(
+    modelUrl(import.meta.env.VITE_HAND_LANDMARKER_URL, 'model/hand_landmarker.task'), 8,
+  );
   if (handLoading) return handLoading;
   const pending = (async () => {
     const [fileset, modelAssetBuffer] = await Promise.all([filesetPromise, handModelLoading!]);
@@ -125,10 +170,11 @@ export function loadHandLandmarker(): Promise<HandLandmarker> {
     const t0 = performance.now();
     const filesetPromise = loadFileset();
     const handPromise = loadHandOverlayLandmarker();
-    handModelLoading ??= loadModel('model/hand_landmarker.task');
-    poseModelLoading ??= loadModel('model/pose_landmarker.task');
-    const [fileset, poseModelAssetBuffer] = await Promise.all([filesetPromise, poseModelLoading!]);
+    // Do not make the visible hand skeleton compete with the large pose model
+    // on mobile networks. Pose is only needed by the temporal recognizer.
     await handPromise;
+    poseModelLoading ??= loadModel(modelUrl(import.meta.env.VITE_POSE_LANDMARKER_URL, 'model/pose_landmarker.task'));
+    const [fileset, poseModelAssetBuffer] = await Promise.all([filesetPromise, poseModelLoading!]);
     const makePose = (d: 'GPU' | 'CPU') => PoseLandmarker.createFromOptions(fileset, {
       baseOptions: { modelAssetBuffer: poseModelAssetBuffer, delegate: d },
       runningMode: 'VIDEO', numPoses: 1, outputSegmentationMasks: false,
