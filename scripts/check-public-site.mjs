@@ -51,6 +51,7 @@ try {
   await page.screenshot({ path: resolve(out, 'conversation-desktop.png'), fullPage: true });
   await page.evaluate(() => { location.hash = '/presentation'; });
   await page.getByRole('heading', { name: 'Signed speech recognition', exact: true }).waitFor({ timeout: 30_000 });
+  await page.getByRole('button', { name: 'Sign recognition', exact: true }).click();
   await page.getByRole('button', { name: 'Sign a phrase', exact: true }).waitFor();
   checks.push('Public six-phrase screen loaded');
   await page.setViewportSize({ width: 390, height: 844 });

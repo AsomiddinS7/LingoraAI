@@ -11,6 +11,7 @@ import type { RecognitionProgress, RecognitionResult } from '../recognition/type
 import { useCamera } from '../state/CameraContext';
 import { useConversation } from '../state/ConversationContext';
 import { initialWindow, windowReducer } from '../state/signWindow';
+import { ScriptedDemo } from '../components/ScriptedDemo';
 
 /** Camera inference against separately verified speech references. No scripted progression. */
 export function SignedSpeechScreen() {
@@ -25,6 +26,7 @@ export function SignedSpeechScreen() {
   const [ready, setReady] = useState(false);
   const [sent, setSent] = useState(false);
   const [generation, setGeneration] = useState(0);
+  const [mode, setMode] = useState<'script' | 'recognition'>('script');
   const version = useSignedSpeechVersion();
   const recognizer = useMemo(() => new MotionRecognizer({
     store: signedSpeechStore, modelUrl: SIGNED_SPEECH_MODEL_URL, maxRecordingMs: 20000,
@@ -83,11 +85,17 @@ export function SignedSpeechScreen() {
 
   return <div>
     <div className="screen-title"><h1>{say('Imo-ishoradan nutqqa', 'Signed speech recognition', 'Распознавание жестовой речи')}</h1></div>
-    <p>{say('Kamera harakatni tasdiqlangan video namunalari bilan solishtiradi. Har safar bitta to‘liq jumlani ko‘rsating.', 'The camera compares your movement with verified video examples. Sign one complete phrase per turn.', 'Камера сравнивает движения с проверенными видеообразцами. Показывайте по одной полной фразе.')}</p>
+    {mode === 'recognition' && <p>{say('Kamera harakatni video namunalari bilan solishtiradi. Har safar bitta jumlani ko‘rsating.', 'The camera compares your movement with reference examples. Sign one phrase per turn.', 'Камера сравнивает движения с видеообразцами. Показывайте по одной фразе.')}</p>}
     <div className="talk">
       <section className="talk-signer">
         <CameraPanel controller={controller} recognizedText={matchedText} />
         <div className="stage">
+          <div className="btn-row" aria-label={say('Namoyish turi', 'Demonstration mode', 'Режим демонстрации')}>
+            <button type="button" className="btn" aria-pressed={mode === 'script'} onClick={() => { cancel(); setMode('script'); }}>{say('Tayyor matn', 'Scripted demo', 'Готовый текст')}</button>
+            <button type="button" className="btn" aria-pressed={mode === 'recognition'} onClick={() => setMode('recognition')}>{say('Ishorani aniqlash', 'Sign recognition', 'Распознавание жестов')}</button>
+          </div>
+          {mode === 'script' && <ScriptedDemo />}
+          <div hidden={mode !== 'recognition'}>
           {!count && <p className="notice info" role="status">{say('Bu nutq uchun tasdiqlangan namunalar hali yuklanmagan. Mavjud videodan jumla oralig‘ini tekshirib qo‘shing yoki tayyor namunalarni import qiling.', 'No verified references for this speech are loaded. Verify phrase intervals in the existing video or import labeled examples.', 'Проверенные образцы этой речи ещё не загружены. Проверьте фрагменты существующего видео или импортируйте примеры.')}</p>}
           <div className="btn-row">
             <button type="button" className="btn btn-primary btn-lg" disabled={!ready || camera.status !== 'live' || !count || active} onClick={start}>{say('Jumlani ko‘rsatish', 'Sign a phrase', 'Показать фразу')}</button>
@@ -104,11 +112,12 @@ export function SignedSpeechScreen() {
           {win.phase === 'result' && !matchedText && <p className="notice warn" role="status">{say('Ishonchli moslik topilmadi. Qayta ko‘rsating.', 'No reliable match. Try signing again.', 'Надёжное совпадение не найдено. Повторите жесты.')}</p>}
           {(win.phase === 'error' || win.phase === 'unavailable') && <div className="notice bad" role="alert"><p>{say('Aniqlash bajarilmadi. Kamerani va yuklangan namunalarni tekshiring.', 'Recognition failed. Check the camera and loaded examples.', 'Распознавание не удалось. Проверьте камеру и загруженные примеры.')}</p><button type="button" className="btn" onClick={() => setGeneration((value) => value + 1)}>{say('Qayta urinish', 'Retry', 'Повторить')}</button></div>}
           <p className="small muted">{say('Bu cheklangan namunalar bilan solishtirish demosidir. O‘xshashlik foizi tarjima aniqligi emas.', 'This is a limited reference-matching demo. Similarity is not translation accuracy.', 'Это ограниченная демонстрация сравнения образцов. Процент сходства не означает точность перевода.')}</p>
+          </div>
         </div>
       </section>
       <section className="talk-chat"><Chat /><Composer /></section>
     </div>
-    <details className="card" style={{ marginTop: 24 }}>
+    <details className="card" style={{ marginTop: 24 }} hidden={mode !== 'recognition'}>
       <summary>{say('Mavjud videodan nutq namunalarini tayyorlash', 'Prepare speech references from an existing video', 'Подготовить образцы из существующего видео')}</summary>
       <p>{say('Pastdagi jumlalar taniladigan natijalar emas, namunalarga beriladigan tasdiqlangan yorliqlardir. Har bir oralig‘ 0,3–20 soniya.', 'The phrases below are labels for verified references, not recognition results. Each interval must be 0.3–20 seconds.', 'Фразы ниже служат метками проверенных образцов, а не результатами распознавания. Длительность фрагмента: 0,3–20 секунд.')}</p>
       <VideoExamples store={signedSpeechStore} entries={SIGNED_SPEECH_ENTRIES} maxSeconds={20} />

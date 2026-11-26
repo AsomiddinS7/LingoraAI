@@ -36,6 +36,7 @@ try {
   await page.goto(base + '/#/presentation', { waitUntil: 'networkidle' });
   await page.locator('#lang-select').selectOption('en');
   await page.getByRole('heading', { name: 'Signed speech recognition', exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Sign recognition', exact: true }).click();
   // Vite-only test access clears bundled data so the empty state remains testable.
   await page.evaluate(async () => {
     const { loadHandLandmarker } = await import('/src/ml/handTracking.ts');
@@ -109,6 +110,7 @@ try {
   // existing source. This is source replay consistency, never held-out accuracy.
   await context.unroute('**/model/signed-speech-model.json');
   await page.reload({ waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sign recognition', exact: true }).click();
   const labels = await page.evaluate(async () => {
     const { signedSpeechStore } = await import('/src/ml/signedSpeechStore.ts');
     const deadline = performance.now() + 60000;
