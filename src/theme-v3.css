@@ -301,6 +301,14 @@ dialog.modal::backdrop { background: rgb(16 27 45 / .45); }
 }
 .talk .camera-msg h3 { font-size: clamp(20px, 2.4vw, 26px); letter-spacing: -.035em; }
 .talk .camera .btn { min-height: 48px; font-weight: 700; }
+.tracking-indicator {
+  position: absolute; z-index: 2; bottom: 12px; left: 12px; max-width: calc(100% - 135px);
+  display: inline-flex; align-items: center; gap: 8px; padding: 8px 11px; border-radius: 999px;
+  color: #fff; background: rgb(8 28 34 / .88); font-size: 12px; font-weight: 650; line-height: 1.3;
+}
+.tracking-indicator-dot { width: 8px; height: 8px; flex: 0 0 8px; border-radius: 50%; background: #a5b7bb; }
+.tracking-indicator.active .tracking-indicator-dot { background: #77e5b0; }
+.tracking-indicator.moving .tracking-indicator-dot { box-shadow: 0 0 0 4px rgb(119 229 176 / .22); }
 .talk-chat .chat-new { display: grid; place-items: center; min-height: 190px; }
 .conversation-welcome { max-width: 290px; margin: auto; padding: 20px 12px; text-align: center; color: var(--muted); }
 .conversation-welcome p { margin: 8px 0 0; line-height: 1.55; font-size: 14px; }

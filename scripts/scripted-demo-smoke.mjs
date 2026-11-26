@@ -28,11 +28,13 @@ try {
   if (process.env.LINGORA_SCREENSHOT) await page.screenshot({ path: process.env.LINGORA_SCREENSHOT, fullPage: true });
   await page.getByRole('button', { name: 'Turn on camera', exact: true }).click();
   await page.waitForFunction(() => [...document.querySelectorAll('video')].some(v => v.videoWidth > 0));
-  await page.waitForTimeout(300);
+  await page.locator('.hand-overlay').waitFor({ timeout: 60000 });
   await page.evaluate(() => window.__hand(.2));
+  await page.getByText('Hand detected', { exact: true }).waitFor();
   await page.waitForTimeout(100);
   assert.equal(await page.evaluate(() => window.__plays), 0, 'A stationary hand should not start playback');
   await page.evaluate(() => window.__hand(.3));
+  await page.getByText('Tracking hand movement', { exact: true }).waitFor();
   await page.waitForFunction(() => window.__plays >= 1);
   await page.waitForFunction(() => window.__pauses >= 1, undefined, { timeout: 5000 });
   await page.evaluate(() => window.__hand(.4));
