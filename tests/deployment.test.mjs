@@ -54,6 +54,13 @@ test('distribution audit permits examples and compiled assets while rejecting re
   assert.equal(auditPublishedPaths(unsafe).length, unsafe.length);
 });
 
+test('service worker never intercepts MediaPipe runtime or model binaries', async () => {
+  const source = await readFile(new URL('../public/sw.js', import.meta.url), 'utf8');
+  assert.match(source, /url\.pathname\.includes\('\/mediapipe\/'\)/);
+  assert.match(source, /url\.pathname\.includes\('\/model\/'\)/);
+  assert(source.indexOf("includes('/mediapipe/')") < source.indexOf("req.mode === 'navigate'"));
+});
+
 test('models use actual production parser and exclude raw source metadata even if that parser would strip it', async () => {
   const current = model(['goodbye', 'hello', 'no', 'please', 'thank_you']);
   assert.equal((await inspectCompiledModel(JSON.stringify(current), 'model/motion-model.json')).templates, 5);

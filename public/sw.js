@@ -1,6 +1,6 @@
 // SignConnect service worker: caches the app shell so phrases, typed text and read aloud work offline.
 // Never caches /api/ responses and never touches camera or microphone data.
-const CACHE = 'lingora-conversation-v9';
+const CACHE = 'lingora-conversation-v10';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png'];
 
 self.addEventListener('install', (event) => {
@@ -17,7 +17,10 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
   if (req.method !== 'GET' || url.origin !== self.location.origin) return;
-  if (url.pathname.includes('/api/') || url.pathname.includes('/model/')) return;
+  // MediaPipe instantiates its WASM response as a stream. Passing that response
+  // through CacheStorage can leave initialization pending on GitHub Pages, so
+  // runtime and model binaries always use the browser's direct network path.
+  if (url.pathname.includes('/api/') || url.pathname.includes('/model/') || url.pathname.includes('/mediapipe/')) return;
 
   // Navigations: network first, cached shell when offline.
   if (req.mode === 'navigate') {
