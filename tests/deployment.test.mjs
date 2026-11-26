@@ -48,9 +48,9 @@ test('Azure public hosting accepts only a public HTTPS broker without inline cre
 });
 
 test('distribution audit permits examples and compiled assets while rejecting recordings, credentials, weights and private artifacts', () => {
-  const safe = ['.env.example', '.env.speech.example', 'backend/.env.example', 'public/model/motion-model.json', 'public/model/pose_landmarker.task', 'tools/speech/MODEL_NOTICES.md', 'public/audio/introduction/1.wav', 'audio/introduction/6.wav'];
+  const safe = ['.env.example', '.env.speech.example', 'backend/.env.example', 'public/model/motion-model.json', 'public/model/pose_landmarker.task', 'tools/speech/MODEL_NOTICES.md', 'public/audio/introduction/1.wav', 'audio/introduction/6.wav', 'public/audio/signs/hello.wav'];
   assert.deepEqual(auditPublishedPaths(safe), []);
-  const unsafe = ['.env.local', 'backend/.env', 'private-video-work/train.json', 'output/demo.zip', 'tmp/results.json', 'public/clip.mp4', 'public/audio/introduction/7.wav', 'public/audio/recording.wav', 'checkpoints/model.onnx', 'tls/private.key'];
+  const unsafe = ['.env.local', 'backend/.env', 'private-video-work/train.json', 'output/demo.zip', 'tmp/results.json', 'public/clip.mp4', 'public/audio/introduction/7.wav', 'public/audio/signs/other.wav', 'public/audio/recording.wav', 'checkpoints/model.onnx', 'tls/private.key'];
   assert.equal(auditPublishedPaths(unsafe).length, unsafe.length);
 });
 

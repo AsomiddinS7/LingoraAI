@@ -25,6 +25,7 @@ try {
     HTMLMediaElement.prototype.pause = function () { if (this instanceof HTMLAudioElement && !this.paused) window.__pauses++; return pause.call(this); };
   });
   assert.equal(await page.getByText('Demo: prepared audio', { exact: true }).count(), 0);
+  await page.getByRole('button', { name: 'Prepared audio', exact: true }).click();
   if (process.env.LINGORA_SCREENSHOT) await page.screenshot({ path: process.env.LINGORA_SCREENSHOT, fullPage: true });
   await page.getByRole('button', { name: 'Turn on camera', exact: true }).click();
   await page.waitForFunction(() => [...document.querySelectorAll('video')].some(v => v.videoWidth > 0));
@@ -40,7 +41,16 @@ try {
   await page.evaluate(() => window.__hand(.4));
   await page.waitForFunction(() => window.__plays >= 2);
   assert.equal(await page.locator('#reply').count(), 0);
-  assert.equal(await page.getByRole('button', { name: 'Sign recognition', exact: true }).count(), 0);
+  await page.getByRole('button', { name: 'Sign recognition', exact: true }).click();
+  await page.getByRole('button', { name: 'Sign now', exact: true }).waitFor({ timeout: 60000 });
+  const spoken = await page.evaluate(async () => {
+    const { SignAudioTts } = await import('/src/providers/signAudio.ts');
+    let fallbackCalled = false;
+    const voice = new SignAudioTts({ speak: async () => { fallbackCalled = true; }, cancel: () => {} });
+    await voice.speak('Salom.', 'uz');
+    return { fallbackCalled };
+  });
+  assert.equal(spoken.fallbackCalled, false, 'Trial word must play the bundled clip');
   assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
   console.log('Movement-controlled prepared audio: stillness, start, pause, resume and mobile layout passed with synthetic landmarks.');
 } finally { await browser.close(); }

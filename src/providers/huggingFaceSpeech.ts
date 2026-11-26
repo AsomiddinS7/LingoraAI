@@ -1,5 +1,6 @@
 import { LocalWhisperStt, type LocalSttOptions } from './localStt';
 import { LocalNeuralTts } from './localTts';
+import { SignAudioTts } from './signAudio';
 
 const MAX_AUDIO=10*1024*1024;
 function base64(bytes: Uint8Array): string {
@@ -87,5 +88,5 @@ export function createHuggingFaceSpeech(url: string, options: {
 }={}) {
   const base=speechSpaceUrl(url),fetcher=createSpaceFetch(base);
   return {stt:new LocalWhisperStt({url:base,fetcher,...options,serviceKind:'hosted',timeoutMs:180000}),
-    tts:new LocalNeuralTts({url:base,fetcher,timeoutMs:180000})};
+    tts:new SignAudioTts(new LocalNeuralTts({url:base,fetcher,timeoutMs:180000}))};
 }
