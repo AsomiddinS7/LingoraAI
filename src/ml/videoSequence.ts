@@ -1,7 +1,7 @@
 import { loadHandLandmarker, beginTrackingSequence, trackVideoFrame, handTracking } from './handTracking';
 import type { SequenceFrame } from './sequence';
 // Diagnostics and controls must refer to the exact instance used by this extractor.
-export { setTrackingMode,trackingDiagnostics,loadHandLandmarker,TRACKING_PROFILE,delegate,poseDelegate } from './handTracking';
+export { setTrackingMode,trackingDiagnostics,loadHandLandmarker,handTracking,TRACKING_PROFILE,delegate,poseDelegate } from './handTracking';
 
 export function videoSampleTimes(start: number, end: number): number[] {
   // A rounding error near an integer must not create a duplicate final frame.

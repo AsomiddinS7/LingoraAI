@@ -10,21 +10,23 @@ import { limitDemoSign } from './demoVocabulary';
 
 /** A bounded signing turn matched against labeled examples from existing videos. */
 export class MotionRecognizer extends Emitter implements SequenceRecognizer {
-  constructor(private options: { store?: SequenceStore; modelUrl?: string; maxRecordingMs?: number; allowedLabels?: readonly string[] } = {}) { super(); }
+  constructor(private options: { store?: SequenceStore; modelUrl?: string; maxRecordingMs?: number; allowedLabels?: readonly string[]; captureCountdown?: boolean } = {}) { super(); }
   private get store() { return this.options.store ?? sequenceStore; }
   private timing = () => ({ ...runtime.get().config.signWindow,
     ...(this.options.maxRecordingMs ? { maxRecordingMs: this.options.maxRecordingMs } : {}) });
   private release: (() => void) | null = null;
   private unsubscribe: (() => void) | null = null;
   private collecting = false;
+  private collectingCountdown = false;
   private frames: SequenceFrame[] = [];
+  private countdownFrames: SequenceFrame[] = [];
   // A fixed window avoids treating the pause inside a moving sign as its endpoint.
   private runner = createWindowRunner({
     emitter: this,
     timing: () => this.timing(),
     simulatedRestAfterMs: () => this.timing().maxRecordingMs,
-    onRecordingStart: () => { this.frames = []; this.collecting = true; },
-    onRecordingEnd: () => { this.collecting = false; },
+    onRecordingStart: () => { this.frames = this.countdownFrames; this.countdownFrames = []; this.collectingCountdown = false; this.collecting = true; },
+    onRecordingEnd: () => { this.collecting = false; this.collectingCountdown = false; },
     onProcessed: (ms) => metrics.set({ lastProcessingMs: ms }),
     classify: () => {
       const result = this.store.match(this.trim(this.frames));
@@ -48,24 +50,28 @@ export class MotionRecognizer extends Emitter implements SequenceRecognizer {
     this.detach();
     this.release = handTracking.acquire(video);
     this.unsubscribe = handTracking.subscribe((frame, capturedAt) => {
-      if (!this.collecting) return;
+      if (!this.collecting && !this.collectingCountdown) return;
       const t = capturedAt;
-      if (this.frames.length && t - this.frames[this.frames.length - 1].t < 50) return;
-      this.frames.push(frame
+      const target = this.collecting ? this.frames : this.countdownFrames;
+      if (target.length && t - target[target.length - 1].t < 50) return;
+      target.push(frame
         ? { t, left: frame.left, right: frame.right, pose: frame.pose, aspect: frame.aspect }
         : { t, left: null, right: null });
+      if (this.collectingCountdown && target.length > 60) target.shift();
     });
   }
   detach(): void {
-    this.runner.cancel(); this.collecting = false;
+    this.runner.cancel(); this.collecting = false; this.collectingCountdown = false; this.countdownFrames = [];
     this.unsubscribe?.(); this.release?.();
     this.unsubscribe = this.release = null;
   }
   startWindow(): void {
     if (!this.store.all().length) { this.emit('error', { message: 'no_templates' }); return; }
+    this.countdownFrames = [];
+    this.collectingCountdown = Boolean(this.options.captureCountdown);
     this.runner.start();
   }
-  cancelWindow(): void { this.collecting = false; this.runner.cancel(); }
+  cancelWindow(): void { this.collecting = false; this.collectingCountdown = false; this.countdownFrames = []; this.runner.cancel(); }
   finishWindow(): void { this.runner.finish(); }
 
   private trim(frames: SequenceFrame[]): SequenceFrame[] {

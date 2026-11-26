@@ -17,6 +17,10 @@ const production = process.argv.includes('--production');
 const allLiveCases = process.argv.includes('--all-live-cases');
 const forcePhrase = process.argv.includes('--force-phrase');
 const demoScope = process.argv.includes('--demo-scope');
+const captureCountdown = process.argv.includes('--capture-countdown');
+const startDuringCountdown = process.argv.includes('--start-during-countdown');
+const countdownMs = Number(process.argv.find(arg => arg.startsWith('--countdown-ms='))?.split('=')[1] ?? 0);
+if (!Number.isFinite(countdownMs) || countdownMs < 0 || countdownMs > 5000) throw new Error('Invalid countdown');
 const requested = process.argv.find(arg => arg.startsWith('--labels='))?.slice('--labels='.length).split(',');
 const requestedIds = process.argv.find(arg => arg.startsWith('--case-ids='))?.slice('--case-ids='.length).split(',');
 const quiet=process.env.LINGORA_QUIET_SIMULATION==='1';
@@ -78,6 +82,7 @@ try {
       liveTiming: 'Scripted user-start/sign-finish windows. No automatic continuous-language segmentation or fresh signer test.' };
   }, { neuralText, galleryText, phraseText, skeletal, trackingMode, productionText });
   report.runtime.classifierPath = production ? 'production trained bundle and sequence store' : 'research hybrid classifier';
+  report.runtime.captureExperiment = { countdownMs, captureCountdown, startDuringCountdown };
   if (productionText) report.runtime.productionBundleSha256 = hash(productionText);
   const limit = process.argv.includes('--probe') ? 6 : manifest.cases.length;
   for (const test of liveOnly ? [] : manifest.cases.filter(c => !requested || requested.includes(c.expected)).slice(0, limit)) {
@@ -135,8 +140,12 @@ try {
       const { MotionRecognizer } = await import('/src/recognition/motionRecognizer.ts');
       const { DEMO_SIGN_LABELS } = await import('/src/recognition/demoVocabulary.ts');
       const { runtime } = await import('/src/runtime.ts');
-      runtime.setConfig({ signWindow: { ...runtime.get().config.signWindow, countdownMs: 0 } });
+      runtime.setConfig({ signWindow: { ...runtime.get().config.signWindow, countdownMs: test.countdownMs } });
       let diagnostics, capturedFrames = 0, observedFrames = [];
+      const videoTimes = new Map();
+      const stopTiming = s.tracking.handTracking.subscribe((_frame, capturedAt, videoTime) => {
+        if (Number.isFinite(videoTime)) videoTimes.set(capturedAt, videoTime);
+      });
       const references = test.scope === 'phrase' ? s.phraseStore : s.productionStore;
       const store = { all: () => references ? references.all() : s.gallery.templates, match: frames => {
         capturedFrames = frames.length;
@@ -146,7 +155,7 @@ try {
           : s.productionStore ? { result: s.productionStore.match(frames) } : s.classify(frames);
         return diagnostics.result;
       } };
-      const recognizer = new MotionRecognizer({ store, maxRecordingMs: test.durationSeconds * 1000 + 2000,
+      const recognizer = new MotionRecognizer({ store, maxRecordingMs: test.durationSeconds * 1000 + 2000, captureCountdown: test.captureCountdown,
         ...(s.productionStore && test.scope !== 'phrase' ? { allowedLabels: DEMO_SIGN_LABELS } : {}) });
       const started = performance.now();
       try {
@@ -154,7 +163,7 @@ try {
           const timeout = setTimeout(() => reject(new Error('Live replay timeout')), test.durationSeconds * 2000 + 20000);
           let playing = false;
           recognizer.on('progress', event => {
-            if (event.phase === 'recording' && !playing) { playing = true; video.play().catch(reject); }
+            if ((event.phase === 'recording' || (test.startDuringCountdown && event.phase === 'countdown')) && !playing) { playing = true; video.play().catch(reject); }
           });
           recognizer.on('result', result => { clearTimeout(timeout); resolve(result); });
           recognizer.on('error', error => { clearTimeout(timeout); reject(new Error(error.message)); });
@@ -164,9 +173,18 @@ try {
         const liveDiagnostics=s.tracking.trackingDiagnostics();
         if(liveDiagnostics.frames<capturedFrames || (test.trackingMode&&liveDiagnostics.mode!==test.trackingMode))
           throw new Error('Live tracker instance mismatch');
-        return { ...diagnostics, result: outcome, frames:observedFrames, capturedFrames,trackingDiagnostics:liveDiagnostics,elapsedMs: performance.now() - started };
-      } finally { video.pause(); video.onended = null; recognizer.detach(); }
-    }, {...test,trackingMode});
+        const times = observedFrames.map(frame => videoTimes.get(frame.t)).filter(Number.isFinite);
+        const annotatedStart = test.paddingSeconds;
+        const annotatedEnd = annotatedStart + (test.sourceWindowSeconds[1] - test.sourceWindowSeconds[0]) / test.speed;
+        const captureWindow = times.length ? { firstVideoS: times[0], lastVideoS: times.at(-1),
+          annotatedStartS: annotatedStart, annotatedEndS: annotatedEnd,
+          missedStartMs: Math.round(Math.max(0, times[0] - annotatedStart) * 1000),
+          missedEndMs: Math.round(Math.max(0, annotatedEnd - times.at(-1)) * 1000),
+          alignedFrames: times.length } : null;
+        return { ...diagnostics, result: outcome, frames:observedFrames, capturedFrames, captureWindow,
+          trackingDiagnostics:liveDiagnostics,elapsedMs: performance.now() - started };
+      } finally { stopTiming(); video.pause(); video.onended = null; recognizer.detach(); }
+    }, {...test,trackingMode,countdownMs,captureCountdown,startDuringCountdown});
     const {frames:liveFrames,...liveResult}=result;
     liveTracked.push({...test,frames:liveFrames});
     report.runtime.sharedTrackerVerified=true;

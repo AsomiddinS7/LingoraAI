@@ -209,7 +209,7 @@ export function trackVideoFrame(video: HTMLVideoElement, at = performance.now())
     left, right, pose, aspect: width / height, width, height, at };
 }
 
-type Listener = (f: HandFrame | null, capturedAt: number) => void;
+type Listener = (f: HandFrame | null, capturedAt: number, videoTime?: number) => void;
 const listeners = new Set<Listener>();
 let latest: HandFrame | null = null;
 let current: { video: HTMLVideoElement; stop: () => void; users: number } | null = null;
@@ -229,9 +229,10 @@ export const handTracking = {
         // Record the instant the video is sampled, before synchronous hand and
         // pose inference. Using completion time distorts movement when it lags.
         const capturedAt = performance.now();
+        const videoTime = v.currentTime;
         try { latest = trackVideoFrame(v, capturedAt); }
-        catch (error) { latest = null; listeners.forEach((l) => l(null, capturedAt)); throw error; }
-        listeners.forEach((l) => l(latest, capturedAt));
+        catch (error) { latest = null; listeners.forEach((l) => l(null, capturedAt, videoTime)); throw error; }
+        listeners.forEach((l) => l(latest, capturedAt, videoTime));
       }, {
         maxFps: 30,
         onStats: (s) => metrics.set({ processedFps: s.processedFps, avgProcessMs: s.avgProcessMs, skippedPerSec: s.skippedPerSec }),
