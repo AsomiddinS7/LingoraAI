@@ -46,7 +46,13 @@ let poseLandmarker: PoseLandmarker | null = null;
 let recoveryLandmarker: HandLandmarker | null = null;
 let recoveryFactory: (()=>Promise<HandLandmarker>) | null = null;
 let recoveryLoading: Promise<void> | null = null;
+let handLoading: Promise<HandLandmarker> | null = null;
 let loading: Promise<HandLandmarker> | null = null;
+let visionLoading: Promise<typeof import('@mediapipe/tasks-vision')> | null = null;
+type VisionFileset = Awaited<ReturnType<(typeof import('@mediapipe/tasks-vision'))['FilesetResolver']['forVisionTasks']>>;
+let filesetLoading: Promise<VisionFileset> | null = null;
+let handModelLoading: Promise<Uint8Array> | null = null;
+let poseModelLoading: Promise<Uint8Array> | null = null;
 export let delegate: 'GPU' | 'CPU' | null = null;
 export let poseDelegate: 'GPU' | 'CPU' | null = null;
 
@@ -68,42 +74,80 @@ async function loadRecoveryLandmarker() {
     await recoveryLoading;
   }
 }
-export function loadHandLandmarker(): Promise<HandLandmarker> {
-  if (landmarker && poseLandmarker) return trackingMode==='recovery'
-    ? loadRecoveryLandmarker().then(()=>landmarker!) : Promise.resolve(landmarker);
-  loading ??= (async () => {
-    const t0 = performance.now();
-    const { FilesetResolver, HandLandmarker, PoseLandmarker } = await import('@mediapipe/tasks-vision');
-    const base = document.baseURI;
-    const fileset = await FilesetResolver.forVisionTasks(new URL('mediapipe/wasm', base).href);
+
+function loadVision() {
+  return visionLoading ??= import('@mediapipe/tasks-vision');
+}
+
+function loadFileset() {
+  return filesetLoading ??= loadVision().then(({ FilesetResolver }) => {
+    const configured = String(import.meta.env.VITE_MEDIAPIPE_WASM_URL ?? '').trim();
+    const root = configured || new URL('mediapipe/wasm', document.baseURI).href;
+    return FilesetResolver.forVisionTasks(root);
+  });
+}
+
+function loadModel(path: string): Promise<Uint8Array> {
+  return fetch(new URL(path, document.baseURI), { cache: 'force-cache' }).then(async response => {
+    if (!response.ok) throw new Error(`Tracking model could not be loaded: ${path}`);
+    return new Uint8Array(await response.arrayBuffer());
+  });
+}
+
+/** Load just the hand graph so the live skeleton can appear before pose/recognition is ready. */
+export function loadHandOverlayLandmarker(): Promise<HandLandmarker> {
+  if (landmarker) return Promise.resolve(landmarker);
+  handModelLoading ??= loadModel('model/hand_landmarker.task');
+  if (handLoading) return handLoading;
+  const pending = (async () => {
+    const [{ HandLandmarker }, fileset, modelAssetBuffer] = await Promise.all([loadVision(), loadFileset(), handModelLoading!]);
     const makeHand = (d: 'GPU' | 'CPU') => HandLandmarker.createFromOptions(fileset, {
-      baseOptions: { modelAssetPath: new URL('model/hand_landmarker.task', base).href, delegate: d },
+      baseOptions: { modelAssetBuffer, delegate: d },
       ...HAND_TRACKING_OPTIONS,
     });
     const preferred = preferredDelegate();
     try { landmarker = await makeHand(preferred); delegate = preferred; }
     catch { landmarker = await makeHand('CPU'); delegate = 'CPU'; }
+    return landmarker!;
+  })();
+  handLoading = pending;
+  pending.catch(() => { if (handLoading === pending) handLoading = null; });
+  return pending;
+}
+
+export function loadHandLandmarker(): Promise<HandLandmarker> {
+  if (landmarker && poseLandmarker) return trackingMode==='recovery'
+    ? loadRecoveryLandmarker().then(()=>landmarker!) : Promise.resolve(landmarker);
+  if (loading) return loading;
+  const pending = (async () => {
+    const t0 = performance.now();
+    handModelLoading ??= loadModel('model/hand_landmarker.task');
+    poseModelLoading ??= loadModel('model/pose_landmarker.task');
+    const handPromise = loadHandOverlayLandmarker();
+    const [{ HandLandmarker, PoseLandmarker }, fileset, poseModelAssetBuffer] = await Promise.all([loadVision(), loadFileset(), poseModelLoading!]);
+    await handPromise;
     const makePose = (d: 'GPU' | 'CPU') => PoseLandmarker.createFromOptions(fileset, {
-      baseOptions: { modelAssetPath: new URL('model/pose_landmarker.task', base).href, delegate: d },
+      baseOptions: { modelAssetBuffer: poseModelAssetBuffer, delegate: d },
       runningMode: 'VIDEO', numPoses: 1, outputSegmentationMasks: false,
       minPoseDetectionConfidence: 0.5, minPosePresenceConfidence: 0.5, minTrackingConfidence: 0.5,
     });
     try { poseLandmarker = await makePose(delegate!); poseDelegate = delegate; }
     catch {
       try { poseLandmarker = await makePose('CPU'); poseDelegate = 'CPU'; }
-      catch (err) { landmarker.close(); landmarker = null; throw err; }
+      catch (err) { landmarker?.close(); landmarker = null; throw err; }
     }
     // Separate IMAGE inference never contaminates the main VIDEO tracker state.
-    recoveryFactory = () => HandLandmarker.createFromOptions(fileset, {
-        baseOptions: { modelAssetPath: new URL('model/hand_landmarker.task', base).href, delegate: delegate! },
+    recoveryFactory = async () => HandLandmarker.createFromOptions(fileset, {
+        baseOptions: { modelAssetBuffer: await handModelLoading!, delegate: delegate! },
         runningMode: 'IMAGE', numHands: 1, minHandDetectionConfidence: .5, minHandPresenceConfidence: .5,
       });
     if(trackingMode==='recovery')await loadRecoveryLandmarker();
     metrics.set({ modelLoadMs: performance.now() - t0 });
-    return landmarker;
+    return landmarker!;
   })();
-  loading.catch(() => { loading = null; });
-  return loading;
+  loading = pending;
+  pending.catch(() => { if (loading === pending) loading = null; });
+  return pending;
 }
 
 /** Assign hands using body wrists, including when hands cross or labels flicker. */
@@ -134,7 +178,7 @@ let recoveryCanvas: HTMLCanvasElement | null = null;
 
 /** Independent videos must not inherit the previous stream's tracked regions. */
 export function beginTrackingSequence(): void {
-  if (!landmarker || !poseLandmarker) throw new Error('Tracking models not loaded');
+  if (!landmarker) throw new Error('Hand tracking model not loaded');
   associator.reset(); lastRecovery = -Infinity; nextRecoverySlot = 0;
   for (const key of Object.keys(diagnostics) as (keyof typeof diagnostics)[]) diagnostics[key] = 0;
   const empty = document.createElement('canvas');
@@ -143,13 +187,13 @@ export function beginTrackingSequence(): void {
   const timestamp = videoClock.next(0);
   // A blank warm-up frame clears tracked regions without fabricating observations.
   landmarker.detectForVideo(empty, timestamp);
-  poseLandmarker.detectForVideo(empty, timestamp);
+  poseLandmarker?.detectForVideo(empty, timestamp);
   videoClock.restart();
 }
 
 /** Shared sequential live/offline processing. Call only after loadHandLandmarker(). */
 export function trackVideoFrame(video: HTMLVideoElement, at = performance.now()): HandFrame | null {
-  if (!landmarker || !poseLandmarker) throw new Error('Tracking models not loaded');
+  if (!landmarker) throw new Error('Hand tracking model not loaded');
   const started = performance.now();
   snapshot ??= document.createElement('canvas');
   const width = video.videoWidth || 640;
@@ -160,7 +204,7 @@ export function trackVideoFrame(video: HTMLVideoElement, at = performance.now())
   snapshot.getContext('2d')!.drawImage(video, 0, 0, width, height);
   const timestamp = videoClock.next(at);
   const result = landmarker.detectForVideo(snapshot, timestamp);
-  const body = poseLandmarker.detectForVideo(snapshot, timestamp).landmarks[0];
+  const body = poseLandmarker?.detectForVideo(snapshot, timestamp).landmarks[0];
   const indices = [0, 11, 12, 13, 14, 15, 16];
   const pose = body ? indices.map((i) => ({ x: body[i].x, y: body[i].y, z: body[i].z })) : null;
   const hands = result.landmarks.map((h) => h.map(({ x, y, z }) => ({ x, y, z })));

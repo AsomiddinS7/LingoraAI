@@ -6,7 +6,7 @@ import { metrics, useMetrics } from '../pipeline/metrics';
 import { useRuntime } from '../runtime';
 import { useCamera } from '../state/CameraContext';
 import { useSignWindow, type SignWindowValue } from '../state/SignWindowContext';
-import { handTracking, loadHandLandmarker } from '../ml/handTracking';
+import { handTracking, loadHandOverlayLandmarker } from '../ml/handTracking';
 import { HandOverlay } from './HandOverlay';
 import { Icon } from './Icon';
 
@@ -69,7 +69,7 @@ export function CameraPanel({ controller, recognizedText }: { controller?: Camer
     if (!video || !cam.stream || (recognizer !== 'motion' && recognizer !== 'static')) return;
     let cancelled = false;
     let release: (() => void) | null = null;
-    void loadHandLandmarker().then(() => {
+    void loadHandOverlayLandmarker().then(() => {
       if (cancelled) return;
       release = handTracking.acquire(video);
     }).catch((error) => console.warn('[Lingora] hand tracking unavailable', error));

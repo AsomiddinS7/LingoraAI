@@ -29,6 +29,8 @@ jobs:
       # Pages builds must never depend on an ignored local training artifact.
       VITE_MOTION_MODEL_URL: model/trained-sign-model.json
       VITE_SIGNED_SPEECH_MODEL_URL: model/signed-speech-model.json
+      # Pin the large MediaPipe runtime to a globally cached immutable CDN.
+      VITE_MEDIAPIPE_WASM_URL: https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm
       VITE_STT_PROVIDER: huggingface
       VITE_TTS_PROVIDER: huggingface
       VITE_SPEECH_SPACE_URL: ${{ vars.LINGORA_SPEECH_SPACE_URL || 'https://asomiddinsaidov07-lingora-speech.hf.space' }}

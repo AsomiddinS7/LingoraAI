@@ -20,6 +20,7 @@ beforeEach(() => {
   mocks.handCreate.mockResolvedValue({ detectForVideo: mocks.hand, detect: mocks.image, close() {} });
   mocks.poseCreate.mockResolvedValue({ detectForVideo: mocks.pose, detect: mocks.image, close() {} });
   mocks.pump.mockReturnValue(() => {});
+  vi.stubGlobal('fetch', vi.fn(async () => new Response(new Uint8Array([0]), { status: 200 })));
   vi.stubGlobal('document', { baseURI: 'http://localhost:5173/', createElement: () => ({
     width: 300, height: 150, getContext: (type: string) => type === '2d' ? { drawImage() {} } : null,
   }) });
