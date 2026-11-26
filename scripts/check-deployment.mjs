@@ -67,7 +67,9 @@ export function auditPublishedPaths(paths) {
     const path = input.replaceAll('\\', '/'); const name = basename(path);
     const secret = (name === '.env' || name.startsWith('.env.')) && !name.endsWith('.example');
     const privateDirectory = /(?:^|\/)(?:private-video-work|tmp|output|node_modules|dist|__pycache__|\.venv[^/]*|\.pgdata[^/]*)(?:\/|$)/.test(path);
-    const recordingOrWeights = /\.(?:mp4|mov|mkv|webm|wav|mp3|m4a|ogg|zip|7z|tar|gz|onnx|nemo|safetensors|pt|pth|ckpt|pyc|log)$/i.test(name);
+    // Only the explicitly generated, public introduction is permitted as audio.
+    const preparedAudio = /^(?:public\/)?audio\/introduction\/[1-6]\.wav$/.test(path);
+    const recordingOrWeights = !preparedAudio && /\.(?:mp4|mov|mkv|webm|wav|mp3|m4a|ogg|zip|7z|tar|gz|onnx|nemo|safetensors|pt|pth|ckpt|pyc|log)$/i.test(name);
     const credentialFile = /\.(?:pem|pfx|key|crt)$/i.test(name);
     return secret || privateDirectory || recordingOrWeights || credentialFile
       ? [{ code: 'private_or_unexpected_distribution_file', file: path }] : [];
