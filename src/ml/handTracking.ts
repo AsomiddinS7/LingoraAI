@@ -1,5 +1,5 @@
 // Both hands and the upper body are processed locally. Raw video is never uploaded.
-import type { HandLandmarker, PoseLandmarker } from '@mediapipe/tasks-vision';
+import { FilesetResolver, HandLandmarker, PoseLandmarker } from '@mediapipe/tasks-vision';
 import { startFramePump } from '../pipeline/framePump';
 import { metrics } from '../pipeline/metrics';
 import { landmarksToFeatures, type Landmark } from './features';
@@ -48,8 +48,7 @@ let recoveryFactory: (()=>Promise<HandLandmarker>) | null = null;
 let recoveryLoading: Promise<void> | null = null;
 let handLoading: Promise<HandLandmarker> | null = null;
 let loading: Promise<HandLandmarker> | null = null;
-let visionLoading: Promise<typeof import('@mediapipe/tasks-vision')> | null = null;
-type VisionFileset = Awaited<ReturnType<(typeof import('@mediapipe/tasks-vision'))['FilesetResolver']['forVisionTasks']>>;
+type VisionFileset = Awaited<ReturnType<typeof FilesetResolver.forVisionTasks>>;
 let filesetLoading: Promise<VisionFileset> | null = null;
 let handModelLoading: Promise<Uint8Array> | null = null;
 let poseModelLoading: Promise<Uint8Array> | null = null;
@@ -75,12 +74,8 @@ async function loadRecoveryLandmarker() {
   }
 }
 
-function loadVision() {
-  return visionLoading ??= import('@mediapipe/tasks-vision');
-}
-
 function loadFileset() {
-  return filesetLoading ??= loadVision().then(({ FilesetResolver }) => {
+  return filesetLoading ??= Promise.resolve().then(() => {
     const configured = String(import.meta.env.VITE_MEDIAPIPE_WASM_URL ?? '').trim();
     const root = configured || new URL('mediapipe/wasm', document.baseURI).href;
     return FilesetResolver.forVisionTasks(root);
@@ -100,7 +95,7 @@ export function loadHandOverlayLandmarker(): Promise<HandLandmarker> {
   handModelLoading ??= loadModel('model/hand_landmarker.task');
   if (handLoading) return handLoading;
   const pending = (async () => {
-    const [{ HandLandmarker }, fileset, modelAssetBuffer] = await Promise.all([loadVision(), loadFileset(), handModelLoading!]);
+    const [fileset, modelAssetBuffer] = await Promise.all([loadFileset(), handModelLoading!]);
     const makeHand = (d: 'GPU' | 'CPU') => HandLandmarker.createFromOptions(fileset, {
       baseOptions: { modelAssetBuffer, delegate: d },
       ...HAND_TRACKING_OPTIONS,
@@ -124,7 +119,7 @@ export function loadHandLandmarker(): Promise<HandLandmarker> {
     handModelLoading ??= loadModel('model/hand_landmarker.task');
     poseModelLoading ??= loadModel('model/pose_landmarker.task');
     const handPromise = loadHandOverlayLandmarker();
-    const [{ HandLandmarker, PoseLandmarker }, fileset, poseModelAssetBuffer] = await Promise.all([loadVision(), loadFileset(), poseModelLoading!]);
+    const [fileset, poseModelAssetBuffer] = await Promise.all([loadFileset(), poseModelLoading!]);
     await handPromise;
     const makePose = (d: 'GPU' | 'CPU') => PoseLandmarker.createFromOptions(fileset, {
       baseOptions: { modelAssetBuffer: poseModelAssetBuffer, delegate: d },
