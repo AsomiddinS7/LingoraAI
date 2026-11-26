@@ -3,6 +3,7 @@ import { CameraPanel, type CameraController } from '../components/CameraPanel';
 import { Chat, Composer } from '../components/Chat';
 import { VideoExamples } from '../components/VideoExamples';
 import { TtsNotice } from '../components/Notices';
+import { Icon } from '../components/Icon';
 import { SIGNED_SPEECH_ENTRIES, SIGNED_SPEECH_MODEL_URL, signedSpeechText } from '../data/signedSpeech';
 import { useI18n } from '../i18n';
 import { signedSpeechStore, useSignedSpeechVersion } from '../ml/signedSpeechStore';
@@ -83,12 +84,18 @@ export function SignedSpeechScreen() {
     latestConversation.current.speakDirect(matchedText, 'uz'); setSent(true);
   };
 
-  return <div>
+  return <div className="speech-page">
     <div className="screen-title"><h1>{say('Imo-ishoradan nutqqa', 'Signed speech recognition', 'Распознавание жестовой речи')}</h1></div>
-    {mode === 'recognition' && <p>{say('Kamera harakatni video namunalari bilan solishtiradi. Har safar bitta jumlani ko‘rsating.', 'The camera compares your movement with reference examples. Sign one phrase per turn.', 'Камера сравнивает движения с видеообразцами. Показывайте по одной фразе.')}</p>}
+    {mode === 'recognition' && <p className="speech-intro">{say('Kamera harakatni video namunalari bilan solishtiradi. Har safar bitta jumlani ko‘rsating.', 'The camera compares your movement with reference examples. Sign one phrase per turn.', 'Камера сравнивает движения с видеообразцами. Показывайте по одной фразе.')}</p>}
     <div className="talk">
       <section className="talk-signer">
-        <CameraPanel controller={controller} recognizedText={matchedText} />
+        <div className="panel cam-panel">
+          <div className="panel-head">
+            <h2 className="panel-title"><Icon name="camera" />{say('Kamera kiritmasi', 'Camera input', 'Ввод с камеры')}</h2>
+            <span className={`status-dot${camera.status === 'live' ? ' on' : ''}`}>{!ready ? say('Model yuklanmoqda', 'Loading model', 'Загрузка модели') : win.phase === 'recording' ? say('Yozilmoqda', 'Recording', 'Запись') : win.phase === 'processing' ? say('Solishtirilmoqda', 'Comparing', 'Сравнение') : camera.status === 'live' ? say('Tayyor', 'Ready', 'Готово') : say('Kamera oʻchiq', 'Camera off', 'Камера выкл.')}</span>
+          </div>
+          <div className="panel-body"><CameraPanel controller={controller} recognizedText={matchedText} /></div>
+        </div>
         <div className="stage">
           <div className="btn-row" aria-label={say('Namoyish turi', 'Demonstration mode', 'Режим демонстрации')}>
             <button type="button" className="btn" aria-pressed={mode === 'script'} onClick={() => { cancel(); setMode('script'); }}>{say('Tayyor matn', 'Scripted demo', 'Готовый текст')}</button>
@@ -103,9 +110,14 @@ export function SignedSpeechScreen() {
             {active && <button type="button" className="btn" onClick={cancel}>{say('Bekor qilish', 'Cancel', 'Отмена')}</button>}
           </div>
           {active && <p role="status">{win.phase === 'countdown' ? say('Tayyorlaning…', 'Get ready…', 'Приготовьтесь…') : win.phase === 'recording' ? say('Jumlani to‘liq ko‘rsating, so‘ng tugatishni bosing.', 'Sign the whole phrase, then press Finish.', 'Покажите полную фразу и нажмите «Завершить».') : say('Solishtirilmoqda…', 'Comparing…', 'Сравнение…')}</p>}
-          {matchedText && <section className="card" aria-live="polite">
-            <p className="small muted">{say('Namunaga mos jumla', 'Matched reference phrase', 'Фраза по совпавшему образцу')} · {say('o‘xshashlik', 'similarity', 'сходство')} {Math.round((win.result?.confidence ?? 0) * 100)}%</p>
-            <p lang="uz">{matchedText}</p>
+          {matchedText && <section className="card speech-result" aria-live="polite">
+            <p className="eyebrow">{say('Namunaga mos jumla', 'Matched reference phrase', 'Фраза по совпавшему образцу')}</p>
+            <p className="result-phrase" lang="uz">{matchedText}</p>
+            <div className="meter-row" style={{ marginBottom: 14 }}>
+              <span>{say('O‘xshashlik', 'Similarity', 'Сходство')}</span>
+              <span className="meter" role="img" aria-label={`${Math.round((win.result?.confidence ?? 0) * 100)}%`}><span style={{ width: `${Math.round((win.result?.confidence ?? 0) * 100)}%` }} /></span>
+              <strong>{Math.round((win.result?.confidence ?? 0) * 100)}%</strong>
+            </div>
             <button type="button" className="btn btn-primary" disabled={sent || conversationBusy} onClick={accept}>{sent ? say('Suhbatga qo‘shildi', 'Added to conversation', 'Добавлено в разговор') : say('Tasdiqlash va ovozga aylantirish', 'Confirm and read aloud', 'Подтвердить и озвучить')}</button>
           </section>}
           <TtsNotice />
@@ -115,7 +127,10 @@ export function SignedSpeechScreen() {
           </div>
         </div>
       </section>
-      <section className="talk-chat"><Chat /><Composer /></section>
+      <section className="talk-chat panel chat-panel" aria-labelledby="speech-chat-h">
+        <div className="panel-head"><h2 className="panel-title" id="speech-chat-h"><Icon name="chat" />{say('Suhbat tarixi', 'Conversation history', 'История разговора')}</h2></div>
+        <Chat /><Composer />
+      </section>
     </div>
     <details className="card" style={{ marginTop: 24 }} hidden={mode !== 'recognition'}>
       <summary>{say('Mavjud videodan nutq namunalarini tayyorlash', 'Prepare speech references from an existing video', 'Подготовить образцы из существующего видео')}</summary>

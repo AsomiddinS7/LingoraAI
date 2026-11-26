@@ -5,6 +5,33 @@ import { LANGS, type Lang } from '../types';
 import { BrandMark, Icon, type IconName } from './Icon';
 import { InterpreterButton } from './InterpreterButton';
 import { OfflineBanner } from './Notices';
+import { useAccount } from '../account';
+import { accountsEnabled } from '../config';
+
+export function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?';
+}
+
+/** Signed in: avatar + name (opens Profile). Signed out: sign-in entry. Without accounts: Profile. */
+function AccountControl() {
+  const { t } = useI18n();
+  const me = useAccount();
+  if (me) {
+    return (
+      <a className="account-btn" href={href('profile')} aria-label={`${t('nav.account')}: ${me.display_name}`}>
+        <span className="avatar" aria-hidden="true">{initials(me.display_name)}</span>
+        <span className="account-name">{me.display_name}</span>
+      </a>
+    );
+  }
+  return (
+    <a className="account-btn signed-out" href={href(accountsEnabled ? 'signin' : 'profile')} aria-label={accountsEnabled ? t('welcome.signin') : t('nav.profile')}>
+      <span className="avatar" aria-hidden="true"><Icon name="person" /></span>
+      <span className="account-name">{accountsEnabled ? t('welcome.signin') : t('nav.profile')}</span>
+    </a>
+  );
+}
 
 const TOP: { route: Route; key: MessageKey }[] = [
   { route: 'conversation', key: 'nav.conversation' },
@@ -57,14 +84,17 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
         <div className="header-tools">
           <label className="sr-only" htmlFor="lang-select">{t('lang.label')}</label>
-          <select id="lang-select" className="lang-select" value={lang} onChange={(e) => setLang(e.target.value as Lang)}>
-            {LANGS.map((l) => (
-              <option key={l} value={l} lang={l}>
-                {t(`lang.${l}` as MessageKey)}
-              </option>
-            ))}
-          </select>
+          <span className="lang-select-wrap">
+            <select id="lang-select" className="lang-select" value={lang} onChange={(e) => setLang(e.target.value as Lang)}>
+              {LANGS.map((l) => (
+                <option key={l} value={l} lang={l}>
+                  {t(`lang.${l}` as MessageKey)}
+                </option>
+              ))}
+            </select>
+          </span>
           <InterpreterButton compact />
+          <AccountControl />
         </div>
       </header>
       <OfflineBanner />

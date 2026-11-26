@@ -9,16 +9,18 @@ function apply(t: Theme) {
   else document.documentElement.setAttribute('data-theme', t);
 }
 
-export function initTheme() {
+/** Bright by default; "system" only when the user picks it in Profile. */
+function stored(): Theme {
   const t = readPref('theme');
-  apply(t === 'light' || t === 'dark' ? t : 'system');
+  return t === 'dark' || t === 'system' ? t : 'light';
+}
+
+export function initTheme() {
+  apply(stored());
 }
 
 export function useTheme() {
-  const [theme, set] = useState<Theme>(() => {
-    const t = readPref('theme');
-    return t === 'light' || t === 'dark' ? t : 'system';
-  });
+  const [theme, set] = useState<Theme>(stored);
   useEffect(() => {
     apply(theme);
   }, [theme]);
