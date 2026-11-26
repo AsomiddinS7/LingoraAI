@@ -8,16 +8,20 @@ import { SignWindowPanel } from '../components/SignWindowPanel';
 import { useI18n } from '../i18n';
 import { RecognitionStatus } from '../components/RecognitionStatus';
 import { TypedMessage } from '../components/TypedMessage';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useConversation } from '../state/ConversationContext';
-import { href } from '../router';
+import { ScriptedDemo } from '../components/ScriptedDemo';
 import { Icon } from '../components/Icon';
 import { useCamera } from '../state/CameraContext';
+import { useSignWindow } from '../state/SignWindowContext';
 
 export function ConversationScreen() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const say = (uz: string, en: string, ru: string) => lang === 'uz' ? uz : lang === 'ru' ? ru : en;
+  const [mode, setMode] = useState<'script' | 'recognition'>('script');
   const conv = useConversation();
   const cam = useCamera();
+  const signWindow = useSignWindow();
   const current = useRef(conv);
   current.current = conv;
   useEffect(() => () => {
@@ -37,11 +41,14 @@ export function ConversationScreen() {
           <div className="panel-body"><CameraPanel /></div>
         </div>
         <div className="stage">
-          <SignWindowPanel />
+          <div className="btn-row" aria-label={say('Namoyish turi', 'Demonstration mode', 'Режим демонстрации')}>
+            <button type="button" className="btn" aria-pressed={mode === 'script'} onClick={() => { signWindow.cancel(); setMode('script'); }}>{say('Tayyor matn', 'Scripted demo', 'Готовый текст')}</button>
+            <button type="button" className="btn" aria-pressed={mode === 'recognition'} onClick={() => setMode('recognition')}>{say('Ishorani aniqlash', 'Sign recognition', 'Распознавание жестов')}</button>
+          </div>
+          {mode === 'script' && <ScriptedDemo />}
+          <div hidden={mode !== 'recognition'}><SignWindowPanel /><RecognitionStatus /></div>
           <SentenceCard />
           <TypedMessage />
-          <RecognitionStatus />
-          <a className="link-btn" href={href('presentation')}>{t('presentation.open')}</a>
         </div>
       </section>
       <section className="talk-chat panel chat-panel" aria-labelledby="chat-h">

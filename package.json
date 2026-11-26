@@ -33,7 +33,7 @@
     "model:optimize": "node scripts/quantize-motion.mjs",
     "speech:check": "node scripts/check-speech-readiness.mjs",
     "test:browser": "node scripts/browser-smoke.mjs",
-    "test:presentation": "node scripts/presentation-smoke.mjs",
+    "test:presentation": "node scripts/scripted-demo-smoke.mjs",
     "speech:dev": "node --env-file=.env.speech scripts/speech-server.mjs",
     "start": "node scripts/speech-server.mjs",
     "start:local": "node --env-file-if-exists=.env.speech scripts/start-local.mjs",

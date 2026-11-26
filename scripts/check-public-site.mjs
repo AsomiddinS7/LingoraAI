@@ -38,6 +38,7 @@ try {
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(new URL('#/conversation', base).href, { waitUntil: 'networkidle', timeout: 60_000 });
   await page.locator('#lang-select').selectOption('en');
+  await page.getByRole('button', { name: 'Sign recognition', exact: true }).click();
   await page.getByText(`${vocabularyCount} signs have video examples. Confirm the text before speaking.`, { exact: true })
     .waitFor({ state: 'attached', timeout: 60_000 });
   checks.push(`Public vocabulary model loaded with ${vocabularyCount} labels`);
@@ -50,10 +51,9 @@ try {
   checks.push('Real MediaPipe camera turn completed and rejected synthetic no-hand input');
   await page.screenshot({ path: resolve(out, 'conversation-desktop.png'), fullPage: true });
   await page.evaluate(() => { location.hash = '/presentation'; });
-  await page.getByRole('heading', { name: 'Signed speech recognition', exact: true }).waitFor({ timeout: 30_000 });
-  await page.getByRole('button', { name: 'Sign recognition', exact: true }).click();
-  await page.getByRole('button', { name: 'Sign a phrase', exact: true }).waitFor();
-  checks.push('Public six-phrase screen loaded');
+  await page.getByRole('button', { name: 'Scripted demo', exact: true }).click();
+  await page.getByTestId('scripted-demo-output').waitFor({ state: 'attached', timeout: 30_000 });
+  checks.push('Previous presentation link opens prepared text in conversation');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: resolve(out, 'presentation-mobile.png'), fullPage: true });
   assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Mobile page overflows horizontally');

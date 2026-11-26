@@ -49,6 +49,7 @@ try {
   await page.goto(base + '/#/conversation', { waitUntil: 'networkidle' });
   console.log('browser: conversation loaded');
   await page.locator('#lang-select').selectOption('en');
+  await page.getByRole('button', { name: 'Sign recognition', exact: true }).click();
   await page.getByText('Experimental sign recognition', { exact: true }).waitFor();
   await page.getByText(`${expectedMotionLabels} signs have video examples. Confirm the text before speaking.`).waitFor({ state: 'attached', timeout: 60000 });
   // This diagnostic explicitly stubs browser speech for UI lifecycle checks;
@@ -57,6 +58,7 @@ try {
   await page.locator('#sw-sttProvider').selectOption('browser-speech');
   await page.locator('#sw-ttsProvider').selectOption('browser-synthesis');
   await page.evaluate(() => { location.hash = '/conversation'; });
+  await page.getByRole('button', { name: 'Sign recognition', exact: true }).click();
   console.log('browser: model ready');
   checks.push(`real local motion model loaded: ${expectedMotionLabels} labels`);
 
@@ -91,6 +93,7 @@ try {
   await page.getByRole('link', { name: 'Help', exact: true }).first().click();
   await page.waitForFunction(() => window.__micOpen === false);
   await page.goto(base + '/#/conversation', { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'Sign recognition', exact: true }).click();
   checks.push('speech UI notice, interim captions, stop and navigation cleanup (recognition stub)');
 
   for (const width of [1440, 768, 390]) {

@@ -184,7 +184,7 @@ main { padding: 28px 24px calc(var(--nav-h) + 28px); }
 
 /* Bottom navigation (phones and tablets) */
 .bottom-nav {
-  grid-template-columns: repeat(5, 1fr); background: var(--surface); border-top: 1px solid var(--line);
+  grid-template-columns: repeat(4, 1fr); background: var(--surface); border-top: 1px solid var(--line);
   -webkit-backdrop-filter: none; backdrop-filter: none;
 }
 .bottom-nav a { position: relative; gap: 3px; min-height: var(--nav-h); font-size: 11.5px; font-weight: 550; color: var(--muted); }

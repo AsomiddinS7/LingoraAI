@@ -32,7 +32,7 @@ Requires Node.js 22.12 or newer. Local STT also requires Python and model setup.
 Open a terminal in this folder and run:
   node scripts/start-local.mjs
 Then open http://localhost:8787/#/conversation
-Signed speech: http://localhost:8787/#/presentation
+Prepared text in conversation: http://localhost:8787/#/conversation
 
 This build selects the free NVIDIA Uzbek STT service on localhost:8791.
 Follow tools/speech/README.md to install Python dependencies and download the

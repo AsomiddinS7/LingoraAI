@@ -2,11 +2,11 @@
 import { useSyncExternalStore } from 'react';
 import { readPref } from './lib/prefs';
 
-export type Route = 'welcome' | 'conversation' | 'presentation' | 'phrasebook' | 'contribute' | 'profile' | 'help' | 'signin' | 'register' | 'console';
-export const ROUTES: Route[] = ['welcome', 'conversation', 'presentation', 'phrasebook', 'contribute', 'profile', 'help', 'signin', 'register', 'console'];
+export type Route = 'welcome' | 'conversation' | 'phrasebook' | 'contribute' | 'profile' | 'help' | 'signin' | 'register' | 'console';
+export const ROUTES: Route[] = ['welcome', 'conversation', 'phrasebook', 'contribute', 'profile', 'help', 'signin', 'register', 'console'];
 
 /** Links from the earlier version keep working. */
-const LEGACY: Record<string, Route> = { sign: 'conversation', speak: 'conversation', phrases: 'phrasebook', about: 'help' };
+const LEGACY: Record<string, Route> = { sign: 'conversation', speak: 'conversation', presentation: 'conversation', phrases: 'phrasebook', about: 'help' };
 
 export function resolveRoute(hash: string, welcomed: boolean): Route {
   const r = hash.replace(/^#\/?/, '').split(/[/?]/)[0];

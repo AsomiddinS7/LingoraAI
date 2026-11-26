@@ -35,7 +35,6 @@ function AccountControl() {
 
 const TOP: { route: Route; key: MessageKey }[] = [
   { route: 'conversation', key: 'nav.conversation' },
-  { route: 'presentation', key: 'presentation.nav' },
   { route: 'phrasebook', key: 'nav.phrasebook' },
   { route: 'help', key: 'nav.help' },
   { route: 'profile', key: 'nav.profile' },
@@ -43,7 +42,6 @@ const TOP: { route: Route; key: MessageKey }[] = [
 
 const BOTTOM: { route: Route; key: MessageKey; icon: IconName }[] = [
   { route: 'conversation', key: 'nav.conversation', icon: 'chat' },
-  { route: 'presentation', key: 'presentation.short', icon: 'hand' },
   { route: 'phrasebook', key: 'nav.phrasebook', icon: 'book' },
   { route: 'help', key: 'nav.help', icon: 'info' },
   { route: 'profile', key: 'nav.profile', icon: 'person' },

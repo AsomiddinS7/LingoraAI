@@ -8,7 +8,7 @@ try {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
-  await page.goto(base + '/#/presentation', { waitUntil: 'domcontentloaded' });
+  await page.goto(base + '/#/conversation', { waitUntil: 'domcontentloaded' });
   await page.locator('#lang-select').selectOption('en');
   await page.getByText('This is prepared text. Words appear on a timer; the camera is not translating signs.').waitFor();
   assert.equal(await page.getByRole('heading', { name: 'Scripted text demonstration' }).count(), 0);
@@ -30,6 +30,10 @@ try {
   assert.equal(await output.textContent(), '');
   await page.getByRole('button', { name: 'Sign recognition', exact: true }).click();
   assert.equal(await page.getByTestId('scripted-demo-output').count(), 0);
+  assert.equal(await page.locator('nav a[href="#/presentation"]').count(), 0);
+  await page.goto(base + '/#/presentation', { waitUntil: 'domcontentloaded' });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.getByTestId('scripted-demo-output').waitFor({ state: 'attached' });
   assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
   assert.deepEqual(errors, []);
   console.log('Scripted demo: timing, pause/resume, reset, disclosure, mode switch and mobile width passed.');
